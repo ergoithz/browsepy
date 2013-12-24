@@ -1,0 +1,1610 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>API Reference &mdash; Bottle 0.13-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/bottle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.13-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Bottle 0.13-dev documentation" href="index.html" />
+    <link rel="next" title="List of available Plugins" href="plugins/index.html" />
+    <link rel="prev" title="SimpleTemplate Engine" href="stpl.html" />
+    <link rel="shortcut icon" type="image/x-icon" href="_static/favicon.ico" />
+    <link rel="image_src" type="image/png" href="_static/logo_reddit.png" />
+    <script type="application/javascript" src="_static/default.js"></script>
+    
+     
+
+  </head>
+  <body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div></div>
+  
+  <div class="section" id="module-bottle">
+<span id="api-reference"></span><h1>API Reference<a class="headerlink" href="#module-bottle" title="Permalink to this headline">¶</a></h1>
+<p>This is a mostly auto-generated API. If you are new to bottle, you might find the
+narrative <a class="reference internal" href="tutorial.html"><em>Tutorial</em></a> more helpful.</p>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<p>The module defines several functions, constants, and an exception.</p>
+<dl class="function">
+<dt id="bottle.debug">
+<tt class="descname">debug</tt><big>(</big><em>mode=True</em><big>)</big><a class="reference internal" href="_modules/bottle.html#debug"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the debug level.
+There is only one debug level supported at the moment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.run">
+<tt class="descname">run</tt><big>(</big><em>app=None</em>, <em>server='wsgiref'</em>, <em>host='127.0.0.1'</em>, <em>port=8080</em>, <em>interval=1</em>, <em>reloader=False</em>, <em>quiet=False</em>, <em>plugins=None</em>, <em>debug=None</em>, <em>**kargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start a server instance. This method blocks until the server terminates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>app</strong> &#8211; WSGI application or target string supported by
+<a class="reference internal" href="#bottle.load_app" title="bottle.load_app"><tt class="xref py py-func docutils literal"><span class="pre">load_app()</span></tt></a>. (default: <a class="reference internal" href="#bottle.default_app" title="bottle.default_app"><tt class="xref py py-func docutils literal"><span class="pre">default_app()</span></tt></a>)</li>
+<li><strong>server</strong> &#8211; Server adapter to use. See <tt class="xref py py-data docutils literal"><span class="pre">server_names</span></tt> keys
+for valid names or pass a <tt class="xref py py-class docutils literal"><span class="pre">ServerAdapter</span></tt> subclass.
+(default: <cite>wsgiref</cite>)</li>
+<li><strong>host</strong> &#8211; Server address to bind to. Pass <tt class="docutils literal"><span class="pre">0.0.0.0</span></tt> to listens on
+all interfaces including the external one. (default: 127.0.0.1)</li>
+<li><strong>port</strong> &#8211; Server port to bind to. Values below 1024 require root
+privileges. (default: 8080)</li>
+<li><strong>reloader</strong> &#8211; Start auto-reloading server? (default: False)</li>
+<li><strong>interval</strong> &#8211; Auto-reloader interval in seconds (default: 1)</li>
+<li><strong>quiet</strong> &#8211; Suppress output to stdout and stderr? (default: False)</li>
+<li><strong>options</strong> &#8211; Options passed to the server adapter.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.load">
+<tt class="descname">load</tt><big>(</big><em>target</em>, <em>**namespace</em><big>)</big><a class="reference internal" href="_modules/bottle.html#load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import a module or fetch an object from a module.</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">package.module</span></tt> returns <cite>module</cite> as a module object.</li>
+<li><tt class="docutils literal"><span class="pre">pack.mod:name</span></tt> returns the module variable <cite>name</cite> from <cite>pack.mod</cite>.</li>
+<li><tt class="docutils literal"><span class="pre">pack.mod:func()</span></tt> calls <cite>pack.mod.func()</cite> and returns the result.</li>
+</ul>
+<p>The last form accepts not only function calls, but any type of
+expression. Keyword arguments passed to this function are available as
+local variables. Example: <tt class="docutils literal"><span class="pre">import_string('re:compile(x)',</span> <span class="pre">x='[a-z]')</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.load_app">
+<tt class="descname">load_app</tt><big>(</big><em>target</em><big>)</big><a class="reference internal" href="_modules/bottle.html#load_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.load_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a bottle application from a module and make sure that the import
+does not affect the current default application, but returns a separate
+application object. See <a class="reference internal" href="#bottle.load" title="bottle.load"><tt class="xref py py-func docutils literal"><span class="pre">load()</span></tt></a> for the target parameter.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="bottle.request">
+<tt class="descname">request</tt><em class="property"> = &lt;LocalRequest: GET http://127.0.0.1/&gt;</em><a class="headerlink" href="#bottle.request" title="Permalink to this definition">¶</a></dt>
+<dd><p>A thread-safe instance of <a class="reference internal" href="#bottle.LocalRequest" title="bottle.LocalRequest"><tt class="xref py py-class docutils literal"><span class="pre">LocalRequest</span></tt></a>. If accessed from within a
+request callback, this instance always refers to the <em>current</em> request
+(even on a multithreaded server).</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="bottle.response">
+<tt class="descname">response</tt><em class="property"> = Content-Type: text/html; charset=UTF-8 </em><a class="headerlink" href="#bottle.response" title="Permalink to this definition">¶</a></dt>
+<dd><p>A thread-safe instance of <a class="reference internal" href="#bottle.LocalResponse" title="bottle.LocalResponse"><tt class="xref py py-class docutils literal"><span class="pre">LocalResponse</span></tt></a>. It is used to change the
+HTTP response for the <em>current</em> request.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="bottle.HTTP_CODES">
+<tt class="descname">HTTP_CODES</tt><em class="property"> = {300: 'Multiple Choices', 301: 'Moved Permanently', 302: 'Found', 303: 'See Other', 304: 'Not Modified', 305: 'Use Proxy', 306: '(Unused)', 307: 'Temporary Redirect', 100: 'Continue', 101: 'Switching Protocols', 400: 'Bad Request', 401: 'Unauthorized', 402: 'Payment Required', 403: 'Forbidden', 404: 'Not Found', 405: 'Method Not Allowed', 406: 'Not Acceptable', 407: 'Proxy Authentication Required', 408: 'Request Timeout', 409: 'Conflict', 410: 'Gone', 411: 'Length Required', 412: 'Precondition Failed', 413: 'Request Entity Too Large', 414: 'Request-URI Too Long', 415: 'Unsupported Media Type', 416: 'Requested Range Not Satisfiable', 417: 'Expectation Failed', 418: &quot;I'm a teapot&quot;, 428: 'Precondition Required', 429: 'Too Many Requests', 431: 'Request Header Fields Too Large', 200: 'OK', 201: 'Created', 202: 'Accepted', 203: 'Non-Authoritative Information', 204: 'No Content', 205: 'Reset Content', 206: 'Partial Content', 500: 'Internal Server Error', 501: 'Not Implemented', 502: 'Bad Gateway', 503: 'Service Unavailable', 504: 'Gateway Timeout', 505: 'HTTP Version Not Supported', 511: 'Network Authentication Required'}</em><a class="headerlink" href="#bottle.HTTP_CODES" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict to map HTTP status codes (e.g. 404) to phrases (e.g. &#8216;Not Found&#8217;)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.app">
+<tt class="descname">app</tt><big>(</big><big>)</big><a class="headerlink" href="#bottle.app" title="Permalink to this definition">¶</a></dt>
+<dt id="bottle.default_app">
+<tt class="descname">default_app</tt><big>(</big><big>)</big><a class="headerlink" href="#bottle.default_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current <a class="reference internal" href="tutorial.html#default-app"><em>Default Application</em></a>. Actually, these are callable instances of <a class="reference internal" href="#bottle.AppStack" title="bottle.AppStack"><tt class="xref py py-class docutils literal"><span class="pre">AppStack</span></tt></a> and implement a stack-like API.</p>
+</dd></dl>
+
+<div class="section" id="routing">
+<h3>Routing<a class="headerlink" href="#routing" title="Permalink to this headline">¶</a></h3>
+<p>Bottle maintains a stack of <a class="reference internal" href="#bottle.Bottle" title="bottle.Bottle"><tt class="xref py py-class docutils literal"><span class="pre">Bottle</span></tt></a> instances (see <a class="reference internal" href="#bottle.app" title="bottle.app"><tt class="xref py py-func docutils literal"><span class="pre">app()</span></tt></a> and <a class="reference internal" href="#bottle.AppStack" title="bottle.AppStack"><tt class="xref py py-class docutils literal"><span class="pre">AppStack</span></tt></a>) and uses the top of the stack as a <em>default application</em> for some of the module-level functions and decorators.</p>
+<dl class="function">
+<dt id="bottle.route">
+<tt class="descname">route</tt><big>(</big><em>path</em>, <em>method='GET'</em>, <em>callback=None</em>, <em>**options</em><big>)</big><a class="headerlink" href="#bottle.route" title="Permalink to this definition">¶</a></dt>
+<dt id="bottle.get">
+<tt class="descname">get</tt><big>(</big><em>...</em><big>)</big><a class="headerlink" href="#bottle.get" title="Permalink to this definition">¶</a></dt>
+<dt id="bottle.post">
+<tt class="descname">post</tt><big>(</big><em>...</em><big>)</big><a class="headerlink" href="#bottle.post" title="Permalink to this definition">¶</a></dt>
+<dt id="bottle.put">
+<tt class="descname">put</tt><big>(</big><em>...</em><big>)</big><a class="headerlink" href="#bottle.put" title="Permalink to this definition">¶</a></dt>
+<dt id="bottle.delete">
+<tt class="descname">delete</tt><big>(</big><em>...</em><big>)</big><a class="headerlink" href="#bottle.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator to install a route to the current default application. See <a class="reference internal" href="#bottle.Bottle.route" title="bottle.Bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">Bottle.route()</span></tt></a> for details.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.error">
+<tt class="descname">error</tt><big>(</big><em>...</em><big>)</big><a class="headerlink" href="#bottle.error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator to install an error handler to the current default application. See <a class="reference internal" href="#bottle.Bottle.error" title="bottle.Bottle.error"><tt class="xref py py-meth docutils literal"><span class="pre">Bottle.error()</span></tt></a> for details.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="wsgi-and-http-utilities">
+<h3>WSGI and HTTP Utilities<a class="headerlink" href="#wsgi-and-http-utilities" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="bottle.parse_date">
+<tt class="descname">parse_date</tt><big>(</big><em>ims</em><big>)</big><a class="reference internal" href="_modules/bottle.html#parse_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.parse_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse rfc1123, rfc850 and asctime timestamps and return UTC epoch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.parse_auth">
+<tt class="descname">parse_auth</tt><big>(</big><em>header</em><big>)</big><a class="reference internal" href="_modules/bottle.html#parse_auth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.parse_auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse rfc2617 HTTP authentication header string (basic) and return (user,pass) tuple or None</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.cookie_encode">
+<tt class="descname">cookie_encode</tt><big>(</big><em>data</em>, <em>key</em><big>)</big><a class="reference internal" href="_modules/bottle.html#cookie_encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.cookie_encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encode and sign a pickle-able object. Return a (byte) string</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.cookie_decode">
+<tt class="descname">cookie_decode</tt><big>(</big><em>data</em>, <em>key</em><big>)</big><a class="reference internal" href="_modules/bottle.html#cookie_decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.cookie_decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verify and decode an encoded string. Return an object or None.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.cookie_is_encoded">
+<tt class="descname">cookie_is_encoded</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="_modules/bottle.html#cookie_is_encoded"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.cookie_is_encoded" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the argument looks like a encoded cookie.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.yieldroutes">
+<tt class="descname">yieldroutes</tt><big>(</big><em>func</em><big>)</big><a class="reference internal" href="_modules/bottle.html#yieldroutes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.yieldroutes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a generator for routes that match the signature (name, args)
+of the func parameter. This may yield more than one route if the function
+takes optional keyword arguments. The output is best described by example:</p>
+<div class="highlight-python"><pre>a()         -&gt; '/a'
+b(x, y)     -&gt; '/b/&lt;x&gt;/&lt;y&gt;'
+c(x, y=5)   -&gt; '/c/&lt;x&gt;' and '/c/&lt;x&gt;/&lt;y&gt;'
+d(x=5, y=6) -&gt; '/d' and '/d/&lt;x&gt;' and '/d/&lt;x&gt;/&lt;y&gt;'</pre>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.path_shift">
+<tt class="descname">path_shift</tt><big>(</big><em>script_name</em>, <em>path_info</em>, <em>shift=1</em><big>)</big><a class="reference internal" href="_modules/bottle.html#path_shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.path_shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shift path fragments from PATH_INFO to SCRIPT_NAME and vice versa.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The modified paths.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>script_name</strong> &#8211; The SCRIPT_NAME path.</li>
+<li><strong>script_name</strong> &#8211; The PATH_INFO path.</li>
+<li><strong>shift</strong> &#8211; The number of path fragments to shift. May be negative to
+change the shift direction. (default: 1)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="data-structures">
+<h3>Data Structures<a class="headerlink" href="#data-structures" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="bottle.MultiDict">
+<em class="property">class </em><tt class="descname">MultiDict</tt><big>(</big><em>*a</em>, <em>**k</em><big>)</big><a class="reference internal" href="_modules/bottle.html#MultiDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.MultiDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>This dict stores multiple values per key, but behaves exactly like a
+normal dict in that it returns only the newest value for any given key.
+There are special methods available to access the full list of values.</p>
+<dl class="method">
+<dt id="bottle.MultiDict.get">
+<tt class="descname">get</tt><big>(</big><em>key</em>, <em>default=None</em>, <em>index=-1</em>, <em>type=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#MultiDict.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.MultiDict.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the most recent value for a key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>default</strong> &#8211; The default value to be returned if the key is not
+present or the type conversion fails.</li>
+<li><strong>index</strong> &#8211; An index for the list of available values.</li>
+<li><strong>type</strong> &#8211; If defined, this callable is used to cast the value
+into a specific type. Exception are suppressed and result in
+the default value to be returned.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.MultiDict.append">
+<tt class="descname">append</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="reference internal" href="_modules/bottle.html#MultiDict.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.MultiDict.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new value to the list of values for this key.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.MultiDict.replace">
+<tt class="descname">replace</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="reference internal" href="_modules/bottle.html#MultiDict.replace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.MultiDict.replace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace the list of values with a single value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.MultiDict.getall">
+<tt class="descname">getall</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="_modules/bottle.html#MultiDict.getall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.MultiDict.getall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a (possibly empty) list of values for a key.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.MultiDict.getone">
+<tt class="descname">getone</tt><big>(</big><em>key</em>, <em>default=None</em>, <em>index=-1</em>, <em>type=None</em><big>)</big><a class="headerlink" href="#bottle.MultiDict.getone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aliases for WTForms to mimic other multi-dict APIs (Django)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.MultiDict.getlist">
+<tt class="descname">getlist</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#bottle.MultiDict.getlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a (possibly empty) list of values for a key.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.HeaderDict">
+<em class="property">class </em><tt class="descname">HeaderDict</tt><big>(</big><em>*a</em>, <em>**ka</em><big>)</big><a class="reference internal" href="_modules/bottle.html#HeaderDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.HeaderDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A case-insensitive version of <a class="reference internal" href="#bottle.MultiDict" title="bottle.MultiDict"><tt class="xref py py-class docutils literal"><span class="pre">MultiDict</span></tt></a> that defaults to
+replace the old value instead of appending it.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.FormsDict">
+<em class="property">class </em><tt class="descname">FormsDict</tt><big>(</big><em>*a</em>, <em>**k</em><big>)</big><a class="reference internal" href="_modules/bottle.html#FormsDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.FormsDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>This <a class="reference internal" href="#bottle.MultiDict" title="bottle.MultiDict"><tt class="xref py py-class docutils literal"><span class="pre">MultiDict</span></tt></a> subclass is used to store request form data.
+Additionally to the normal dict-like item access methods (which return
+unmodified data as native strings), this container also supports
+attribute-like access to its values. Attributes are automatically de-
+or recoded to match <a class="reference internal" href="#bottle.FormsDict.input_encoding" title="bottle.FormsDict.input_encoding"><tt class="xref py py-attr docutils literal"><span class="pre">input_encoding</span></tt></a> (default: &#8216;utf8&#8217;). Missing
+attributes default to an empty string.</p>
+<dl class="attribute">
+<dt id="bottle.FormsDict.input_encoding">
+<tt class="descname">input_encoding</tt><em class="property"> = 'utf8'</em><a class="headerlink" href="#bottle.FormsDict.input_encoding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encoding used for attribute values.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.FormsDict.recode_unicode">
+<tt class="descname">recode_unicode</tt><em class="property"> = True</em><a class="headerlink" href="#bottle.FormsDict.recode_unicode" title="Permalink to this definition">¶</a></dt>
+<dd><p>If true (default), unicode strings are first encoded with <cite>latin1</cite>
+and then decoded to match <a class="reference internal" href="#bottle.FormsDict.input_encoding" title="bottle.FormsDict.input_encoding"><tt class="xref py py-attr docutils literal"><span class="pre">input_encoding</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.FormsDict.decode">
+<tt class="descname">decode</tt><big>(</big><em>encoding=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#FormsDict.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.FormsDict.decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy with all keys and values de- or recoded to match
+<a class="reference internal" href="#bottle.FormsDict.input_encoding" title="bottle.FormsDict.input_encoding"><tt class="xref py py-attr docutils literal"><span class="pre">input_encoding</span></tt></a>. Some libraries (e.g. WTForms) want a
+unicode dictionary.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.FormsDict.getunicode">
+<tt class="descname">getunicode</tt><big>(</big><em>name</em>, <em>default=None</em>, <em>encoding=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#FormsDict.getunicode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.FormsDict.getunicode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value as a unicode string, or the default.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.WSGIHeaderDict">
+<em class="property">class </em><tt class="descname">WSGIHeaderDict</tt><big>(</big><em>environ</em><big>)</big><a class="reference internal" href="_modules/bottle.html#WSGIHeaderDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.WSGIHeaderDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>This dict-like class wraps a WSGI environ dict and provides convenient
+access to HTTP_* fields. Keys and values are native strings
+(2.x bytes or 3.x unicode) and keys are case-insensitive. If the WSGI
+environment contains non-native string values, these are de- or encoded
+using a lossless &#8216;latin1&#8217; character set.</p>
+<p>The API will remain stable even on changes to the relevant PEPs.
+Currently PEP 333, 444 and 3333 are supported. (PEP 444 is the only one
+that uses non-native strings.)</p>
+<dl class="attribute">
+<dt id="bottle.WSGIHeaderDict.cgikeys">
+<tt class="descname">cgikeys</tt><em class="property"> = ('CONTENT_TYPE', 'CONTENT_LENGTH')</em><a class="headerlink" href="#bottle.WSGIHeaderDict.cgikeys" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of keys that do not have a <tt class="docutils literal"><span class="pre">HTTP_</span></tt> prefix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.WSGIHeaderDict.raw">
+<tt class="descname">raw</tt><big>(</big><em>key</em>, <em>default=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#WSGIHeaderDict.raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.WSGIHeaderDict.raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the header value as is (may be bytes or unicode).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.AppStack">
+<em class="property">class </em><tt class="descname">AppStack</tt><a class="reference internal" href="_modules/bottle.html#AppStack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.AppStack" title="Permalink to this definition">¶</a></dt>
+<dd><p>A stack-like list. Calling it returns the head of the stack.</p>
+<dl class="method">
+<dt id="bottle.AppStack.pop">
+<tt class="descname">pop</tt><big>(</big><big>)</big><a class="headerlink" href="#bottle.AppStack.pop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current default application and remove it from the stack.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.AppStack.push">
+<tt class="descname">push</tt><big>(</big><em>value=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#AppStack.push"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.AppStack.push" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new <a class="reference internal" href="#bottle.Bottle" title="bottle.Bottle"><tt class="xref py py-class docutils literal"><span class="pre">Bottle</span></tt></a> instance to the stack</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.ResourceManager">
+<em class="property">class </em><tt class="descname">ResourceManager</tt><big>(</big><em>base='./'</em>, <em>opener=&lt;built-in function open&gt;</em>, <em>cachemode='all'</em><big>)</big><a class="reference internal" href="_modules/bottle.html#ResourceManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.ResourceManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class manages a list of search paths and helps to find and open
+application-bound resources (files).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>base</strong> &#8211; default value for <a class="reference internal" href="#bottle.ResourceManager.add_path" title="bottle.ResourceManager.add_path"><tt class="xref py py-meth docutils literal"><span class="pre">add_path()</span></tt></a> calls.</li>
+<li><strong>opener</strong> &#8211; callable used to open resources.</li>
+<li><strong>cachemode</strong> &#8211; controls which lookups are cached. One of &#8216;all&#8217;,
+&#8216;found&#8217; or &#8216;none&#8217;.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="bottle.ResourceManager.path">
+<tt class="descname">path</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.ResourceManager.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of search paths. See <a class="reference internal" href="#bottle.ResourceManager.add_path" title="bottle.ResourceManager.add_path"><tt class="xref py py-meth docutils literal"><span class="pre">add_path()</span></tt></a> for details.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.ResourceManager.cache">
+<tt class="descname">cache</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.ResourceManager.cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>A cache for resolved paths. <tt class="docutils literal"><span class="pre">res.cache.clear()</span></tt> clears the cache.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.ResourceManager.add_path">
+<tt class="descname">add_path</tt><big>(</big><em>path</em>, <em>base=None</em>, <em>index=None</em>, <em>create=False</em><big>)</big><a class="reference internal" href="_modules/bottle.html#ResourceManager.add_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.ResourceManager.add_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new path to the list of search paths. Return False if the
+path does not exist.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> &#8211; The new search path. Relative paths are turned into
+an absolute and normalized form. If the path looks like a file
+(not ending in <cite>/</cite>), the filename is stripped off.</li>
+<li><strong>base</strong> &#8211; Path used to absolutize relative search paths.
+Defaults to <tt class="xref py py-attr docutils literal"><span class="pre">base</span></tt> which defaults to <tt class="docutils literal"><span class="pre">os.getcwd()</span></tt>.</li>
+<li><strong>index</strong> &#8211; Position within the list of search paths. Defaults
+to last index (appends to the list).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>base</cite> parameter makes it easy to reference files installed
+along with a python module or package:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">res</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="s">&#39;./resources/&#39;</span><span class="p">,</span> <span class="n">__file__</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.ResourceManager.lookup">
+<tt class="descname">lookup</tt><big>(</big><em>name</em><big>)</big><a class="reference internal" href="_modules/bottle.html#ResourceManager.lookup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.ResourceManager.lookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for a resource and return an absolute file path, or <cite>None</cite>.</p>
+<p>The <a class="reference internal" href="#bottle.ResourceManager.path" title="bottle.ResourceManager.path"><tt class="xref py py-attr docutils literal"><span class="pre">path</span></tt></a> list is searched in order. The first match is
+returend. Symlinks are followed. The result is cached to speed up
+future lookups.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.ResourceManager.open">
+<tt class="descname">open</tt><big>(</big><em>name</em>, <em>mode='r'</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#ResourceManager.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.ResourceManager.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find a resource and return a file object, or raise IOError.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.FileUpload">
+<em class="property">class </em><tt class="descname">FileUpload</tt><big>(</big><em>fileobj</em>, <em>name</em>, <em>filename</em>, <em>headers=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#FileUpload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.FileUpload" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="bottle.FileUpload.file">
+<tt class="descname">file</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.FileUpload.file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open file(-like) object (BytesIO buffer or temporary file)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.FileUpload.name">
+<tt class="descname">name</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.FileUpload.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the upload form field</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.FileUpload.raw_filename">
+<tt class="descname">raw_filename</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.FileUpload.raw_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raw filename as sent by the client (may contain unsafe characters)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.FileUpload.headers">
+<tt class="descname">headers</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.FileUpload.headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference internal" href="#bottle.HeaderDict" title="bottle.HeaderDict"><tt class="xref py py-class docutils literal"><span class="pre">HeaderDict</span></tt></a> with additional headers (e.g. content-type)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.FileUpload.content_type">
+<tt class="descname">content_type</tt><a class="headerlink" href="#bottle.FileUpload.content_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current value of the &#8216;Content-Type&#8217; header.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.FileUpload.content_length">
+<tt class="descname">content_length</tt><a class="headerlink" href="#bottle.FileUpload.content_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current value of the &#8216;Content-Length&#8217; header.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.FileUpload.filename">
+<tt class="descname">filename</tt><a class="reference internal" href="_modules/bottle.html#FileUpload.filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.FileUpload.filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the file on the client file system, but normalized to ensure
+file system compatibility (lowercase, no whitespace, no path
+separators, no unsafe characters, ASCII only). An empty filename
+is returned as &#8216;empty&#8217;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.FileUpload.save">
+<tt class="descname">save</tt><big>(</big><em>destination</em>, <em>overwrite=False</em>, <em>chunk_size=65536</em><big>)</big><a class="reference internal" href="_modules/bottle.html#FileUpload.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.FileUpload.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save file to disk or copy its content to an open file(-like) object.
+If <em>destination</em> is a directory, <a class="reference internal" href="#bottle.FileUpload.filename" title="bottle.FileUpload.filename"><tt class="xref py py-attr docutils literal"><span class="pre">filename</span></tt></a> is added to the
+path. Existing files are not overwritten by default (IOError).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>destination</strong> &#8211; File path, directory or file(-like) object.</li>
+<li><strong>overwrite</strong> &#8211; If True, replace existing files. (default: False)</li>
+<li><strong>chunk_size</strong> &#8211; Bytes to read at a time. (default: 64kb)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="exceptions">
+<h3>Exceptions<a class="headerlink" href="#exceptions" title="Permalink to this headline">¶</a></h3>
+<dl class="exception">
+<dt id="bottle.BottleException">
+<em class="property">exception </em><tt class="descname">BottleException</tt><a class="reference internal" href="_modules/bottle.html#BottleException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BottleException" title="Permalink to this definition">¶</a></dt>
+<dd><p>A base class for exceptions used by bottle.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="the-bottle-class">
+<h2>The <a class="reference internal" href="#bottle.Bottle" title="bottle.Bottle"><tt class="xref py py-class docutils literal"><span class="pre">Bottle</span></tt></a> Class<a class="headerlink" href="#the-bottle-class" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="bottle.Bottle">
+<em class="property">class </em><tt class="descname">Bottle</tt><big>(</big><em>catchall=True</em>, <em>autojson=True</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each Bottle object represents a single, distinct web application and
+consists of routes, callbacks, plugins, resources and configuration.
+Instances are callable WSGI applications.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>catchall</strong> &#8211; If true (default), handle all exceptions. Turn off to
+let debugging middleware handle exceptions.</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="bottle.Bottle.config">
+<tt class="descname">config</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Bottle.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference internal" href="configuration.html#bottle.ConfigDict" title="bottle.ConfigDict"><tt class="xref py py-class docutils literal"><span class="pre">ConfigDict</span></tt></a> for app specific configuration.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Bottle.resources">
+<tt class="descname">resources</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Bottle.resources" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference internal" href="#bottle.ResourceManager" title="bottle.ResourceManager"><tt class="xref py py-class docutils literal"><span class="pre">ResourceManager</span></tt></a> for application files</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Bottle.catchall">
+<tt class="descname">catchall</tt><a class="headerlink" href="#bottle.Bottle.catchall" title="Permalink to this definition">¶</a></dt>
+<dd><p>If true, most exceptions are caught and returned as <a class="reference internal" href="#bottle.HTTPError" title="bottle.HTTPError"><tt class="xref py py-exc docutils literal"><span class="pre">HTTPError</span></tt></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.add_hook">
+<tt class="descname">add_hook</tt><big>(</big><em>name</em>, <em>func</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.add_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.add_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attach a callback to a hook. Three hooks are currently implemented:</p>
+<dl class="docutils">
+<dt>before_request</dt>
+<dd>Executed once before each request. The request context is
+available, but no routing has happened yet.</dd>
+<dt>after_request</dt>
+<dd>Executed once after each request regardless of its outcome.</dd>
+<dt>app_reset</dt>
+<dd>Called whenever <a class="reference internal" href="#bottle.Bottle.reset" title="bottle.Bottle.reset"><tt class="xref py py-meth docutils literal"><span class="pre">Bottle.reset()</span></tt></a> is called.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.remove_hook">
+<tt class="descname">remove_hook</tt><big>(</big><em>name</em>, <em>func</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.remove_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.remove_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a callback from a hook.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.trigger_hook">
+<tt class="descname">trigger_hook</tt><big>(</big><em>_Bottle__name</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.trigger_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.trigger_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trigger a hook and return a list of results.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.hook">
+<tt class="descname">hook</tt><big>(</big><em>name</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a decorator that attaches a callback to a hook. See
+<a class="reference internal" href="#bottle.Bottle.add_hook" title="bottle.Bottle.add_hook"><tt class="xref py py-meth docutils literal"><span class="pre">add_hook()</span></tt></a> for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.mount">
+<tt class="descname">mount</tt><big>(</big><em>prefix</em>, <em>app</em>, <em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.mount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.mount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mount an application (<a class="reference internal" href="#bottle.Bottle" title="bottle.Bottle"><tt class="xref py py-class docutils literal"><span class="pre">Bottle</span></tt></a> or plain WSGI) to a specific
+URL prefix. Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">root_app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s">&#39;/admin/&#39;</span><span class="p">,</span> <span class="n">admin_app</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>prefix</strong> &#8211; path prefix or <cite>mount-point</cite>. If it ends in a slash,
+that slash is mandatory.</li>
+<li><strong>app</strong> &#8211; an instance of <a class="reference internal" href="#bottle.Bottle" title="bottle.Bottle"><tt class="xref py py-class docutils literal"><span class="pre">Bottle</span></tt></a> or a WSGI application.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>All other parameters are passed to the underlying <a class="reference internal" href="#bottle.route" title="bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">route()</span></tt></a> call.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.merge">
+<tt class="descname">merge</tt><big>(</big><em>routes</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.merge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge the routes of another <a class="reference internal" href="#bottle.Bottle" title="bottle.Bottle"><tt class="xref py py-class docutils literal"><span class="pre">Bottle</span></tt></a> application or a list of
+<a class="reference internal" href="#bottle.Route" title="bottle.Route"><tt class="xref py py-class docutils literal"><span class="pre">Route</span></tt></a> objects into this application. The routes keep their
+&#8216;owner&#8217;, meaning that the <a class="reference internal" href="#bottle.Route.app" title="bottle.Route.app"><tt class="xref py py-data docutils literal"><span class="pre">Route.app</span></tt></a> attribute is not
+changed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.install">
+<tt class="descname">install</tt><big>(</big><em>plugin</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.install"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.install" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a plugin to the list of plugins and prepare it for being
+applied to all routes of this application. A plugin may be a simple
+decorator or an object that implements the <a class="reference internal" href="plugindev.html#bottle.Plugin" title="bottle.Plugin"><tt class="xref py py-class docutils literal"><span class="pre">Plugin</span></tt></a> API.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.uninstall">
+<tt class="descname">uninstall</tt><big>(</big><em>plugin</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.uninstall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.uninstall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uninstall plugins. Pass an instance to remove a specific plugin, a type
+object to remove all plugins that match that type, a string to remove
+all plugins with a matching <tt class="docutils literal"><span class="pre">name</span></tt> attribute or <tt class="docutils literal"><span class="pre">True</span></tt> to remove all
+plugins. Return the list of removed plugins.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.reset">
+<tt class="descname">reset</tt><big>(</big><em>route=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset all routes (force plugins to be re-applied) and clear all
+caches. If an ID or route object is given, only that specific route
+is affected.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close the application and all installed plugins.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.run">
+<tt class="descname">run</tt><big>(</big><em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls <a class="reference internal" href="#bottle.run" title="bottle.run"><tt class="xref py py-func docutils literal"><span class="pre">run()</span></tt></a> with the same parameters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.match">
+<tt class="descname">match</tt><big>(</big><em>environ</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.match"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.match" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for a matching route and return a (<a class="reference internal" href="#bottle.Route" title="bottle.Route"><tt class="xref py py-class docutils literal"><span class="pre">Route</span></tt></a> , urlargs)
+tuple. The second value is a dictionary with parameters extracted
+from the URL. Raise <a class="reference internal" href="#bottle.HTTPError" title="bottle.HTTPError"><tt class="xref py py-exc docutils literal"><span class="pre">HTTPError</span></tt></a> (404/405) on a non-match.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.get_url">
+<tt class="descname">get_url</tt><big>(</big><em>routename</em>, <em>**kargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.get_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.get_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string that matches a named route</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.add_route">
+<tt class="descname">add_route</tt><big>(</big><em>route</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.add_route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.add_route" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a route object, but do not change the <a class="reference internal" href="#bottle.Route.app" title="bottle.Route.app"><tt class="xref py py-data docutils literal"><span class="pre">Route.app</span></tt></a>
+attribute.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.route">
+<tt class="descname">route</tt><big>(</big><em>path=None</em>, <em>method='GET'</em>, <em>callback=None</em>, <em>name=None</em>, <em>apply=None</em>, <em>skip=None</em>, <em>**config</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.route" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator to bind a function to a request URL. Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@app.route</span><span class="p">(</span><span class="s">&#39;/hello/:name&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s">&#39;Hello </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">name</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">:name</span></tt> part is a wildcard. See <tt class="xref py py-class docutils literal"><span class="pre">Router</span></tt> for syntax
+details.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> &#8211; Request path or a list of paths to listen to. If no
+path is specified, it is automatically generated from the
+signature of the function.</li>
+<li><strong>method</strong> &#8211; HTTP method (<cite>GET</cite>, <cite>POST</cite>, <cite>PUT</cite>, ...) or a list of
+methods to listen to. (default: <cite>GET</cite>)</li>
+<li><strong>callback</strong> &#8211; An optional shortcut to avoid the decorator
+syntax. <tt class="docutils literal"><span class="pre">route(...,</span> <span class="pre">callback=func)</span></tt> equals <tt class="docutils literal"><span class="pre">route(...)(func)</span></tt></li>
+<li><strong>name</strong> &#8211; The name for this route. (default: None)</li>
+<li><strong>apply</strong> &#8211; A decorator or plugin or a list of plugins. These are
+applied to the route callback in addition to installed plugins.</li>
+<li><strong>skip</strong> &#8211; A list of plugins, plugin classes or names. Matching
+plugins are not installed to this route. <tt class="docutils literal"><span class="pre">True</span></tt> skips all.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Any additional keyword arguments are stored as route-specific
+configuration and passed to plugins (see <a class="reference internal" href="plugindev.html#bottle.Plugin.apply" title="bottle.Plugin.apply"><tt class="xref py py-meth docutils literal"><span class="pre">Plugin.apply()</span></tt></a>).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.get">
+<tt class="descname">get</tt><big>(</big><em>path=None</em>, <em>method='GET'</em>, <em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equals <a class="reference internal" href="#bottle.route" title="bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">route()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.post">
+<tt class="descname">post</tt><big>(</big><em>path=None</em>, <em>method='POST'</em>, <em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equals <a class="reference internal" href="#bottle.route" title="bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">route()</span></tt></a> with a <tt class="docutils literal"><span class="pre">POST</span></tt> method parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.put">
+<tt class="descname">put</tt><big>(</big><em>path=None</em>, <em>method='PUT'</em>, <em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equals <a class="reference internal" href="#bottle.route" title="bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">route()</span></tt></a> with a <tt class="docutils literal"><span class="pre">PUT</span></tt> method parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.delete">
+<tt class="descname">delete</tt><big>(</big><em>path=None</em>, <em>method='DELETE'</em>, <em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equals <a class="reference internal" href="#bottle.route" title="bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">route()</span></tt></a> with a <tt class="docutils literal"><span class="pre">DELETE</span></tt> method parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.error">
+<tt class="descname">error</tt><big>(</big><em>code=500</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator: Register an output handler for a HTTP error code</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Bottle.wsgi">
+<tt class="descname">wsgi</tt><big>(</big><em>environ</em>, <em>start_response</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Bottle.wsgi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Bottle.wsgi" title="Permalink to this definition">¶</a></dt>
+<dd><p>The bottle WSGI-interface.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.Route">
+<em class="property">class </em><tt class="descname">Route</tt><big>(</big><em>app</em>, <em>rule</em>, <em>method</em>, <em>callback</em>, <em>name=None</em>, <em>plugins=None</em>, <em>skiplist=None</em>, <em>**config</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class wraps a route callback along with route specific metadata and
+configuration and applies Plugins on demand. It is also responsible for
+turing an URL path rule into a regular expression usable by the Router.</p>
+<dl class="attribute">
+<dt id="bottle.Route.app">
+<tt class="descname">app</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.app" title="Permalink to this definition">¶</a></dt>
+<dd><p>The application this route is installed to.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.rule">
+<tt class="descname">rule</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.rule" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path-rule string (e.g. <tt class="docutils literal"><span class="pre">/wiki/:page</span></tt>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.method">
+<tt class="descname">method</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.method" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HTTP method as a string (e.g. <tt class="docutils literal"><span class="pre">GET</span></tt>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.callback">
+<tt class="descname">callback</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>The original callback with no plugins applied. Useful for introspection.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.name">
+<tt class="descname">name</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the route (if specified) or <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.plugins">
+<tt class="descname">plugins</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.plugins" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of route-specific plugins (see <a class="reference internal" href="#bottle.Bottle.route" title="bottle.Bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">Bottle.route()</span></tt></a>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.skiplist">
+<tt class="descname">skiplist</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.skiplist" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of plugins to not apply to this route (see <a class="reference internal" href="#bottle.Bottle.route" title="bottle.Bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">Bottle.route()</span></tt></a>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.config">
+<tt class="descname">config</tt><em class="property"> = None</em><a class="headerlink" href="#bottle.Route.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional keyword arguments passed to the <a class="reference internal" href="#bottle.Bottle.route" title="bottle.Bottle.route"><tt class="xref py py-meth docutils literal"><span class="pre">Bottle.route()</span></tt></a>
+decorator are stored in this dictionary. Used for route-specific
+plugin configuration and meta-data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.Route.call">
+<tt class="descname">call</tt><a class="reference internal" href="_modules/bottle.html#Route.call"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route.call" title="Permalink to this definition">¶</a></dt>
+<dd><p>The route callback with all plugins applied. This property is
+created on demand and then cached to speed up subsequent requests.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Route.reset">
+<tt class="descname">reset</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#Route.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forget any cached values. The next time <a class="reference internal" href="#bottle.Route.call" title="bottle.Route.call"><tt class="xref py py-attr docutils literal"><span class="pre">call</span></tt></a> is accessed,
+all plugins are re-applied.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Route.prepare">
+<tt class="descname">prepare</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#Route.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route.prepare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do all on-demand work immediately (useful for debugging).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Route.all_plugins">
+<tt class="descname">all_plugins</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#Route.all_plugins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route.all_plugins" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yield all Plugins affecting this route.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Route.get_undecorated_callback">
+<tt class="descname">get_undecorated_callback</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#Route.get_undecorated_callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route.get_undecorated_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the callback. If the callback is a decorated function, try to
+recover the original function.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Route.get_callback_args">
+<tt class="descname">get_callback_args</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#Route.get_callback_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route.get_callback_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of argument names the callback (most likely) accepts
+as keyword arguments. If the callback is a decorated function, try
+to recover the original function before inspection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.Route.get_config">
+<tt class="descname">get_config</tt><big>(</big><em>key</em>, <em>default=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#Route.get_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.Route.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lookup a config field and return its value, first checking the
+route.config, then route.app.config.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="the-request-object">
+<h2>The <a class="reference internal" href="#bottle.Request" title="bottle.Request"><tt class="xref py py-class docutils literal"><span class="pre">Request</span></tt></a> Object<a class="headerlink" href="#the-request-object" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#bottle.Request" title="bottle.Request"><tt class="xref py py-class docutils literal"><span class="pre">Request</span></tt></a> class wraps a WSGI environment and provides helpful methods to parse and access form data, cookies, file uploads and other metadata. Most of the attributes are read-only.</p>
+<dl class="attribute">
+<dt id="bottle.Request">
+<tt class="descname">Request</tt><a class="headerlink" href="#bottle.Request" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#bottle.BaseRequest" title="bottle.BaseRequest"><tt class="xref py py-class docutils literal"><span class="pre">BaseRequest</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.BaseRequest">
+<em class="property">class </em><tt class="descname">BaseRequest</tt><big>(</big><em>environ=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseRequest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest" title="Permalink to this definition">¶</a></dt>
+<dd><p>A wrapper for WSGI environment dictionaries that adds a lot of
+convenient access methods and properties. Most of them are read-only.</p>
+<p>Adding new attributes to a request actually adds them to the environ
+dictionary (as &#8216;bottle.request.ext.&lt;name&gt;&#8217;). This is the recommended
+way to store and access request-specific data.</p>
+<dl class="attribute">
+<dt id="bottle.BaseRequest.MEMFILE_MAX">
+<tt class="descname">MEMFILE_MAX</tt><em class="property"> = 102400</em><a class="headerlink" href="#bottle.BaseRequest.MEMFILE_MAX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum size of memory buffer for <a class="reference internal" href="#bottle.BaseRequest.body" title="bottle.BaseRequest.body"><tt class="xref py py-attr docutils literal"><span class="pre">body</span></tt></a> in bytes.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.environ">
+<tt class="descname">environ</tt><a class="headerlink" href="#bottle.BaseRequest.environ" title="Permalink to this definition">¶</a></dt>
+<dd><p>The wrapped WSGI environ dictionary. This is the only real attribute.
+All other attributes actually are read-only properties.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.app">
+<tt class="descname">app</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bottle application handling this request.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.route">
+<tt class="descname">route</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.route" title="Permalink to this definition">¶</a></dt>
+<dd><p>The bottle <a class="reference internal" href="#bottle.Route" title="bottle.Route"><tt class="xref py py-class docutils literal"><span class="pre">Route</span></tt></a> object that matches this request.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.url_args">
+<tt class="descname">url_args</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.url_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.url_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>The arguments extracted from the URL.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.path">
+<tt class="descname">path</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>The value of <tt class="docutils literal"><span class="pre">PATH_INFO</span></tt> with exactly one prefixed slash (to fix
+broken clients and avoid the &#8220;empty path&#8221; edge case).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.method">
+<tt class="descname">method</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.method" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="docutils literal"><span class="pre">REQUEST_METHOD</span></tt> value as an uppercase string.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.headers">
+<tt class="descname">headers</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.headers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference internal" href="#bottle.WSGIHeaderDict" title="bottle.WSGIHeaderDict"><tt class="xref py py-class docutils literal"><span class="pre">WSGIHeaderDict</span></tt></a> that provides case-insensitive access to
+HTTP request headers.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseRequest.get_header">
+<tt class="descname">get_header</tt><big>(</big><em>name</em>, <em>default=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseRequest.get_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.get_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value of a request header, or a given default value.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.cookies">
+<tt class="descname">cookies</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.cookies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.cookies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cookies parsed into a <a class="reference internal" href="#bottle.FormsDict" title="bottle.FormsDict"><tt class="xref py py-class docutils literal"><span class="pre">FormsDict</span></tt></a>. Signed cookies are NOT
+decoded. Use <a class="reference internal" href="#bottle.BaseRequest.get_cookie" title="bottle.BaseRequest.get_cookie"><tt class="xref py py-meth docutils literal"><span class="pre">get_cookie()</span></tt></a> if you expect signed cookies.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseRequest.get_cookie">
+<tt class="descname">get_cookie</tt><big>(</big><em>key</em>, <em>default=None</em>, <em>secret=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseRequest.get_cookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.get_cookie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the content of a cookie. To read a <cite>Signed Cookie</cite>, the
+<cite>secret</cite> must match the one used to create the cookie (see
+<a class="reference internal" href="#bottle.BaseResponse.set_cookie" title="bottle.BaseResponse.set_cookie"><tt class="xref py py-meth docutils literal"><span class="pre">BaseResponse.set_cookie()</span></tt></a>). If anything goes wrong (missing
+cookie or wrong signature), return a default value.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.query">
+<tt class="descname">query</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.query"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <a class="reference internal" href="#bottle.BaseRequest.query_string" title="bottle.BaseRequest.query_string"><tt class="xref py py-attr docutils literal"><span class="pre">query_string</span></tt></a> parsed into a <a class="reference internal" href="#bottle.FormsDict" title="bottle.FormsDict"><tt class="xref py py-class docutils literal"><span class="pre">FormsDict</span></tt></a>. These
+values are sometimes called &#8220;URL arguments&#8221; or &#8220;GET parameters&#8221;, but
+not to be confused with &#8220;URL wildcards&#8221; as they are provided by the
+<tt class="xref py py-class docutils literal"><span class="pre">Router</span></tt>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.forms">
+<tt class="descname">forms</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.forms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.forms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Form values parsed from an <cite>url-encoded</cite> or <cite>multipart/form-data</cite>
+encoded POST or PUT request body. The result is returned as a
+<a class="reference internal" href="#bottle.FormsDict" title="bottle.FormsDict"><tt class="xref py py-class docutils literal"><span class="pre">FormsDict</span></tt></a>. All keys and values are strings. File uploads
+are stored separately in <a class="reference internal" href="#bottle.BaseRequest.files" title="bottle.BaseRequest.files"><tt class="xref py py-attr docutils literal"><span class="pre">files</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.params">
+<tt class="descname">params</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.params" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference internal" href="#bottle.FormsDict" title="bottle.FormsDict"><tt class="xref py py-class docutils literal"><span class="pre">FormsDict</span></tt></a> with the combined values of <a class="reference internal" href="#bottle.BaseRequest.query" title="bottle.BaseRequest.query"><tt class="xref py py-attr docutils literal"><span class="pre">query</span></tt></a> and
+<a class="reference internal" href="#bottle.BaseRequest.forms" title="bottle.BaseRequest.forms"><tt class="xref py py-attr docutils literal"><span class="pre">forms</span></tt></a>. File uploads are stored in <a class="reference internal" href="#bottle.BaseRequest.files" title="bottle.BaseRequest.files"><tt class="xref py py-attr docutils literal"><span class="pre">files</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.files">
+<tt class="descname">files</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.files" title="Permalink to this definition">¶</a></dt>
+<dd><p>File uploads parsed from <cite>multipart/form-data</cite> encoded POST or PUT
+request body. The values are instances of <a class="reference internal" href="#bottle.FileUpload" title="bottle.FileUpload"><tt class="xref py py-class docutils literal"><span class="pre">FileUpload</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.json">
+<tt class="descname">json</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.json" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the <tt class="docutils literal"><span class="pre">Content-Type</span></tt> header is <tt class="docutils literal"><span class="pre">application/json</span></tt>, this
+property holds the parsed content of the request body. Only requests
+smaller than <a class="reference internal" href="#bottle.BaseRequest.MEMFILE_MAX" title="bottle.BaseRequest.MEMFILE_MAX"><tt class="xref py py-attr docutils literal"><span class="pre">MEMFILE_MAX</span></tt></a> are processed to avoid memory
+exhaustion.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.body">
+<tt class="descname">body</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.body"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.body" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HTTP request body as a seek-able file-like object. Depending on
+<a class="reference internal" href="#bottle.BaseRequest.MEMFILE_MAX" title="bottle.BaseRequest.MEMFILE_MAX"><tt class="xref py py-attr docutils literal"><span class="pre">MEMFILE_MAX</span></tt></a>, this is either a temporary file or a
+<a class="reference external" href="http://docs.python.org/library/io.html#io.BytesIO" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">io.BytesIO</span></tt></a> instance. Accessing this property for the first
+time reads and replaces the <tt class="docutils literal"><span class="pre">wsgi.input</span></tt> environ variable.
+Subsequent accesses just do a <cite>seek(0)</cite> on the file object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.chunked">
+<tt class="descname">chunked</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.chunked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.chunked" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if Chunked transfer encoding was.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.GET">
+<tt class="descname">GET</tt><a class="headerlink" href="#bottle.BaseRequest.GET" title="Permalink to this definition">¶</a></dt>
+<dd><p>An alias for <a class="reference internal" href="#bottle.BaseRequest.query" title="bottle.BaseRequest.query"><tt class="xref py py-attr docutils literal"><span class="pre">query</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.POST">
+<tt class="descname">POST</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.POST"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.POST" title="Permalink to this definition">¶</a></dt>
+<dd><p>The values of <a class="reference internal" href="#bottle.BaseRequest.forms" title="bottle.BaseRequest.forms"><tt class="xref py py-attr docutils literal"><span class="pre">forms</span></tt></a> and <a class="reference internal" href="#bottle.BaseRequest.files" title="bottle.BaseRequest.files"><tt class="xref py py-attr docutils literal"><span class="pre">files</span></tt></a> combined into a single
+<a class="reference internal" href="#bottle.FormsDict" title="bottle.FormsDict"><tt class="xref py py-class docutils literal"><span class="pre">FormsDict</span></tt></a>. Values are either strings (form values) or
+instances of <tt class="xref py py-class docutils literal"><span class="pre">cgi.FieldStorage</span></tt> (file uploads).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.url">
+<tt class="descname">url</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.url" title="Permalink to this definition">¶</a></dt>
+<dd><p>The full request URI including hostname and scheme. If your app
+lives behind a reverse proxy or load balancer and you get confusing
+results, make sure that the <tt class="docutils literal"><span class="pre">X-Forwarded-Host</span></tt> header is set
+correctly.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.urlparts">
+<tt class="descname">urlparts</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.urlparts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.urlparts" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <a class="reference internal" href="#bottle.BaseRequest.url" title="bottle.BaseRequest.url"><tt class="xref py py-attr docutils literal"><span class="pre">url</span></tt></a> string as an <a class="reference external" href="http://docs.python.org/library/urlparse.html#urlparse.SplitResult" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">urlparse.SplitResult</span></tt></a> tuple.
+The tuple contains (scheme, host, path, query_string and fragment),
+but the fragment is always empty because it is not visible to the
+server.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.fullpath">
+<tt class="descname">fullpath</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.fullpath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.fullpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Request path including <a class="reference internal" href="#bottle.BaseRequest.script_name" title="bottle.BaseRequest.script_name"><tt class="xref py py-attr docutils literal"><span class="pre">script_name</span></tt></a> (if present).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.query_string">
+<tt class="descname">query_string</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.query_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.query_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>The raw <a class="reference internal" href="#bottle.BaseRequest.query" title="bottle.BaseRequest.query"><tt class="xref py py-attr docutils literal"><span class="pre">query</span></tt></a> part of the URL (everything in between <tt class="docutils literal"><span class="pre">?</span></tt>
+and <tt class="docutils literal"><span class="pre">#</span></tt>) as a string.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.script_name">
+<tt class="descname">script_name</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.script_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.script_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The initial portion of the URL&#8217;s <cite>path</cite> that was removed by a higher
+level (server or routing middleware) before the application was
+called. This script path is returned with leading and tailing
+slashes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseRequest.path_shift">
+<tt class="descname">path_shift</tt><big>(</big><em>shift=1</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseRequest.path_shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.path_shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shift path segments from <a class="reference internal" href="#bottle.BaseRequest.path" title="bottle.BaseRequest.path"><tt class="xref py py-attr docutils literal"><span class="pre">path</span></tt></a> to <a class="reference internal" href="#bottle.BaseRequest.script_name" title="bottle.BaseRequest.script_name"><tt class="xref py py-attr docutils literal"><span class="pre">script_name</span></tt></a> and
+vice versa.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>shift</strong> &#8211; The number of path segments to shift. May be negative
+to change the shift direction. (default: 1)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.content_length">
+<tt class="descname">content_length</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.content_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.content_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>The request body length as an integer. The client is responsible to
+set this header. Otherwise, the real length of the body is unknown
+and -1 is returned. In this case, <a class="reference internal" href="#bottle.BaseRequest.body" title="bottle.BaseRequest.body"><tt class="xref py py-attr docutils literal"><span class="pre">body</span></tt></a> will be empty.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.content_type">
+<tt class="descname">content_type</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.content_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.content_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Content-Type header as a lowercase-string (default: empty).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.is_xhr">
+<tt class="descname">is_xhr</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.is_xhr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.is_xhr" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if the request was triggered by a XMLHttpRequest. This only
+works with JavaScript libraries that support the <cite>X-Requested-With</cite>
+header (most of the popular libraries do).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.is_ajax">
+<tt class="descname">is_ajax</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.is_ajax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.is_ajax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for <a class="reference internal" href="#bottle.BaseRequest.is_xhr" title="bottle.BaseRequest.is_xhr"><tt class="xref py py-attr docutils literal"><span class="pre">is_xhr</span></tt></a>. &#8220;Ajax&#8221; is not the right term.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.auth">
+<tt class="descname">auth</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.auth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>HTTP authentication data as a (user, password) tuple. This
+implementation currently supports basic (not digest) authentication
+only. If the authentication happened at a higher level (e.g. in the
+front web-server or a middleware), the password field is None, but
+the user field is looked up from the <tt class="docutils literal"><span class="pre">REMOTE_USER</span></tt> environ
+variable. On any errors, None is returned.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.remote_route">
+<tt class="descname">remote_route</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.remote_route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.remote_route" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of all IPs that were involved in this request, starting with
+the client IP and followed by zero or more proxies. This does only
+work if all proxies support the <tt class="docutils literal"><span class="pre">`X-Forwarded-For</span></tt> header. Note
+that this information can be forged by malicious clients.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseRequest.remote_addr">
+<tt class="descname">remote_addr</tt><a class="reference internal" href="_modules/bottle.html#BaseRequest.remote_addr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.remote_addr" title="Permalink to this definition">¶</a></dt>
+<dd><p>The client IP as a string. Note that this information can be forged
+by malicious clients.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseRequest.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseRequest.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseRequest.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new <a class="reference internal" href="#bottle.Request" title="bottle.Request"><tt class="xref py py-class docutils literal"><span class="pre">Request</span></tt></a> with a shallow <a class="reference internal" href="#bottle.BaseRequest.environ" title="bottle.BaseRequest.environ"><tt class="xref py py-attr docutils literal"><span class="pre">environ</span></tt></a> copy.</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>The module-level <a class="reference internal" href="#bottle.request" title="bottle.request"><tt class="xref py py-data docutils literal"><span class="pre">bottle.request</span></tt></a> is a proxy object (implemented in <a class="reference internal" href="#bottle.LocalRequest" title="bottle.LocalRequest"><tt class="xref py py-class docutils literal"><span class="pre">LocalRequest</span></tt></a>) and always refers to the <cite>current</cite> request, or in other words, the request that is currently processed by the request handler in the current thread. This <cite>thread locality</cite> ensures that you can safely use a global instance in a multi-threaded environment.</p>
+<dl class="class">
+<dt id="bottle.LocalRequest">
+<em class="property">class </em><tt class="descname">LocalRequest</tt><big>(</big><em>environ=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#LocalRequest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.LocalRequest" title="Permalink to this definition">¶</a></dt>
+<dd><p>A thread-local subclass of <a class="reference internal" href="#bottle.BaseRequest" title="bottle.BaseRequest"><tt class="xref py py-class docutils literal"><span class="pre">BaseRequest</span></tt></a> with a different
+set of attribues for each thread. There is usually only one global
+instance of this class (<a class="reference internal" href="#bottle.request" title="bottle.request"><tt class="xref py py-data docutils literal"><span class="pre">request</span></tt></a>). If accessed during a
+request/response cycle, this instance always refers to the <em>current</em>
+request (even on a multithreaded server).</p>
+<dl class="method">
+<dt id="bottle.LocalRequest.bind">
+<tt class="descname">bind</tt><big>(</big><em>environ=None</em><big>)</big><a class="headerlink" href="#bottle.LocalRequest.bind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrap a WSGI environ dictionary.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.LocalRequest.environ">
+<tt class="descname">environ</tt><a class="headerlink" href="#bottle.LocalRequest.environ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thread-local property</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">request</tt><em class="property"> = &lt;LocalRequest: GET http://127.0.0.1/&gt;</em></dt>
+<dd><p>A thread-safe instance of <a class="reference internal" href="#bottle.LocalRequest" title="bottle.LocalRequest"><tt class="xref py py-class docutils literal"><span class="pre">LocalRequest</span></tt></a>. If accessed from within a
+request callback, this instance always refers to the <em>current</em> request
+(even on a multithreaded server).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="the-response-object">
+<h2>The <a class="reference internal" href="#bottle.Response" title="bottle.Response"><tt class="xref py py-class docutils literal"><span class="pre">Response</span></tt></a> Object<a class="headerlink" href="#the-response-object" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#bottle.Response" title="bottle.Response"><tt class="xref py py-class docutils literal"><span class="pre">Response</span></tt></a> class stores the HTTP status code as well as headers and cookies that are to be sent to the client. Similar to <a class="reference internal" href="#bottle.request" title="bottle.request"><tt class="xref py py-data docutils literal"><span class="pre">bottle.request</span></tt></a> there is a thread-local <a class="reference internal" href="#bottle.response" title="bottle.response"><tt class="xref py py-data docutils literal"><span class="pre">bottle.response</span></tt></a> instance that can be used to adjust the <cite>current</cite> response. Moreover, you can instantiate <a class="reference internal" href="#bottle.Response" title="bottle.Response"><tt class="xref py py-class docutils literal"><span class="pre">Response</span></tt></a> and return it from your request handler. In this case, the custom instance overrules the headers and cookies defined in the global one.</p>
+<dl class="attribute">
+<dt id="bottle.Response">
+<tt class="descname">Response</tt><a class="headerlink" href="#bottle.Response" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#bottle.BaseResponse" title="bottle.BaseResponse"><tt class="xref py py-class docutils literal"><span class="pre">BaseResponse</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.BaseResponse">
+<em class="property">class </em><tt class="descname">BaseResponse</tt><big>(</big><em>body=''</em>, <em>status=None</em>, <em>headers=None</em>, <em>**more_headers</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Storage class for a response body as well as headers and cookies.</p>
+<p>This class does support dict-like case-insensitive item-access to
+headers, but is NOT a dict. Most notably, iterating over a response
+yields parts of the body and not the headers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>body</strong> &#8211; The response body as one of the supported types.</li>
+<li><strong>status</strong> &#8211; Either an HTTP status code (e.g. 200) or a status line
+including the reason phrase (e.g. &#8216;200 OK&#8217;).</li>
+<li><strong>headers</strong> &#8211; A dictionary or a list of name-value pairs.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Additional keyword arguments are added to the list of headers.
+Underscores in the header name are replaced with dashes.</p>
+<dl class="method">
+<dt id="bottle.BaseResponse.copy">
+<tt class="descname">copy</tt><big>(</big><em>cls=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of self.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.status_line">
+<tt class="descname">status_line</tt><a class="reference internal" href="_modules/bottle.html#BaseResponse.status_line"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.status_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HTTP status line as a string (e.g. <tt class="docutils literal"><span class="pre">404</span> <span class="pre">Not</span> <span class="pre">Found</span></tt>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.status_code">
+<tt class="descname">status_code</tt><a class="reference internal" href="_modules/bottle.html#BaseResponse.status_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.status_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HTTP status code as an integer (e.g. 404).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.status">
+<tt class="descname">status</tt><a class="headerlink" href="#bottle.BaseResponse.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>A writeable property to change the HTTP response status. It accepts
+either a numeric code (100-999) or a string with a custom reason
+phrase (e.g. &#8220;404 Brain not found&#8221;). Both <a class="reference internal" href="#bottle.BaseResponse.status_line" title="bottle.BaseResponse.status_line"><tt class="xref py py-data docutils literal"><span class="pre">status_line</span></tt></a> and
+<a class="reference internal" href="#bottle.BaseResponse.status_code" title="bottle.BaseResponse.status_code"><tt class="xref py py-data docutils literal"><span class="pre">status_code</span></tt></a> are updated accordingly. The return value is
+always a status string.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.headers">
+<tt class="descname">headers</tt><a class="reference internal" href="_modules/bottle.html#BaseResponse.headers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>An instance of <a class="reference internal" href="#bottle.HeaderDict" title="bottle.HeaderDict"><tt class="xref py py-class docutils literal"><span class="pre">HeaderDict</span></tt></a>, a case-insensitive dict-like
+view on the response headers.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseResponse.get_header">
+<tt class="descname">get_header</tt><big>(</big><em>name</em>, <em>default=None</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse.get_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.get_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value of a previously defined header. If there is no
+header with that name, return a default value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseResponse.set_header">
+<tt class="descname">set_header</tt><big>(</big><em>name</em>, <em>value</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse.set_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.set_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new response header, replacing any previously defined
+headers with the same name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseResponse.add_header">
+<tt class="descname">add_header</tt><big>(</big><em>name</em>, <em>value</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse.add_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.add_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an additional response header, not removing duplicates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseResponse.iter_headers">
+<tt class="descname">iter_headers</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse.iter_headers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.iter_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yield (header, value) tuples, skipping headers that are not
+allowed with the current response status code.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.headerlist">
+<tt class="descname">headerlist</tt><a class="reference internal" href="_modules/bottle.html#BaseResponse.headerlist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.headerlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>WSGI conform list of (header, value) tuples.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.content_type">
+<tt class="descname">content_type</tt><a class="headerlink" href="#bottle.BaseResponse.content_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current value of the &#8216;Content-Type&#8217; header.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.content_length">
+<tt class="descname">content_length</tt><a class="headerlink" href="#bottle.BaseResponse.content_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current value of the &#8216;Content-Length&#8217; header.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.expires">
+<tt class="descname">expires</tt><a class="headerlink" href="#bottle.BaseResponse.expires" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current value of the &#8216;Expires&#8217; header.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bottle.BaseResponse.charset">
+<tt class="descname">charset</tt><a class="reference internal" href="_modules/bottle.html#BaseResponse.charset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.charset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the charset specified in the content-type header (default: utf8).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseResponse.set_cookie">
+<tt class="descname">set_cookie</tt><big>(</big><em>name</em>, <em>value</em>, <em>secret=None</em>, <em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse.set_cookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.set_cookie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new cookie or replace an old one. If the <cite>secret</cite> parameter is
+set, create a <cite>Signed Cookie</cite> (described below).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; the name of the cookie.</li>
+<li><strong>value</strong> &#8211; the value of the cookie.</li>
+<li><strong>secret</strong> &#8211; a signature key required for signed cookies.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Additionally, this method accepts all RFC 2109 attributes that are
+supported by <tt class="xref py py-class docutils literal"><span class="pre">cookie.Morsel</span></tt>, including:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max_age</strong> &#8211; maximum age in seconds. (default: None)</li>
+<li><strong>expires</strong> &#8211; a datetime object or UNIX timestamp. (default: None)</li>
+<li><strong>domain</strong> &#8211; the domain that is allowed to read the cookie.
+(default: current domain)</li>
+<li><strong>path</strong> &#8211; limits the cookie to a given path (default: current path)</li>
+<li><strong>secure</strong> &#8211; limit the cookie to HTTPS connections (default: off).</li>
+<li><strong>httponly</strong> &#8211; prevents client-side javascript to read this cookie
+(default: off, requires Python 2.6 or newer).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>If neither <cite>expires</cite> nor <cite>max_age</cite> is set (default), the cookie will
+expire at the end of the browser session (as soon as the browser
+window is closed).</p>
+<p>Signed cookies may store any pickle-able object and are
+cryptographically signed to prevent manipulation. Keep in mind that
+cookies are limited to 4kb in most browsers.</p>
+<p>Warning: Signed cookies are not encrypted (the client can still see
+the content) and not copy-protected (the client can restore an old
+cookie). The main intention is to make pickling and unpickling
+save, not to store secret information at client side.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseResponse.delete_cookie">
+<tt class="descname">delete_cookie</tt><big>(</big><em>key</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseResponse.delete_cookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseResponse.delete_cookie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a cookie. Be sure to use the same <cite>domain</cite> and <cite>path</cite>
+settings as used to create the cookie.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bottle.LocalResponse">
+<em class="property">class </em><tt class="descname">LocalResponse</tt><big>(</big><em>body=''</em>, <em>status=None</em>, <em>headers=None</em>, <em>**more_headers</em><big>)</big><a class="reference internal" href="_modules/bottle.html#LocalResponse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.LocalResponse" title="Permalink to this definition">¶</a></dt>
+<dd><p>A thread-local subclass of <a class="reference internal" href="#bottle.BaseResponse" title="bottle.BaseResponse"><tt class="xref py py-class docutils literal"><span class="pre">BaseResponse</span></tt></a> with a different
+set of attribues for each thread. There is usually only one global
+instance of this class (<a class="reference internal" href="#bottle.response" title="bottle.response"><tt class="xref py py-data docutils literal"><span class="pre">response</span></tt></a>). Its attributes are used
+to build the HTTP response at the end of the request/response cycle.</p>
+<dl class="attribute">
+<dt id="bottle.LocalResponse.body">
+<tt class="descname">body</tt><a class="headerlink" href="#bottle.LocalResponse.body" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thread-local property</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>The following two classes can be raised as an exception. The most noticeable difference is that bottle invokes error handlers for <a class="reference internal" href="#bottle.HTTPError" title="bottle.HTTPError"><tt class="xref py py-class docutils literal"><span class="pre">HTTPError</span></tt></a>, but not for <a class="reference internal" href="#bottle.HTTPResponse" title="bottle.HTTPResponse"><tt class="xref py py-class docutils literal"><span class="pre">HTTPResponse</span></tt></a> or other response types.</p>
+<dl class="exception">
+<dt id="bottle.HTTPResponse">
+<em class="property">exception </em><tt class="descname">HTTPResponse</tt><big>(</big><em>body=''</em>, <em>status=None</em>, <em>headers=None</em>, <em>**more_headers</em><big>)</big><a class="reference internal" href="_modules/bottle.html#HTTPResponse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.HTTPResponse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="exception">
+<dt id="bottle.HTTPError">
+<em class="property">exception </em><tt class="descname">HTTPError</tt><big>(</big><em>status=None</em>, <em>body=None</em>, <em>exception=None</em>, <em>traceback=None</em>, <em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#HTTPError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.HTTPError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="templates">
+<h2>Templates<a class="headerlink" href="#templates" title="Permalink to this headline">¶</a></h2>
+<p>All template engines supported by <a class="reference internal" href="tutorial.html#module-bottle" title="bottle"><tt class="xref py py-mod docutils literal"><span class="pre">bottle</span></tt></a> implement the <a class="reference internal" href="#bottle.BaseTemplate" title="bottle.BaseTemplate"><tt class="xref py py-class docutils literal"><span class="pre">BaseTemplate</span></tt></a> API. This way it is possible to switch and mix template engines without changing the application code at all.</p>
+<dl class="class">
+<dt id="bottle.BaseTemplate">
+<em class="property">class </em><tt class="descname">BaseTemplate</tt><big>(</big><em>source=None</em>, <em>name=None</em>, <em>lookup=</em><span class="optional">[</span><span class="optional">]</span>, <em>encoding='utf8'</em>, <em>**settings</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseTemplate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseTemplate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class and minimal API for template adapters</p>
+<dl class="method">
+<dt id="bottle.BaseTemplate.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>source=None</em>, <em>name=None</em>, <em>lookup=</em><span class="optional">[</span><span class="optional">]</span>, <em>encoding='utf8'</em>, <em>**settings</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseTemplate.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseTemplate.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new template.
+If the source parameter (str or buffer) is missing, the name argument
+is used to guess a template filename. Subclasses can assume that
+self.source and/or self.filename are set. Both are strings.
+The lookup, encoding and settings parameters are stored as instance
+variables.
+The lookup parameter stores a list containing directory paths.
+The encoding parameter should be used to decode byte strings or files.
+The settings parameter contains a dict for engine-specific settings.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="bottle.BaseTemplate.search">
+<em class="property">classmethod </em><tt class="descname">search</tt><big>(</big><em>name</em>, <em>lookup=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseTemplate.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseTemplate.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search name in all directories specified in lookup.
+First without, then with common extensions. Return first hit.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="bottle.BaseTemplate.global_config">
+<em class="property">classmethod </em><tt class="descname">global_config</tt><big>(</big><em>key</em>, <em>*args</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseTemplate.global_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseTemplate.global_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>This reads or sets the global settings stored in class.settings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseTemplate.prepare">
+<tt class="descname">prepare</tt><big>(</big><em>**options</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseTemplate.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseTemplate.prepare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run preparations (parsing, caching, ...).
+It should be possible to call this again to refresh a template or to
+update settings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bottle.BaseTemplate.render">
+<tt class="descname">render</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#BaseTemplate.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.BaseTemplate.render" title="Permalink to this definition">¶</a></dt>
+<dd><p>Render the template with the specified local variables and return
+a single byte or unicode string. If it is a byte string, the encoding
+must match self.encoding. This method must be thread-safe!
+Local variables may be provided in dictionaries (args)
+or directly, as keywords (kwargs).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.view">
+<tt class="descname">view</tt><big>(</big><em>tpl_name</em>, <em>**defaults</em><big>)</big><a class="reference internal" href="_modules/bottle.html#view"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.view" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator: renders a template for a handler.
+The handler can control its behavior like that:</p>
+<ul class="simple">
+<li>return a dict of template vars to fill out the template</li>
+<li>return something other than a dict and the view decorator will not
+process the template, but return the handler result as is.
+This includes returning a HTTPResponse(dict) to get,
+for instance, JSON with autojson or other castfilters.</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="bottle.template">
+<tt class="descname">template</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/bottle.html#template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bottle.template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a rendered template as a string iterator.
+You can use a name, a filename or a template string as first parameter.
+Template rendering arguments can be passed as dictionaries
+or directly (as keyword arguments).</p>
+</dd></dl>
+
+<p>You can write your own adapter for your favourite template engine or use one of the predefined adapters. Currently there are four fully supported template engines:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="24%" />
+<col width="31%" />
+<col width="20%" />
+<col width="24%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Class</th>
+<th class="head">URL</th>
+<th class="head">Decorator</th>
+<th class="head">Render function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><a class="reference internal" href="stpl.html#bottle.SimpleTemplate" title="bottle.SimpleTemplate"><tt class="xref py py-class docutils literal"><span class="pre">SimpleTemplate</span></tt></a></td>
+<td><a class="reference internal" href="stpl.html"><em>SimpleTemplate Engine</em></a></td>
+<td><a class="reference internal" href="#bottle.view" title="bottle.view"><tt class="xref py py-func docutils literal"><span class="pre">view()</span></tt></a></td>
+<td><a class="reference internal" href="#bottle.template" title="bottle.template"><tt class="xref py py-func docutils literal"><span class="pre">template()</span></tt></a></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-class docutils literal"><span class="pre">MakoTemplate</span></tt></td>
+<td><a class="reference external" href="http://www.makotemplates.org">http://www.makotemplates.org</a></td>
+<td><tt class="xref py py-func docutils literal"><span class="pre">mako_view()</span></tt></td>
+<td><tt class="xref py py-func docutils literal"><span class="pre">mako_template()</span></tt></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-class docutils literal"><span class="pre">CheetahTemplate</span></tt></td>
+<td><a class="reference external" href="http://www.cheetahtemplate.org/">http://www.cheetahtemplate.org/</a></td>
+<td><tt class="xref py py-func docutils literal"><span class="pre">cheetah_view()</span></tt></td>
+<td><tt class="xref py py-func docutils literal"><span class="pre">cheetah_template()</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-class docutils literal"><span class="pre">Jinja2Template</span></tt></td>
+<td><a class="reference external" href="http://jinja.pocoo.org/">http://jinja.pocoo.org/</a></td>
+<td><tt class="xref py py-func docutils literal"><span class="pre">jinja2_view()</span></tt></td>
+<td><tt class="xref py py-func docutils literal"><span class="pre">jinja2_template()</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>To use <tt class="xref py py-class docutils literal"><span class="pre">MakoTemplate</span></tt> as your default template engine, just import its specialised decorator and render function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">bottle</span> <span class="kn">import</span> <span class="n">mako_view</span> <span class="k">as</span> <span class="n">view</span><span class="p">,</span> <span class="n">mako_template</span> <span class="k">as</span> <span class="n">template</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_nav.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">API Reference</a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#routing">Routing</a></li>
+<li><a class="reference internal" href="#wsgi-and-http-utilities">WSGI and HTTP Utilities</a></li>
+<li><a class="reference internal" href="#data-structures">Data Structures</a></li>
+<li><a class="reference internal" href="#exceptions">Exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-bottle-class">The <tt class="docutils literal"><span class="pre">Bottle</span></tt> Class</a></li>
+<li><a class="reference internal" href="#the-request-object">The <tt class="docutils literal"><span class="pre">Request</span></tt> Object</a></li>
+<li><a class="reference internal" href="#the-response-object">The <tt class="docutils literal"><span class="pre">Response</span></tt> Object</a></li>
+<li><a class="reference internal" href="#templates">Templates</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="stpl.html"
+                        title="previous chapter">SimpleTemplate Engine</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="plugins/index.html"
+                        title="next chapter">List of available Plugins</a></p><h3>Like it?</h3>
+<ul>
+  <li>
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+      <a href="https://flattr.com/thing/21888/Bottle-A-Python-Web-Framework" target="_blank">
+        <img src="_static/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" />
+      </a>
+
+      <a href="https://www.gittip.com/defnull/" target="_blank">
+        <img src="_static/Gittip.png" alt="Gittip this" title="Gittip this" border="0" />
+      </a>
+
+      <input type="hidden" name="cmd" value="_s-xclick">
+      <input type="hidden" name="hosted_button_id" value="10013866">
+      <input type="image" src="_static/paypal.png" border="0" name="submit" alt="Donate with PayPal!">
+
+    </form>
+  </li>
+</ul>
+<h3>Hosted by:</h3>
+<a href="http://ezcluster.com" target="_blank" title="Dedicated Server Hosting">
+    <img src="_static/ez_cluster.png" alt="dedicated server hosting" />
+</a> 
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+    &copy; <a href="index.html#license">Copyright</a> 2009-2013, Marcel Hellkamp - <a href="contact.html">Contact</a><br />
+    Last updated on Dec 22, 2013. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.<br />
+    Powered by Bottle 0.13-dev
+    </div>
+
+  </body>
+</html>

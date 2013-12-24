@@ -1,0 +1,168 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Frequently Asked Questions &mdash; Bottle 0.12-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/bottle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.12-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Bottle 0.12-dev documentation" href="index.html" />
+    <link rel="next" title="Release Notes and Changelog" href="changelog.html" />
+    <link rel="prev" title="Recipes" href="recipes.html" />
+    <link rel="shortcut icon" type="image/x-icon" href="_static/favicon.ico" />
+    <link rel="image_src" type="image/png" href="_static/logo_reddit.png" />
+    <script type="application/javascript" src="_static/default.js"></script>
+    
+     
+
+  </head>
+  <body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div></div>
+  
+  <span class="target" id="module-bottle"></span><div class="section" id="frequently-asked-questions">
+<h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about-bottle">
+<h2>About Bottle<a class="headerlink" href="#about-bottle" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="is-bottle-suitable-for-complex-applications">
+<h3>Is bottle suitable for complex applications?<a class="headerlink" href="#is-bottle-suitable-for-complex-applications" title="Permalink to this headline">¶</a></h3>
+<p>Bottle is a <em>micro</em> framework designed for prototyping and building small web applications and services. It stays out of your way and allows you to get things done fast, but misses some advanced features and ready-to-use solutions found in other frameworks (MVC, ORM, form validation, scaffolding, XML-RPC). Although it <em>is</em> possible to add these features and build complex applications with Bottle, you should consider using a full-stack Web framework like <a class="reference external" href="http://pylonshq.com/">pylons</a> or <a class="reference external" href="http://pythonpaste.org/modules/evalexception.html">paste</a> instead.</p>
+</div>
+</div>
+<div class="section" id="common-problems-and-pitfalls">
+<h2>Common Problems and Pitfalls<a class="headerlink" href="#common-problems-and-pitfalls" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="template-not-found-in-mod-wsgi-mod-python">
+<h3>&#8220;Template Not Found&#8221; in mod_wsgi/mod_python<a class="headerlink" href="#template-not-found-in-mod-wsgi-mod-python" title="Permalink to this headline">¶</a></h3>
+<p>Bottle searches in <tt class="docutils literal"><span class="pre">./</span></tt> and <tt class="docutils literal"><span class="pre">./views/</span></tt> for templates. In a <a class="reference external" href="http://www.modpython.org/">mod_python</a> or <a class="reference external" href="http://code.google.com/p/modwsgi/">mod_wsgi</a> environment, the working directory (<tt class="docutils literal"><span class="pre">./</span></tt>) depends on your Apache settings. You should add an absolute path to the template search path:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">bottle</span><span class="o">.</span><span class="n">TEMPLATE_PATH</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;/absolut/path/to/templates/&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>so bottle searches the right paths.</p>
+</div>
+<div class="section" id="dynamic-routes-and-slashes">
+<h3>Dynamic Routes and Slashes<a class="headerlink" href="#dynamic-routes-and-slashes" title="Permalink to this headline">¶</a></h3>
+<p>In <a class="reference internal" href="tutorial.html#tutorial-dynamic-routes"><em>dynamic route syntax</em></a>, a placeholder token (<tt class="docutils literal"><span class="pre">:name</span></tt>) matches everything up to the next slash. This equals to <tt class="docutils literal"><span class="pre">[^/]+</span></tt> in regular expression syntax. To accept slashes too, you have to add a custom regular pattern to the placeholder. An example: <tt class="docutils literal"><span class="pre">/images/:filepath#.*#</span></tt> would match <tt class="docutils literal"><span class="pre">/images/icons/error.png</span></tt> but <tt class="docutils literal"><span class="pre">/images/:filename</span></tt> won&#8217;t.</p>
+</div>
+<div class="section" id="problems-with-reverse-proxies">
+<h3>Problems with reverse proxies<a class="headerlink" href="#problems-with-reverse-proxies" title="Permalink to this headline">¶</a></h3>
+<p>Redirects and url-building only works if bottle knows the public address and location of your application. If you run bottle locally behind a reverse proxy or load balancer, some information might get lost along the way. For example, the <tt class="docutils literal"><span class="pre">wsgi.url_scheme</span></tt> value or the <tt class="docutils literal"><span class="pre">Host</span></tt> header might reflect the local request by your proxy, not the real request by the client. Here is a small WSGI middleware snippet that helps to fix these values:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">fix_environ_middleware</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">fixed_app</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+    <span class="n">environ</span><span class="p">[</span><span class="s">&#39;wsgi.url_scheme&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;https&#39;</span>
+    <span class="n">environ</span><span class="p">[</span><span class="s">&#39;HTTP_X_FORWARDED_HOST&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;example.com&#39;</span>
+    <span class="k">return</span> <span class="n">app</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">https_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">bottle</span><span class="o">.</span><span class="n">default_app</span><span class="p">()</span>
+<span class="n">app</span><span class="o">.</span><span class="n">wsgi</span> <span class="o">=</span> <span class="n">fix_environ_middleware</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">wsgi</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_nav.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Frequently Asked Questions</a><ul>
+<li><a class="reference internal" href="#about-bottle">About Bottle</a><ul>
+<li><a class="reference internal" href="#is-bottle-suitable-for-complex-applications">Is bottle suitable for complex applications?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#common-problems-and-pitfalls">Common Problems and Pitfalls</a><ul>
+<li><a class="reference internal" href="#template-not-found-in-mod-wsgi-mod-python">&#8220;Template Not Found&#8221; in mod_wsgi/mod_python</a></li>
+<li><a class="reference internal" href="#dynamic-routes-and-slashes">Dynamic Routes and Slashes</a></li>
+<li><a class="reference internal" href="#problems-with-reverse-proxies">Problems with reverse proxies</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="recipes.html"
+                        title="previous chapter">Recipes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="changelog.html"
+                        title="next chapter">Release Notes and Changelog</a></p><h3>Like it?</h3>
+<ul>
+  <li>
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+      <a href="https://flattr.com/thing/21888/Bottle-A-Python-Web-Framework" target="_blank">
+        <img src="_static/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" />
+      </a>
+
+      <a href="https://www.gittip.com/defnull/" target="_blank">
+        <img src="_static/Gittip.png" alt="Gittip this" title="Gittip this" border="0" />
+      </a>
+
+      <input type="hidden" name="cmd" value="_s-xclick">
+      <input type="hidden" name="hosted_button_id" value="10013866">
+      <input type="image" src="_static/paypal.png" border="0" name="submit" alt="Donate with PayPal!">
+
+    </form>
+  </li>
+</ul>
+<h3>Hosted by:</h3>
+<a href="http://ezcluster.com" target="_blank" title="Dedicated Server Hosting">
+    <img src="_static/ez_cluster.png" alt="dedicated server hosting" />
+</a> 
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+    &copy; <a href="index.html#license">Copyright</a> 2009-2013, Marcel Hellkamp - <a href="contact.html">Contact</a><br />
+    Last updated on Dec 02, 2013. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.<br />
+    Powered by Bottle 0.12-dev
+    </div>
+
+  </body>
+</html>

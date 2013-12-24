@@ -1,0 +1,354 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Recipes &mdash; Bottle 0.13-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/bottle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.13-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Bottle 0.13-dev documentation" href="index.html" />
+    <link rel="next" title="Frequently Asked Questions" href="faq.html" />
+    <link rel="prev" title="Primer to Asynchronous Applications" href="async.html" />
+    <link rel="shortcut icon" type="image/x-icon" href="_static/favicon.ico" />
+    <link rel="image_src" type="image/png" href="_static/logo_reddit.png" />
+    <script type="application/javascript" src="_static/default.js"></script>
+    
+     
+
+  </head>
+  <body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div></div>
+  
+  <span class="target" id="module-bottle"></span><div class="section" id="recipes">
+<h1>Recipes<a class="headerlink" href="#recipes" title="Permalink to this headline">¶</a></h1>
+<p>This is a collection of code snippets and examples for common use cases.</p>
+<div class="section" id="keeping-track-of-sessions">
+<h2>Keeping track of Sessions<a class="headerlink" href="#keeping-track-of-sessions" title="Permalink to this headline">¶</a></h2>
+<p>There is no built-in support for sessions because there is no <em>right</em> way to do it (in a micro framework). Depending on requirements and environment you could use <a class="reference external" href="http://beaker.groovie.org/">beaker</a> middleware with a fitting backend or implement it yourself. Here is an example for beaker sessions with a file-based backend:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">bottle</span>
+<span class="kn">from</span> <span class="nn">beaker.middleware</span> <span class="kn">import</span> <span class="n">SessionMiddleware</span>
+
+<span class="n">session_opts</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;session.type&#39;</span><span class="p">:</span> <span class="s">&#39;file&#39;</span><span class="p">,</span>
+    <span class="s">&#39;session.cookie_expires&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+    <span class="s">&#39;session.data_dir&#39;</span><span class="p">:</span> <span class="s">&#39;./data&#39;</span><span class="p">,</span>
+    <span class="s">&#39;session.auto&#39;</span><span class="p">:</span> <span class="bp">True</span>
+<span class="p">}</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">SessionMiddleware</span><span class="p">(</span><span class="n">bottle</span><span class="o">.</span><span class="n">app</span><span class="p">(),</span> <span class="n">session_opts</span><span class="p">)</span>
+
+<span class="nd">@bottle.route</span><span class="p">(</span><span class="s">&#39;/test&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test</span><span class="p">():</span>
+  <span class="n">s</span> <span class="o">=</span> <span class="n">bottle</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;beaker.session&#39;</span><span class="p">)</span>
+  <span class="n">s</span><span class="p">[</span><span class="s">&#39;test&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;test&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+  <span class="n">s</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+  <span class="k">return</span> <span class="s">&#39;Test counter: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">s</span><span class="p">[</span><span class="s">&#39;test&#39;</span><span class="p">]</span>
+
+<span class="n">bottle</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="debugging-with-style-debugging-middleware">
+<h2>Debugging with Style: Debugging Middleware<a class="headerlink" href="#debugging-with-style-debugging-middleware" title="Permalink to this headline">¶</a></h2>
+<p>Bottle catches all Exceptions raised in your app code to prevent your WSGI server from crashing. If the built-in <a class="reference internal" href="api.html#bottle.debug" title="bottle.debug"><tt class="xref py py-func docutils literal"><span class="pre">debug()</span></tt></a> mode is not enough and you need exceptions to propagate to a debugging middleware, you can turn off this behaviour:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">bottle</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">bottle</span><span class="o">.</span><span class="n">app</span><span class="p">()</span>
+<span class="n">app</span><span class="o">.</span><span class="n">catchall</span> <span class="o">=</span> <span class="bp">False</span> <span class="c">#Now most exceptions are re-raised within bottle.</span>
+<span class="n">myapp</span> <span class="o">=</span> <span class="n">DebuggingMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">)</span> <span class="c">#Replace this with a middleware of your choice (see below)</span>
+<span class="n">bottle</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">myapp</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, bottle only catches its own exceptions (<a class="reference internal" href="api.html#bottle.HTTPError" title="bottle.HTTPError"><tt class="xref py py-exc docutils literal"><span class="pre">HTTPError</span></tt></a>, <a class="reference internal" href="api.html#bottle.HTTPResponse" title="bottle.HTTPResponse"><tt class="xref py py-exc docutils literal"><span class="pre">HTTPResponse</span></tt></a> and <a class="reference internal" href="api.html#bottle.BottleException" title="bottle.BottleException"><tt class="xref py py-exc docutils literal"><span class="pre">BottleException</span></tt></a>) and your middleware can handle the rest.</p>
+<p>The <a class="reference external" href="http://werkzeug.pocoo.org/documentation/dev/debug.html">werkzeug</a> and <a class="reference external" href="http://pythonpaste.org/modules/evalexception.html">paste</a> libraries both ship with very powerful debugging WSGI middleware. Look at <a class="reference external" href="http://werkzeug.pocoo.org/docs/debug/#werkzeug.debug.DebuggedApplication" title="(in Werkzeug v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">werkzeug.debug.DebuggedApplication</span></tt></a> for <a class="reference external" href="http://werkzeug.pocoo.org/documentation/dev/debug.html">werkzeug</a> and <tt class="xref py py-class docutils literal"><span class="pre">paste.evalexception.middleware.EvalException</span></tt> for <a class="reference external" href="http://pythonpaste.org/modules/evalexception.html">paste</a>. They both allow you do inspect the stack and even execute python code within the stack context, so <strong>do not use them in production</strong>.</p>
+</div>
+<div class="section" id="unit-testing-bottle-applications">
+<h2>Unit-Testing Bottle Applications<a class="headerlink" href="#unit-testing-bottle-applications" title="Permalink to this headline">¶</a></h2>
+<p>Unit-testing is usually performed against methods defined in your web application without running a WSGI environment.</p>
+<p>A simple example using <a class="reference external" href="http://readthedocs.org/docs/nose">Nose</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">bottle</span>
+
+<span class="nd">@bottle.route</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s">&#39;Hi!&#39;</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">bottle</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Test script:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">mywebapp</span>
+
+<span class="k">def</span> <span class="nf">test_webapp_index</span><span class="p">():</span>
+    <span class="k">assert</span> <span class="n">mywebapp</span><span class="o">.</span><span class="n">index</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;Hi!&#39;</span>
+</pre></div>
+</div>
+<p>In the example the Bottle route() method is never executed - only index() is tested.</p>
+</div>
+<div class="section" id="functional-testing-bottle-applications">
+<h2>Functional Testing Bottle Applications<a class="headerlink" href="#functional-testing-bottle-applications" title="Permalink to this headline">¶</a></h2>
+<p>Any HTTP-based testing system can be used with a running WSGI server, but some testing frameworks work more intimately with WSGI, and provide the ability the call WSGI applications in a controlled environment, with tracebacks and full use of debugging tools. <a class="reference external" href="http://www.wsgi.org/en/latest/testing.html">Testing tools for WSGI</a> is a good starting point.</p>
+<p>Example using <a class="reference external" href="http://webtest.pythonpaste.org/">WebTest</a> and <a class="reference external" href="http://readthedocs.org/docs/nose">Nose</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">webtest</span> <span class="kn">import</span> <span class="n">TestApp</span>
+<span class="kn">import</span> <span class="nn">mywebapp</span>
+
+<span class="k">def</span> <span class="nf">test_functional_login_logout</span><span class="p">():</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">TestApp</span><span class="p">(</span><span class="n">mywebapp</span><span class="o">.</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s">&#39;/login&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;user&#39;</span><span class="p">:</span> <span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="s">&#39;pass&#39;</span><span class="p">:</span> <span class="s">&#39;bar&#39;</span><span class="p">})</span> <span class="c"># log in and get a cookie</span>
+
+    <span class="k">assert</span> <span class="n">app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/admin&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s">&#39;200 OK&#39;</span>        <span class="c"># fetch a page successfully</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/logout&#39;</span><span class="p">)</span>                                 <span class="c"># log out</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>                                        <span class="c"># drop the cookie</span>
+
+    <span class="c"># fetch the same page, unsuccessfully</span>
+    <span class="k">assert</span> <span class="n">app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/admin&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s">&#39;401 Unauthorized&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="embedding-other-wsgi-apps">
+<h2>Embedding other WSGI Apps<a class="headerlink" href="#embedding-other-wsgi-apps" title="Permalink to this headline">¶</a></h2>
+<p>This is not the recommend way (you should use a middleware in front of bottle to do this) but you can call other WSGI applications from within your bottle app and let bottle act as a pseudo-middleware. Here is an example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">bottle</span> <span class="kn">import</span> <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">route</span>
+<span class="n">subproject</span> <span class="o">=</span> <span class="n">SomeWSGIApplication</span><span class="p">()</span>
+
+<span class="nd">@route</span><span class="p">(</span><span class="s">&#39;/subproject/:subpath#.*#&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;ANY&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">call_wsgi</span><span class="p">(</span><span class="n">subpath</span><span class="p">):</span>
+    <span class="n">new_environ</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">new_environ</span><span class="p">[</span><span class="s">&#39;SCRIPT_NAME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SCRIPT_NAME&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;/subproject&#39;</span>
+    <span class="n">new_environ</span><span class="p">[</span><span class="s">&#39;PATH_INFO&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">subpath</span>
+    <span class="k">def</span> <span class="nf">start_response</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">headerlist</span><span class="p">):</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">headerlist</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">app</span><span class="p">(</span><span class="n">new_environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Again, this is not the recommend way to implement subprojects. It is only here because many people asked for this and to show how bottle maps to WSGI.</p>
+</div>
+<div class="section" id="ignore-trailing-slashes">
+<h2>Ignore trailing slashes<a class="headerlink" href="#ignore-trailing-slashes" title="Permalink to this headline">¶</a></h2>
+<p>For Bottle, <tt class="docutils literal"><span class="pre">/example</span></tt> and <tt class="docutils literal"><span class="pre">/example/</span></tt> are two different routes <a class="footnote-reference" href="#id3" id="id2">[1]</a>. To treat both URLs the same you can add two <tt class="docutils literal"><span class="pre">&#64;route</span></tt> decorators:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@route</span><span class="p">(</span><span class="s">&#39;/test&#39;</span><span class="p">)</span>
+<span class="nd">@route</span><span class="p">(</span><span class="s">&#39;/test/&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test</span><span class="p">():</span> <span class="k">return</span> <span class="s">&#39;Slash? no?&#39;</span>
+</pre></div>
+</div>
+<p>or add a WSGI middleware that strips trailing slashes from all URLs:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">StripPathMiddleware</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
+  <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="n">e</span><span class="p">[</span><span class="s">&#39;PATH_INFO&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="s">&#39;PATH_INFO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="n">h</span><span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">bottle</span><span class="o">.</span><span class="n">app</span><span class="p">()</span>
+<span class="n">myapp</span> <span class="o">=</span> <span class="n">StripPathMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+<span class="n">bottle</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">myapp</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>Because they are. See &lt;<a class="reference external" href="http://www.ietf.org/rfc/rfc3986.txt">http://www.ietf.org/rfc/rfc3986.txt</a>&gt;</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="keep-alive-requests">
+<h2>Keep-alive requests<a class="headerlink" href="#keep-alive-requests" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For a more detailed explanation, see <a class="reference internal" href="async.html"><em>Primer to Asynchronous Applications</em></a>.</p>
+</div>
+<p>Several &#8220;push&#8221; mechanisms like XHR multipart need the ability to write response data without closing the connection in conjunction with the response header &#8220;Connection: keep-alive&#8221;. WSGI does not easily lend itself to this behavior, but it is still possible to do so in Bottle by using the <a class="reference external" href="http://www.gevent.org/">gevent</a> async framework. Here is a sample that works with either the <a class="reference external" href="http://www.gevent.org/">gevent</a> HTTP server or the <a class="reference external" href="http://pythonpaste.org/modules/evalexception.html">paste</a> HTTP server (it may work with others, but I have not tried). Just change <tt class="docutils literal"><span class="pre">server='gevent'</span></tt> to <tt class="docutils literal"><span class="pre">server='paste'</span></tt> to use the <a class="reference external" href="http://pythonpaste.org/modules/evalexception.html">paste</a> server:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">monkey</span><span class="p">;</span> <span class="n">monkey</span><span class="o">.</span><span class="n">patch_all</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">bottle</span> <span class="kn">import</span> <span class="n">route</span><span class="p">,</span> <span class="n">run</span>
+
+<span class="nd">@route</span><span class="p">(</span><span class="s">&#39;/stream&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">stream</span><span class="p">():</span>
+    <span class="k">yield</span> <span class="s">&#39;START&#39;</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s">&#39;MIDDLE&#39;</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s">&#39;END&#39;</span>
+
+<span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">&#39;0.0.0.0&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">,</span> <span class="n">server</span><span class="o">=</span><span class="s">&#39;gevent&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you browse to <tt class="docutils literal"><span class="pre">http://localhost:8080/stream</span></tt>, you should see &#8216;START&#8217;, &#8216;MIDDLE&#8217;, and &#8216;END&#8217; show up one at a time (rather than waiting 8 seconds to see them all at once).</p>
+</div>
+<div class="section" id="gzip-compression-in-bottle">
+<h2>Gzip Compression in Bottle<a class="headerlink" href="#gzip-compression-in-bottle" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For a detailed discussion, see <a class="reference external" href="https://github.com/defnull/bottle/issues/92">compression</a></p>
+</div>
+<p>A common feature request is for Bottle to support Gzip compression, which speeds up sites by compressing static resources (like CSS and JS files) during a request.</p>
+<p>Supporting Gzip compression is not a straightforward proposition, due to a number of corner cases that crop up frequently. A proper Gzip implementation must:</p>
+<ul class="simple">
+<li>Compress on the fly and be fast doing so.</li>
+<li>Do not compress for browsers that don&#8217;t support it.</li>
+<li>Do not compress files that are compressed already (images, videos).</li>
+<li>Do not compress dynamic files.</li>
+<li>Support two differed compression algorithms (gzip and deflate).</li>
+<li>Cache compressed files that don&#8217;t change often.</li>
+<li>De-validate the cache if one of the files changed anyway.</li>
+<li>Make sure the cache does not get to big.</li>
+<li>Do not cache small files because a disk seek would take longer than on-the-fly compression.</li>
+</ul>
+<p>Because of these requirements, it is the recommendation of the Bottle project that Gzip compression is best handled by the WSGI server Bottle runs on top of. WSGI servers such as <a class="reference external" href="http://www.cherrypy.org">cherrypy</a> provide a <a class="reference external" href="http://www.cherrypy.org/wiki/GzipFilter">GzipFilter</a> middleware that can be used to accomplish this.</p>
+</div>
+<div class="section" id="using-the-hooks-plugin">
+<h2>Using the hooks plugin<a class="headerlink" href="#using-the-hooks-plugin" title="Permalink to this headline">¶</a></h2>
+<p>For example, if you want to allow Cross-Origin Resource Sharing for
+the content returned by all of your URL, you can use the hook
+decorator and setup a callback function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">bottle</span> <span class="kn">import</span> <span class="n">hook</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">route</span>
+
+<span class="nd">@hook</span><span class="p">(</span><span class="s">&#39;after_request&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">enable_cors</span><span class="p">():</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Access-Control-Allow-Origin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;*&#39;</span>
+
+<span class="nd">@route</span><span class="p">(</span><span class="s">&#39;/foo&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">say_foo</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s">&#39;foo!&#39;</span>
+
+<span class="nd">@route</span><span class="p">(</span><span class="s">&#39;/bar&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">say_bar</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s">&#39;type&#39;</span><span class="p">:</span> <span class="s">&#39;friendly&#39;</span><span class="p">,</span> <span class="s">&#39;content&#39;</span><span class="p">:</span> <span class="s">&#39;Hi!&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>You can also use the <tt class="docutils literal"><span class="pre">before_request</span></tt> to take an action before
+every function gets called.</p>
+</div>
+<div class="section" id="using-bottle-with-heroku">
+<h2>Using Bottle with Heroku<a class="headerlink" href="#using-bottle-with-heroku" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://heroku.com">Heroku</a>, a popular cloud application platform now provides support
+for running Python applications on their infastructure.</p>
+<p>This recipe is based upon the <a class="reference external" href="http://devcenter.heroku.com/articles/quickstart">Heroku Quickstart</a>,
+with Bottle specific code replacing the
+<a class="reference external" href="http://devcenter.heroku.com/articles/python#write_your_app">Write Your App</a>
+section of the <a class="reference external" href="http://devcenter.heroku.com/articles/python">Getting Started with Python on Heroku/Cedar</a> guide:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">bottle</span> <span class="kn">import</span> <span class="n">route</span><span class="p">,</span> <span class="n">run</span>
+
+<span class="nd">@route</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hello_world</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s">&quot;Hello World!&quot;</span>
+
+<span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;PORT&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>Heroku&#8217;s app stack passes the port that the application needs to
+listen on for requests, using the <cite>os.environ</cite> dictionary.</p>
+</div>
+</div>
+
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_nav.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Recipes</a><ul>
+<li><a class="reference internal" href="#keeping-track-of-sessions">Keeping track of Sessions</a></li>
+<li><a class="reference internal" href="#debugging-with-style-debugging-middleware">Debugging with Style: Debugging Middleware</a></li>
+<li><a class="reference internal" href="#unit-testing-bottle-applications">Unit-Testing Bottle Applications</a></li>
+<li><a class="reference internal" href="#functional-testing-bottle-applications">Functional Testing Bottle Applications</a></li>
+<li><a class="reference internal" href="#embedding-other-wsgi-apps">Embedding other WSGI Apps</a></li>
+<li><a class="reference internal" href="#ignore-trailing-slashes">Ignore trailing slashes</a></li>
+<li><a class="reference internal" href="#keep-alive-requests">Keep-alive requests</a></li>
+<li><a class="reference internal" href="#gzip-compression-in-bottle">Gzip Compression in Bottle</a></li>
+<li><a class="reference internal" href="#using-the-hooks-plugin">Using the hooks plugin</a></li>
+<li><a class="reference internal" href="#using-bottle-with-heroku">Using Bottle with Heroku</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="async.html"
+                        title="previous chapter">Primer to Asynchronous Applications</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="faq.html"
+                        title="next chapter">Frequently Asked Questions</a></p><h3>Like it?</h3>
+<ul>
+  <li>
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+      <a href="https://flattr.com/thing/21888/Bottle-A-Python-Web-Framework" target="_blank">
+        <img src="_static/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" />
+      </a>
+
+      <a href="https://www.gittip.com/defnull/" target="_blank">
+        <img src="_static/Gittip.png" alt="Gittip this" title="Gittip this" border="0" />
+      </a>
+
+      <input type="hidden" name="cmd" value="_s-xclick">
+      <input type="hidden" name="hosted_button_id" value="10013866">
+      <input type="image" src="_static/paypal.png" border="0" name="submit" alt="Donate with PayPal!">
+
+    </form>
+  </li>
+</ul>
+<h3>Hosted by:</h3>
+<a href="http://ezcluster.com" target="_blank" title="Dedicated Server Hosting">
+    <img src="_static/ez_cluster.png" alt="dedicated server hosting" />
+</a> 
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+    &copy; <a href="index.html#license">Copyright</a> 2009-2013, Marcel Hellkamp - <a href="contact.html">Contact</a><br />
+    Last updated on Dec 22, 2013. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.<br />
+    Powered by Bottle 0.13-dev
+    </div>
+
+  </body>
+</html>
