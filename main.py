@@ -389,6 +389,10 @@ def remove(path):
 @app.route("/", name="index")
 @view("index")
 def index():
+    '''
+    Simple start page.
+    Will be removed at some point.
+    '''
     links = {"Browse files": app.get_url("base")}
     links.update(app.config["browsepy.extra_links"])
     return {"extra_links": sorted(links.iteritems())}
@@ -398,7 +402,7 @@ def static(path):
     '''
     Static endpoint.
     Static files always should be served by server instead of from application,
-    nothaways this is useful for debug and template links using `app.geturl`.
+    this endpoint is useful for debug and using `app.geturl` for all urls.
     '''
     return bottle.static_file(path, app.config["browsepy.static"])
 
