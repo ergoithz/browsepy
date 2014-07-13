@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>
+    {% if topdir is defined and topdir %}
+        {{ path }}
+    {% else %}
+        {% set parts = path.split("/") %}
+        {% for p in range(len(parts)-1) %}
+            {% set parent = "/".join(parts[1:p+1]) %}
+            <a href="{{ url_for('browse', path=parent) if parent else url_for('base') }}">{{ parts[p] }}</a>
+            <span> / </span>
+        {% endfor %}
+        {{ parts[-1] }}
+    {% endif %}
+</h1>
+{% if not has_files %}
+    <p>No files in directory</p>
+{% else %}
+    <table class="browser">
+        <thead>
+            <tr>
+                <th colspan="3">Name</th>
+                <th>Mimetype</th>
+                <th>Modified</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in files %}
+                <tr>
+                    <td class="{{ 'dir' if f.is_directory else 'file' }}-icon"></td>
+                    <td>
+                        <a href="{{ url_for('browse' if f.is_directory else 'open', path=f.relpath) if f.relpath else url_for('base') }}">{{ f.basename }}</a>
+                    </td>
+                    <td>
+                        {% if f.can_remove %}
+                        <a href="{{ url_for('remove_confirm', path=f.relpath) }}" class="remove button"></a>
+                        {% endif %}
+                        {% if f.can_download %}
+                        <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.relpath) }}" class="download button"></a>
+                        {% endif %}
+                    </td>
+                    <td>{{ f.type }}</td>
+                    <td>{{ f.modified }}</td>
+                    <td>{{ "" if f.is_directory else f.size }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+{% endblock %}
