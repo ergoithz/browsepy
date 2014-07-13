@@ -1,4 +1,4 @@
 browsepy
 ========
 
-Simple directory listing web application using bottle.py
+Simple web file browser using flask
