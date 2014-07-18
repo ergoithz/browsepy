@@ -25,11 +25,12 @@ app = Flask(__name__,
     template_folder = os.path.join(__basedir__, "templates")
     )
 app.config.update(
-    directory_base = os.getcwd(),
-    directory_start = os.getcwd(),
+    directory_base = os.path.abspath(os.getcwd()),
+    directory_start = os.path.abspath(os.getcwd()),
     directory_remove = None,
     directory_tar_buffsize = 262144,
-    directory_downloadable = True
+    directory_downloadable = True,
+    use_binary_multiples = True,
     )
 
 if "BROWSEPY_SETTINGS" in os.environ:
@@ -122,7 +123,7 @@ class File(object):
 
     @property
     def size(self):
-        return "%.2f %s" % fmt_size(self.stats.st_size)
+        return "%.2f %s" % fmt_size(self.stats.st_size, app.config["use_binary_multiples"])
 
     @property
     def relpath(self):
@@ -229,12 +230,19 @@ class OutsideRemovableBase(Exception):
     pass
 
 
-fmt_sizes = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
-def fmt_size(size):
+binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
+standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")  
+def fmt_size(size, binary=True):
+    if binary:
+        fmt_sizes = binary_units
+        fmt_divider = 1024.
+    else:
+        fmt_sizes = standard_units
+        fmt_divider = 1000.
     for fmt in fmt_sizes[:-1]:
         if size < 1000:
             return (size, fmt)
-        size /= 1024.
+        size /= fmt_divider
     return size, fmt_sizes[-1]
 
 def empty_iterable(iterable):
@@ -283,7 +291,7 @@ def template_globals():
         'len': len,
         }
 
-
+@app.route("/browse", defaults={"path":""})
 @app.route('/browse/<path:path>')
 def browse(path):
     try:
@@ -292,6 +300,7 @@ def browse(path):
             files = File.listdir(realpath)
             empty_files, files = empty_iterable(files)
             return stream_template("browsepy.browse.html",
+                dirbase = os.path.basename(app.config["directory_base"]) or '/',
                 path = relativize_path(realpath, True),
                 files = files,
                 has_files = not empty_files
@@ -300,17 +309,6 @@ def browse(path):
         pass
     return NotFound()
 
-@app.route("/browse")
-def base():
-    dirbase = app.config["directory_base"]
-    files = File.listdir(dirbase)
-    empty_files, files = empty_iterable(files)
-    return stream_template("browsepy.browse.html",
-        topdir = True,
-        path = os.path.basename(dirbase),
-        files = files,
-        has_files = not empty_files
-        )
 
 @app.route('/open/<path:path>', endpoint="open")
 def open_file(path):

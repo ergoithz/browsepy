@@ -2,16 +2,22 @@
 
 {% block content %}
 <h1>
-    {% if topdir is defined and topdir %}
-        {{ path }}
-    {% else %}
-        {% set parts = path.split("/") %}
-        {% for p in range(len(parts)-1) %}
-            {% set parent = "/".join(parts[1:p+1]) %}
-            <a href="{{ url_for('browse', path=parent) if parent else url_for('base') }}">{{ parts[p] }}</a>
+    {% set parts = path.split("/") %}
+    {% if path %}
+        <a href="{{ url_for('browse') }}">{{ dirbase }}</a>
+        {% if parts and dirbase != "/" %}
             <span> / </span>
+        {% endif %}
+        {% for p in range(len(parts)-1) %}
+            {% set parent = "/".join(parts[:p+1]) %}
+            <a href="{{ url_for('browse', path=parent) }}">{{ parts[p] }}</a>
+            {% if parts[p] %}
+                <span> / </span>
+            {% endif %}
         {% endfor %}
         {{ parts[-1] }}
+    {% else %}
+        {{ dirbase }}
     {% endif %}
 </h1>
 {% if not has_files %}
