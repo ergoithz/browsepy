@@ -20,4 +20,4 @@ Usage
 Screenshots
 -----------
 
-    ![Screenshot of directory with enabled remove](https://raw.githubusercontent.com/ergoithz/browsepy/master/doc/screenshot.0.3.1-0.png)
+![Screenshot of directory with enabled remove](https://raw.githubusercontent.com/ergoithz/browsepy/master/doc/screenshot.0.3.1-0.png)
