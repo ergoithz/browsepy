@@ -16,7 +16,7 @@ from flask import Flask, Response, request, render_template, redirect, \
 from werkzeug.exceptions import NotFound
 
 __app__ = "Browsepy"
-__version__ = "0.3"
+__version__ = "0.3.1"
 __author__ = "Felipe A. Hernandez <ergoithz@gmail.com>"
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
@@ -123,7 +123,10 @@ class File(object):
 
     @property
     def size(self):
-        return "%.2f %s" % fmt_size(self.stats.st_size, app.config["use_binary_multiples"])
+        size, unit = fmt_size(self.stats.st_size, app.config["use_binary_multiples"])
+        if unit == binary_units[0]:
+            return "%d %s" % (size, unit)
+        return "%.2f %s" % (size, unit)
 
     @property
     def relpath(self):
@@ -170,12 +173,13 @@ class TarFileStream(object):
     def __init__(self, path, buffsize=10240):
         self.path = path
         self.name = os.path.basename(path) + ".tgz"
-        self._tarfile = tarfile.open(fileobj=self, mode="w|gz", bufsize=buffsize) # stream write
+
         self._finished = 0
         self._want = 0
-        self._data = ""
+        self._data = bytes()
         self._add = threading.Event()
         self._result = threading.Event()
+        self._tarfile = tarfile.open(fileobj=self, mode="w|gz", bufsize=buffsize) # stream write
         self._th = threading.Thread(target=self.fill)
         self._th.start()
 
@@ -212,7 +216,7 @@ class TarFileStream(object):
             self._data = self._data[want:]
         else:
             data = self._data
-            self._data = ""
+            self._data = bytes()
         return data
 
     def __iter__(self):
@@ -231,7 +235,7 @@ class OutsideRemovableBase(Exception):
 
 
 binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
-standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")  
+standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 def fmt_size(size, binary=True):
     if binary:
         fmt_sizes = binary_units
@@ -253,17 +257,20 @@ def empty_iterable(iterable):
     except StopIteration:
         return True, ()
 
-def relativize_path(path, include_base=False):
-    dirbase = app.config["directory_base"]
-    if include_base:
-        dirbase = os.path.dirname(dirbase)
-    return path[len(dirbase + os.sep):]
+def relativize_path(path):
+    prefix = os.path.commonprefix((path, app.config["directory_base"]))
+    prefix_len = len(prefix)
+    if not prefix.endswith(os.sep):
+        prefix_len += len(os.sep)
+    return path[prefix_len:]
 
 def urlpath_to_abspath(path):
     dirbase = app.config["directory_base"]
-    base = dirbase + os.sep
-    realpath = os.path.abspath(base + path)
-    if realpath.startswith(base):
+    prefix = dirbase
+    if not prefix.endswith(os.sep):
+        prefix += os.sep
+    realpath = os.path.abspath(prefix + path)
+    if dirbase == realpath or realpath.startswith(prefix):
         return realpath
     raise OutsideDirectoryBase("%r is not under %r" % (realpath, dirbase))
 
@@ -301,7 +308,7 @@ def browse(path):
             empty_files, files = empty_iterable(files)
             return stream_template("browsepy.browse.html",
                 dirbase = os.path.basename(app.config["directory_base"]) or '/',
-                path = relativize_path(realpath, True),
+                path = relativize_path(realpath),
                 files = files,
                 has_files = not empty_files
                 )
@@ -341,22 +348,20 @@ def download_directory(path):
     except OutsideDirectoryBase:
         return NotFound()
 
-@app.route("/remove/<path:path>")
-def remove_confirm(path):
-    return {
-        "backurl": app.get_url("browse", path=path).rsplit("/", 1)[0],
-        "path": path
-        }
 
-@app.route("/remove/<path:path>", methods=("POST",))
+@app.route("/remove/<path:path>", methods=("GET", "POST"))
 def remove(path):
+    if request.method == 'GET':
+        return render_template('browsepy.remove.html',
+                               backurl = url_for("browse", path=path).rsplit("/", 1)[0],
+                               path = path)
     try:
         realpath = urlpath_to_abspath(path)
         File(realpath).remove()
     except (OutsideDirectoryBase, OutsideRemovableBase):
         return NotFound()
     else:
-        return redirect(request.args.get("backurl") or url_for(".index"))
+        return redirect(request.form.get("backurl") or url_for(".index"))
 
 @app.route("/")
 def index():
@@ -368,3 +373,12 @@ def index():
         return NotFound()
     else:
         return browse(relpath)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    import ipdb; ipdb.set_trace()
+    return e.message, 500

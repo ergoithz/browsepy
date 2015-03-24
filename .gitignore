@@ -1,4 +1,5 @@
 .git/*
 .c9/*
+.idea/*
 env/*
 *.pyc

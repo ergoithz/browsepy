@@ -2,8 +2,8 @@
 
 {% block content %}
 <h1>
-    {% set parts = path.split("/") %}
     {% if path %}
+        {% set parts = path.split("/") %}
         <a href="{{ url_for('browse') }}">{{ dirbase }}</a>
         {% if parts and dirbase != "/" %}
             <span> / </span>
@@ -41,7 +41,7 @@
                     </td>
                     <td>
                         {% if f.can_remove %}
-                        <a href="{{ url_for('remove_confirm', path=f.relpath) }}" class="remove button"></a>
+                        <a href="{{ url_for('remove', path=f.relpath) }}" class="remove button"></a>
                         {% endif %}
                         {% if f.can_download %}
                         <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.relpath) }}" class="download button"></a>
