@@ -6,16 +6,24 @@ Simple web file browser using flask
 Features
 --------
 
-* Simple and easy-to-use file browser similar to Python's SimpleHTTPServer or Apache's Directory Listing,
-  showing current path on title as breadcrumb (more user-friendly that **..** inodes).
-* Downloadable directories using on-the-fly streaming tarballs (minimal RAM usage, no writes to disk).
-* Optional remove, can be enabled for files under a given path.
+* **Simple**, like Python's SimpleHTTPServer or Apache's Directory Listing.
+* **Downloadable directories**, streaming tarballs on the fly.
+* **Optional remove**, which can be enabled for files under a given path.
 
 Usage
 -----
 
+Serving $HOME/shared to all addresses 
 
-    python -m browsepy --help
+```bash
+  python -m browsepy 0.0.0.0 8080 --directory $HOME/shared
+```
+
+Showing help
+
+```bash
+  python -m browsepy --help
+```
 
 Screenshots
 -----------
