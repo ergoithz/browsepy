@@ -262,8 +262,9 @@ class TestApp(unittest.TestCase):
         iodata = io.BytesIO(data)
         with tarfile.open('start.tgz', mode="r:gz", fileobj=iodata) as tgz:
             tgz_files = [member.name for member in tgz.getmembers() if member.name]
+        tgz_files.sort()
 
-        self.assertEqual(tgz_files, ['testfile.txt', 'testfile.bin'])
+        self.assertEqual(tgz_files, ['testfile.bin', 'testfile.txt',])
 
         self.assertRaises(
             Page404Exception,
@@ -342,11 +343,6 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.can_remove, False)
         self.assertEqual(f.dirname, self.workbench)
         self.assertEqual(f.is_directory, False)
-
-
-
-
-
 
 
 class TestFunctions(unittest.TestCase):
