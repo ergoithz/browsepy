@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import re
 import os
+import sys
 import os.path
 import subprocess
 import mimetypes
@@ -16,7 +18,8 @@ from flask import Flask, Response, request, render_template, redirect, \
 from werkzeug.exceptions import NotFound
 
 __app__ = "Browsepy"
-__version__ = "0.3.1"
+__version__ = "0.3.2"
+__license__ = 'MIT'
 __author__ = "Felipe A. Hernandez <ergoithz@gmail.com>"
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,8 +39,16 @@ app.config.update(
 if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
 
+py3k = sys.version > '3'
+if py3k:
+    pass
+else:
+    FileNotFoundError = type('FileNotFoundError', (OSError,), {})
+
 
 class File(object):
+    re_mime_validate = re.compile('\w+/\w+(; \w+=[^;]+)*')
+    re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     def __init__(self, path):
         self.path = path
 
@@ -95,13 +106,16 @@ class File(object):
     def mimetype(self):
         if self._mimetype is None:
             mime, encoding = mimetypes.guess_type(self.path)
+            mimetype = "%s%s%s" % (mime or "application/octet-stream", "; " if encoding else "", encoding or "")
             if mime in self._generic_mimetypes:
                 try:
-                    self._mimetype = subprocess.check_output(("file", "-ib", self.path)).decode('utf8')
-                except:
-                    self._mimetype = "%s;%s" % (mime or "default", encoding or "default")
-            else:
-                self._mimetype = "%s;%s" % (mime or "default", encoding or "default")
+                    output = subprocess.check_output(("file", "-ib", self.path)).decode('utf8').strip()
+                    if self.re_mime_validate.match(output):
+                        # 'file' command can return status zero with invalid output
+                        mimetype = output
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    pass
+            self._mimetype = mimetype
         return self._mimetype
 
     _is_directory = None
@@ -147,7 +161,9 @@ class File(object):
     @property
     def encoding(self):
         if ";" in self.mimetype:
-            return self.mimetype.split(";", 1)[-1]
+            match = self.re_charset.search(self.mimetype)
+            gdict = match.groupdict() if match else {}
+            return gdict.get("charset") or "default"
         return "default"
 
     @classmethod
@@ -255,7 +271,7 @@ def empty_iterable(iterable):
         first = next(rest)
         return False, itertools.chain((first,), rest)
     except StopIteration:
-        return True, ()
+        return True, iter(())
 
 def relativize_path(path):
     prefix = os.path.commonprefix((path, app.config["directory_base"]))
@@ -316,7 +332,6 @@ def browse(path):
         pass
     return NotFound()
 
-
 @app.route('/open/<path:path>', endpoint="open")
 def open_file(path):
     try:
@@ -346,22 +361,26 @@ def download_directory(path):
         realpath = urlpath_to_abspath(path)
         return File(realpath).download()
     except OutsideDirectoryBase:
-        return NotFound()
-
+        pass
+    return NotFound()
 
 @app.route("/remove/<path:path>", methods=("GET", "POST"))
 def remove(path):
+    try:
+        realpath = urlpath_to_abspath(path)
+    except OutsideDirectoryBase:
+        return NotFound()
     if request.method == 'GET':
+        if not File(realpath).can_remove:
+            return NotFound()
         return render_template('browsepy.remove.html',
                                backurl = url_for("browse", path=path).rsplit("/", 1)[0],
                                path = path)
     try:
-        realpath = urlpath_to_abspath(path)
         File(realpath).remove()
-    except (OutsideDirectoryBase, OutsideRemovableBase):
+    except OutsideRemovableBase:
         return NotFound()
-    else:
-        return redirect(request.form.get("backurl") or url_for(".index"))
+    return redirect(request.form.get("backurl") or url_for(".index"))
 
 @app.route("/")
 def index():
@@ -369,15 +388,14 @@ def index():
         relpath = File(app.config["directory_start"] or
                        app.config["directory_base"]
                        ).relpath
-    except OutsideDirectoryBase as e:
+    except OutsideDirectoryBase:
         return NotFound()
-    else:
-        return browse(relpath)
+    return browse(relpath)
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
 @app.errorhandler(500)
-def internal_server_error(e):
+def internal_server_error(e): # pragma: no cover
     return e.message, 500

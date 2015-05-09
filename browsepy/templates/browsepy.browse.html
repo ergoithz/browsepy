@@ -11,9 +11,7 @@
         {% for p in range(len(parts)-1) %}
             {% set parent = "/".join(parts[:p+1]) %}
             <a href="{{ url_for('browse', path=parent) }}">{{ parts[p] }}</a>
-            {% if parts[p] %}
-                <span> / </span>
-            {% endif %}
+            <span> / </span>
         {% endfor %}
         {{ parts[-1] }}
     {% else %}

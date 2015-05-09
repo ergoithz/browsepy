@@ -1,5 +1,6 @@
 .git/*
 .c9/*
 .idea/*
+.coverage
 env/*
 *.pyc
