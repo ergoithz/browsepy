@@ -43,8 +43,12 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
     ],
+
     keywords = ['web', 'file', 'browser'],
     packages=['browsepy'],
+    install_requires=[
+        'flask',
+    ],
     include_package_data=True,
     test_suite='browsepy.tests',
     zip_safe=False,
