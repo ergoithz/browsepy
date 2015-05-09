@@ -1,6 +1,13 @@
 browsepy
 ========
 
+[![Build status](http://img.shields.io/travis/ergoithz/browsepy.svg?style=flat-square)](https://travis-ci.org/ergoithz/browsepy)
+[![Test coverage](http://img.shields.io/coveralls/ergoithz/browsepy.svg?style=flat-square)](https://coveralls.io/r/ergoithz/browsepy)
+[![License](http://img.shields.io/pypi/l/browsepy.svg?style=flat-square)](https://pypi.python.org/pypi/browsepy/)
+[![Latest Version](http://img.shields.io/pypi/v/browsepy.svg?style=flat-square)](https://pypi.python.org/pypi/browsepy/)
+[![Downloads](http://img.shields.io/pypi/dm/browsepy.svg?style=flat-square)](https://pypi.python.org/pypi/browsepy/)
+![Python 2.7+, 3.3+](http://img.shields.io/badge/python-2.7+,_3.3+-FFC100.svg?style=flat-square)
+
 Simple web file browser using flask
 
 Features
