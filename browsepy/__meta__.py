@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+__app__ = "Browsepy"
+__version__ = "0.3.3"
+__license__ = 'MIT'
+__author__ = "Felipe A. Hernandez <ergoithz@gmail.com>"

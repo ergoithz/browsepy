@@ -17,10 +17,8 @@ from flask import Flask, Response, request, render_template, redirect, \
                    url_for, send_from_directory, stream_with_context
 from werkzeug.exceptions import NotFound
 
-__app__ = "Browsepy"
-__version__ = "0.3.2"
-__license__ = 'MIT'
-__author__ = "Felipe A. Hernandez <ergoithz@gmail.com>"
+from __meta__ import __app__, __version__, __license__, __author__
+
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__,

@@ -23,11 +23,19 @@ try:
 except ImportError:
     from distutils.core import setup
 
-from browsepy import __version__, __license__
+with open('browsepy/__meta__.py') as f:
+    data = {}
+    code = compile(f.read(), 'browsepy/__meta__.py', 'exec')
+    exec(code, data, data)
+    __app__ = data['__app__']
+    __version__ = data['__version__']
+    __license__ = data['__license__']
 
+with open('README.md') as f:
+    __doc__ = f.read()
 
 setup(
-    name='browsepy',
+    name=__app__,
     version=__version__,
     url='https://github.com/ergoithz/browsepy',
     download_url = 'https://github.com/ergoithz/browsepy/tarball/0.3.2',
