@@ -17,7 +17,7 @@ from flask import Flask, Response, request, render_template, redirect, \
                    url_for, send_from_directory, stream_with_context
 from werkzeug.exceptions import NotFound
 
-from __meta__ import __app__, __version__, __license__, __author__
+from .__meta__ import __app__, __version__, __license__, __author__
 
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
