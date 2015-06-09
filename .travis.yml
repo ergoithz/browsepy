@@ -9,7 +9,7 @@ install:
   - python setup.py install
 
 script:
-  - coverage run --source=browsepy setup.py test
+  - make coverage
 
 after_success:
   - coveralls

@@ -31,7 +31,7 @@ with open('browsepy/__meta__.py') as f:
     __version__ = data['__version__']
     __license__ = data['__license__']
 
-with open('README.md') as f:
+with open('README.rst') as f:
     __doc__ = f.read()
 
 setup(

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import sys
 import unittest
 import re
 import os
@@ -14,6 +15,8 @@ import stat
 
 import flask
 import browsepy
+
+PY_LEGACY = browsepy.PY_LEGACY
 
 class Page(object):
     @classmethod
@@ -32,11 +35,12 @@ class Page(object):
 
 class ListPage(Page):
     path_strip_re = re.compile('\s+/\s+')
-    def __init__(self, path, directories, files, removable):
+    def __init__(self, path, directories, files, removable, upload):
         self.path = path
         self.directories = directories
         self.files = files
         self.removable = removable
+        self.upload = upload
 
 
     @classmethod
@@ -54,7 +58,8 @@ class ListPage(Page):
             cls.path_strip_re.sub('/', cls.innerText(html.find('.//h1'))).strip(),
             [url for isdir, url, removable in rows if isdir],
             [url for isdir, url, removable in rows if not isdir],
-            all(removable for isdir, url, removable in rows)
+            all(removable for isdir, url, removable in rows) if rows else False,
+            html.find('.//form//input[@type=\'file\']') is not None
         )
 
 
@@ -95,9 +100,11 @@ class TestApp(unittest.TestCase):
         self.base = tempfile.mkdtemp()
         self.start = os.path.join(self.base, 'start')
         self.remove = os.path.join(self.base, 'remove')
+        self.upload = os.path.join(self.base, 'upload')
 
         os.mkdir(self.start)
         os.mkdir(self.remove)
+        os.mkdir(self.upload)
 
         open(os.path.join(self.start, 'testfile.txt'), 'w').close()
         open(os.path.join(self.remove, 'testfile.txt'), 'w').close()
@@ -106,15 +113,28 @@ class TestApp(unittest.TestCase):
             directory_base = self.base,
             directory_start = self.start,
             directory_remove = self.remove,
+            directory_upload = self.upload,
             SERVER_NAME = 'test',
         )
 
         self.base_directories = [
             self.url_for('browse', path='remove'),
             self.url_for('browse', path='start'),
+            self.url_for('browse', path='upload'),
             ]
         self.start_files = [self.url_for('open', path='start/testfile.txt')]
         self.remove_files = [self.url_for('open', path='remove/testfile.txt')]
+        self.upload_files = []
+
+    def clear(self, path):
+        assert path.startswith(self.base + os.sep), 'Cannot clear directories out of base'
+
+        for sub in os.listdir(path):
+            sub = os.path.join(path, sub)
+            if os.path.isdir(sub):
+                shutil.rmtree(sub)
+            else:
+                os.remove(sub)
 
     def tearDown(self):
         shutil.rmtree(self.base)
@@ -164,16 +184,25 @@ class TestApp(unittest.TestCase):
         self.assertEqual(page.path, basename)
         self.assertEqual(page.directories, self.base_directories)
         self.assertFalse(page.removable)
+        self.assertFalse(page.upload)
 
         page = self.get('browse', path='start')
         self.assertEqual(page.path, '%s/start' % basename)
         self.assertEqual(page.files, self.start_files)
         self.assertFalse(page.removable)
+        self.assertFalse(page.upload)
 
         page = self.get('browse', path='remove')
         self.assertEqual(page.path, '%s/remove' % basename)
         self.assertEqual(page.files, self.remove_files)
         self.assertTrue(page.removable)
+        self.assertFalse(page.upload)
+
+        page = self.get('browse', path='upload')
+        self.assertEqual(page.path, '%s/upload' % basename)
+        self.assertEqual(page.files, self.upload_files)
+        self.assertFalse(page.removable)
+        self.assertTrue(page.upload)
 
         self.assertRaises(
             Page404Exception,
@@ -271,6 +300,21 @@ class TestApp(unittest.TestCase):
             self.get, 'download_directory', path='../../shall_not_pass'
         )
 
+    def test_upload(self):
+        c = unichr if PY_LEGACY else chr
+
+        files = {
+            'testfile.txt': io.BytesIO(''.join(map(c, range(127))).encode('ascii')),
+            'testfile.bin': io.BytesIO(''.join(map(c, range(255))).encode('utf-8')),
+        }
+        output = self.post('upload',
+                           path='upload',
+                           data={'file%d' % n: (data, name) for n, (name, data) in enumerate(files.items())}
+                           )
+        expected_links = sorted(self.url_for('open', path='upload/%s' % i) for i in files)
+        self.assertEqual(sorted(output.files), expected_links)
+        self.clear(self.upload)
+
 
 class TestFile(unittest.TestCase):
     def setUp(self):
@@ -341,6 +385,7 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.basename, 'empty.txt')
         self.assertEqual(f.can_download, True)
         self.assertEqual(f.can_remove, False)
+        self.assertEqual(f.can_upload, False)
         self.assertEqual(f.dirname, self.workbench)
         self.assertEqual(f.is_directory, False)
 
@@ -361,6 +406,23 @@ class TestFunctions(unittest.TestCase):
         empty, iterable = fnc(i for i in (1, 2))
         self.assertFalse(empty)
         self.assertEqual(tuple(iterable), (1, 2))
+
+    def test_secure_filename(self):
+        self.assertEqual(browsepy.secure_filename('/path'), 'path')
+        self.assertEqual(browsepy.secure_filename('..'), '')
+        self.assertEqual(browsepy.secure_filename('::'), '')
+        self.assertEqual(browsepy.secure_filename('\0'), '_')
+        self.assertEqual(browsepy.secure_filename('/'), '')
+        self.assertEqual(browsepy.secure_filename('C:\\'), '')
+        self.assertEqual(browsepy.secure_filename('COM1.asdf', destiny_os='nt'), '')
+        self.assertEqual(browsepy.secure_filename('\xf1', fs_encoding='ascii'), '_')
+
+        if PY_LEGACY:
+            expected = unicode('\xf1', encoding='latin-1')
+            self.assertEqual(browsepy.secure_filename('\xf1', fs_encoding='utf-8'), expected)
+            self.assertEqual(browsepy.secure_filename(expected, fs_encoding='utf-8'), expected)
+        else:
+            self.assertEqual(browsepy.secure_filename('\xf1', fs_encoding='utf-8'), '\xf1')
 
 
 if __name__ == '__main__':

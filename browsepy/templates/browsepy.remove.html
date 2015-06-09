@@ -4,7 +4,6 @@
     <h1>Remove</h1>
     <form method="post">
         <p>Do you really want to remove <strong>{{ path }}</strong> ?</p>
-        <input type="hidden" name="backurl" value="{{ backurl }}"/>
         <input type="submit" value="Yes" /> <a href="{{ backurl }}" alt="Go back">Cancel</a>
     </form>
 {% endblock %}

@@ -12,10 +12,12 @@ import itertools
 import tarfile
 import shutil
 import threading
+import codecs
 
 from flask import Flask, Response, request, render_template, redirect, \
-                   url_for, send_from_directory, stream_with_context
+                   url_for, send_from_directory, stream_with_context, make_response
 from werkzeug.exceptions import NotFound
+from werkzeug.utils import cached_property
 
 from .__meta__ import __app__, __version__, __license__, __author__
 
@@ -29,6 +31,7 @@ app.config.update(
     directory_base = os.path.abspath(os.getcwd()),
     directory_start = os.path.abspath(os.getcwd()),
     directory_remove = None,
+    directory_upload = None,
     directory_tar_buffsize = 262144,
     directory_downloadable = True,
     use_binary_multiples = True,
@@ -37,11 +40,16 @@ app.config.update(
 if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
 
-py3k = sys.version > '3'
-if py3k:
-    pass
-else:
+PY_LEGACY = sys.version_info[0] < 3
+if PY_LEGACY:
     FileNotFoundError = type('FileNotFoundError', (OSError,), {})
+
+undescore_replace = '%s:underscore' % __name__
+codecs.register_error(undescore_replace,
+                      (lambda error: (u'_', error.start + 1))
+                      if PY_LEGACY else
+                      (lambda error: ('_', error.start + 1))
+                      )
 
 
 class File(object):
@@ -68,62 +76,55 @@ class File(object):
         directory, name = os.path.split(self.path)
         return send_from_directory(directory, name, as_attachment=True)
 
-    _can_download = None
-    @property
+    @cached_property
     def can_download(self):
-        if self._can_download is None:
-            self._can_download = app.config['directory_downloadable'] \
-                                 or not self.is_directory
-        return self._can_download
+        return app.config['directory_downloadable'] or not self.is_directory
 
-    _can_remove = None
-    @property
+    @cached_property
     def can_remove(self):
-        if self._can_remove is None:
-            dirbase = app.config["directory_remove"]
-            if dirbase:
-                base = dirbase + os.sep
-                self._can_remove = self.path.startswith(base)
-            else:
-                self._can_remove = False
-        return self._can_remove
+        dirbase = app.config["directory_remove"]
+        if dirbase:
+            return self.path.startswith(dirbase + os.sep)
+        return False
 
-    _stats = None
-    @property
+    @cached_property
+    def can_upload(self):
+        dirbase = app.config["directory_upload"]
+        if self.is_directory and dirbase:
+            return dirbase == self.path or self.path.startswith(dirbase + os.sep)
+        return False
+
+    @cached_property
     def stats(self):
-        if self._stats is None:
-            self._stats = os.stat(self.path)
-        return self._stats
+        return os.stat(self.path)
 
     _generic_mimetypes = {
         None,
         'application/octet-stream',
         }
-    _mimetype = None
-    @property
+    @cached_property
     def mimetype(self):
-        if self._mimetype is None:
-            mime, encoding = mimetypes.guess_type(self.path)
-            mimetype = "%s%s%s" % (mime or "application/octet-stream", "; " if encoding else "", encoding or "")
-            if mime in self._generic_mimetypes:
-                try:
-                    output = subprocess.check_output(("file", "-ib", self.path)).decode('utf8').strip()
-                    if self.re_mime_validate.match(output):
-                        # 'file' command can return status zero with invalid output
-                        mimetype = output
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    pass
-            self._mimetype = mimetype
-        return self._mimetype
+        mime, encoding = mimetypes.guess_type(self.path)
+        mimetype = "%s%s%s" % (mime or "application/octet-stream", "; " if encoding else "", encoding or "")
+        if mime in self._generic_mimetypes:
+            try:
+                output = subprocess.check_output(("file", "-ib", self.path)).decode('utf8').strip()
+                if self.re_mime_validate.match(output):
+                    # 'file' command can return status zero with invalid output
+                    mimetype = output
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                pass
+        return mimetype
 
-    _is_directory = None
-    @property
+    @cached_property
     def is_directory(self):
-        if self._is_directory is None:
-            self._is_directory = self.type.endswith("directory") or \
-                                 self.type.endswith("symlink") and \
-                                 os.path.isdir(self.path)
-        return self._is_directory
+        return self.type.endswith("directory") or \
+               self.type.endswith("symlink") and \
+               os.path.isdir(self.path)
+
+    @cached_property
+    def parent(self):
+        return File(os.path.dirname(self.path))
 
     @property
     def mtime(self):
@@ -168,13 +169,12 @@ class File(object):
     def listdir_order(cls, path):
         return not os.path.isdir(path), os.path.basename(path).lower()
 
-    @classmethod
-    def listdir(cls, path):
+    def listdir(self):
         pjoin = os.path.join # minimize list comprehension overhead
-        content = [pjoin(path, i) for i in os.listdir(path)]
-        content.sort(key=cls.listdir_order)
+        content = [pjoin(self.path, i) for i in os.listdir(self.path)]
+        content.sort(key=self.listdir_order)
         for i in content:
-            yield cls(i)
+            yield self.__class__(i)
 
 
 class TarFileStream(object):
@@ -288,6 +288,43 @@ def urlpath_to_abspath(path):
         return realpath
     raise OutsideDirectoryBase("%r is not under %r" % (realpath, dirbase))
 
+restricted_names = ('.', '..', '::', os.sep)
+restricted_chars = '\/\0'
+common_path_separators = '\\/'
+nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1', 'LPT2', 'LPT3', 'PRN', 'NUL')
+fs_encoding = 'unicode' if os.name == 'nt' else sys.getfilesystemencoding() or 'ascii'
+def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
+    '''
+    Get rid of parent path components and special filenames.
+
+    If path is invalid or protected, return empty string.
+
+    :param path: unsafe path
+    :return: filename or empty string
+    '''
+    for sep in common_path_separators:
+        if sep in path:
+            _, path = path.rsplit(sep, 1)
+
+    for character in restricted_chars:
+        path = path.replace(character, '_')
+
+    if destiny_os == 'nt':
+        fpc = path.split('.', 1)[0].upper()
+        if fpc in nt_device_names:
+            return ''
+
+    if path in restricted_names:
+        return ''
+
+    if fs_encoding != 'unicode':
+        if PY_LEGACY and not isinstance(path, unicode):
+            path = unicode(path, encoding='latin-1')
+        path = path.encode(fs_encoding, errors=undescore_replace).decode(fs_encoding)
+
+    return path
+
+
 def stream_template(template_name, **context):
     '''
     Some templates can be huge, this function returns an streaming response,
@@ -317,12 +354,14 @@ def template_globals():
 def browse(path):
     try:
         realpath = urlpath_to_abspath(path)
-        if os.path.isdir(realpath):
-            files = File.listdir(realpath)
+        directory = File(realpath)
+        if directory.is_directory:
+            files = directory.listdir()
             empty_files, files = empty_iterable(files)
             return stream_template("browsepy.browse.html",
                 dirbase = os.path.basename(app.config["directory_base"]) or '/',
                 path = relativize_path(realpath),
+                upload = directory.can_upload,
                 files = files,
                 has_files = not empty_files
                 )
@@ -375,10 +414,30 @@ def remove(path):
                                backurl = url_for("browse", path=path).rsplit("/", 1)[0],
                                path = path)
     try:
-        File(realpath).remove()
+        f = File(realpath)
+        p = f.parent
+        f.remove()
     except OutsideRemovableBase:
         return NotFound()
-    return redirect(request.form.get("backurl") or url_for(".index"))
+    return redirect(url_for(".browse", path=relativize_path(p.path)))
+
+@app.route("/upload/<path:path>", methods=("POST",))
+def upload(path):
+    try:
+        realpath = urlpath_to_abspath(path)
+    except OutsideDirectoryBase:
+        return NotFound()
+
+    directory = File(realpath)
+    if not directory.is_directory or not directory.can_upload:
+        return NotFound()
+
+    for f in request.files.values():
+        filename = secure_filename(f.filename)
+        if filename:
+            f.save(os.path.join(directory.path, filename))
+    return redirect(url_for(".browse", path=relativize_path(realpath)))
+
 
 @app.route("/")
 def index():
@@ -390,10 +449,18 @@ def index():
         return NotFound()
     return browse(relpath)
 
+@app.after_request
+def page_not_found(response):
+    if response.status_code == 404:
+        return make_response((render_template('404.html'), 404))
+    return response
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
 @app.errorhandler(500)
 def internal_server_error(e): # pragma: no cover
-    return e.message, 500
+    import traceback
+    traceback.print_exc()
+    return getattr(e, 'message', 'Internal server error'), 500
