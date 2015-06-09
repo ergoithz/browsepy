@@ -229,12 +229,12 @@ class TestApp(unittest.TestCase):
         self.assertEqual(page.back, self.url_for('browse', path='remove'))
 
         basename = os.path.basename(self.base)
-        page = self.post('remove', path='remove/testfile2.txt', data={'backurl': self.url_for('browse', path='remove')})
+        page = self.post('remove', path='remove/testfile2.txt')
         self.assertEqual(page.path, '%s/remove' % basename)
         self.assertEqual(page.files, self.remove_files)
 
         os.mkdir(os.path.join(self.remove, 'directory'))
-        page = self.post('remove', path='remove/directory', data={'backurl': self.url_for('browse', path='remove')})
+        page = self.post('remove', path='remove/directory')
         self.assertEqual(page.path, '%s/remove' % basename)
         self.assertEqual(page.files, self.remove_files)
 
@@ -245,7 +245,7 @@ class TestApp(unittest.TestCase):
 
         self.assertRaises(
             Page404Exception,
-            self.post, 'remove', path='start/testfile.txt', data={'backurl': self.url_for('browse', path='start')}
+            self.post, 'remove', path='start/testfile.txt'
         )
 
         self.app.config['directory_remove'] = None
