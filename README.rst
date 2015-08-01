@@ -40,7 +40,7 @@ It's on `pypi` so...
 
 .. _pypi: https://pypi.python.org/pypi/browsepy/
 
-.. code-block:: bash
+.. code:: bash
     pip install browsepy
 
 Usage
