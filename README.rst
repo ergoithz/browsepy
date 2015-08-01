@@ -48,12 +48,12 @@ Usage
 
 Serving $HOME/shared to all addresses
 
-.. code-block:: bash
+.. code:: bash
   python -m browsepy 0.0.0.0 8080 --directory $HOME/shared
 
 Showing help
 
-.. code-block:: bash
+.. code:: bash
   python -m browsepy --help
 
 Screenshots
