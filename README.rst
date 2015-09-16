@@ -40,21 +40,25 @@ It's on `pypi` so...
 
 .. _pypi: https://pypi.python.org/pypi/browsepy/
 
-.. code:: bash
-    pip install browsepy
+.. code-block:: bash
+
+   pip install browsepy
+
 
 Usage
 -----
 
 Serving $HOME/shared to all addresses
 
-.. code:: bash
-  python -m browsepy 0.0.0.0 8080 --directory $HOME/shared
+.. code-block:: bash
+
+   python -m browsepy 0.0.0.0 8080 --directory $HOME/shared
 
 Showing help
 
-.. code:: bash
-  python -m browsepy --help
+.. code-block:: bash
+
+   python -m browsepy --help
 
 Screenshots
 -----------
