@@ -8,6 +8,10 @@ browsepy
 .. image:: http://img.shields.io/coveralls/ergoithz/browsepy.svg?style=flat-square
   :target: https://coveralls.io/r/ergoithz/browsepy
   :alt: Test coverage
+  
+.. image:: https://img.shields.io/scrutinizer/g/ergoithz/browsepy.svg?style=flat-square
+  :target: https://scrutinizer-ci.com/g/ergoithz/browsepy/
+  :alt: Code quality
 
 .. image:: http://img.shields.io/pypi/l/browsepy.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
