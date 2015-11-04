@@ -2,6 +2,6 @@
 # -*- coding: UTF-8 -*-
 
 __app__ = "browsepy"
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 __license__ = 'MIT'
 __author__ = "Felipe A. Hernandez <ergoithz@gmail.com>"
