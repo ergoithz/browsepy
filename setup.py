@@ -53,6 +53,7 @@ setup(
     ],
     keywords = ['web', 'file', 'browser'],
     packages=['browsepy'],
+    package_data={'browsepy': ['templates/*.html']}, # ignored by sdist (see MANIFEST.in), used by bdist_wheel
     install_requires=['flask'],
     test_suite='browsepy.tests',
     zip_safe=False,
