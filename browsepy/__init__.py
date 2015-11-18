@@ -24,7 +24,8 @@ from .__meta__ import __app__, __version__, __license__, __author__
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__,
-    static_url_path = os.path.join(__basedir__, "static"),
+    static_url_path = '/static',
+    static_folder = os.path.join(__basedir__, "static"),
     template_folder = os.path.join(__basedir__, "templates")
     )
 app.config.update(
@@ -184,6 +185,10 @@ class TarFileStream(object):
     Buffsize can be provided, it must be 512 multiple (the tar block size) for
     compression.
     '''
+    event_class = threading.Event
+    thread_class = threading.Thread
+    tarfile_class = tarfile.open
+
     def __init__(self, path, buffsize=10240):
         self.path = path
         self.name = os.path.basename(path) + ".tgz"
@@ -191,10 +196,10 @@ class TarFileStream(object):
         self._finished = 0
         self._want = 0
         self._data = bytes()
-        self._add = threading.Event()
-        self._result = threading.Event()
-        self._tarfile = tarfile.open(fileobj=self, mode="w|gz", bufsize=buffsize) # stream write
-        self._th = threading.Thread(target=self.fill)
+        self._add = self.event_class()
+        self._result = self.event_class()
+        self._tarfile = self.tarfile_class(fileobj=self, mode="w|gz", bufsize=buffsize) # stream write
+        self._th = self.thread_class(target=self.fill)
         self._th.start()
 
     def fill(self):
@@ -421,6 +426,7 @@ def remove(path):
         return NotFound()
     return redirect(url_for(".browse", path=relativize_path(p.path)))
 
+@app.route("/upload", defaults={'path': ''}, methods=("POST",))
 @app.route("/upload/<path:path>", methods=("POST",))
 def upload(path):
     try:

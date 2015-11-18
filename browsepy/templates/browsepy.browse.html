@@ -19,7 +19,7 @@
     {% endif %}
 </h1>
 {% if upload %}
-    <form class="upload" method="post" action="{{ url_for('upload', path=path) }}" enctype="multipart/form-data">
+    <form class="upload" method="post" action="{{ url_for('upload', path=path) if path else url_for('upload') }}" enctype="multipart/form-data">
         <label>
             <h2>Upload</h2>
             <input type="file" name="file"/>
