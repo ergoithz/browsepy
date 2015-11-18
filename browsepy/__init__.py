@@ -13,6 +13,8 @@ import tarfile
 import shutil
 import threading
 import codecs
+import string
+import random
 
 from flask import Flask, Response, request, render_template, redirect, \
                    url_for, send_from_directory, stream_with_context, make_response
@@ -44,6 +46,7 @@ if "BROWSEPY_SETTINGS" in os.environ:
 PY_LEGACY = sys.version_info[0] < 3
 if PY_LEGACY:
     FileNotFoundError = type('FileNotFoundError', (OSError,), {})
+    range = xrange
 
 undescore_replace = '%s:underscore' % __name__
 codecs.register_error(undescore_replace,
@@ -76,6 +79,19 @@ class File(object):
             return Response(stream, mimetype="application/octet-stream")
         directory, name = os.path.split(self.path)
         return send_from_directory(directory, name, as_attachment=True)
+
+    def contains(self, filename):
+        return os.path.exists(os.path.join(self.path, filename))
+
+    def choose_filename(self, filename):
+        new_filename = filename
+        for attempt in range(2, 1000):
+            if not self.contains(new_filename):
+                return new_filename
+            new_filename = alternative_filename(filename, attempt)
+        while self.contains(new_filename):
+            new_filename = alternative_filename(filename)
+        return new_filename
 
     @cached_property
     def can_download(self):
@@ -305,7 +321,10 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
     If path is invalid or protected, return empty string.
 
     :param path: unsafe path
+    :param destiny_os: destination operative system
+    :param fs_encoding: destination filesystem filename encoding
     :return: filename or empty string
+    :rtype: str or unicode (depending on python version, destiny_os and fs_encoding)
     '''
     for sep in common_path_separators:
         if sep in path:
@@ -329,6 +348,27 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
 
     return path
 
+fs_safe_characters = string.ascii_uppercase + string.digits
+def alternative_filename(filename, attempt=None):
+    '''
+    Generates an alternative version of given filename.
+
+    If an number attempt parameter is given, will be used on the alternative
+    name, a random value will be used otherwise.
+
+    :param filename: original filename
+    :param attempt: optional attempt number, defaults to null
+    :return: new filename
+    :rtype: str or unicode
+    '''
+    filename_parts = filename.rsplit('.', 2)
+    name = filename_parts[0]
+    ext = ''.join('.%s' % ext for ext in filename_parts[1:])
+    if attempt is None:
+        extra = ' %s' % ''.join(random.choice(fs_safe_characters) for i in range(8))
+    else:
+        extra = ' (%d)' % attempt
+    return '%s%s%s' % (name, extra, ext)
 
 def stream_template(template_name, **context):
     '''
@@ -363,7 +403,7 @@ def browse(path):
         if directory.is_directory:
             files = directory.listdir()
             empty_files, files = empty_iterable(files)
-            return stream_template("browsepy.browse.html",
+            return stream_template("browse.html",
                 dirbase = os.path.basename(app.config["directory_base"]) or '/',
                 path = relativize_path(realpath),
                 upload = directory.can_upload,
@@ -415,7 +455,7 @@ def remove(path):
     if request.method == 'GET':
         if not File(realpath).can_remove:
             return NotFound()
-        return render_template('browsepy.remove.html',
+        return render_template('remove.html',
                                backurl = url_for("browse", path=path).rsplit("/", 1)[0],
                                path = path)
     try:
@@ -441,7 +481,8 @@ def upload(path):
     for f in request.files.values():
         filename = secure_filename(f.filename)
         if filename:
-            f.save(os.path.join(directory.path, filename))
+            definitive_filename = directory.choose_filename(filename)
+            f.save(os.path.join(directory.path, definitive_filename))
     return redirect(url_for(".browse", path=relativize_path(realpath)))
 
 

@@ -151,7 +151,9 @@ class TestApp(unittest.TestCase):
             response = client.get(self.url_for(endpoint, **kwargs))
             if response.status_code != 200:
                 raise self.page_exceptions.get(response.status_code, self.page_exceptions[None])(response.status_code)
-            return response.data if page_class is None else page_class.from_source(response.data)
+            result = response.data if page_class is None else page_class.from_source(response.data)
+            response.close()
+            return result
 
     def post(self, endpoint, **kwargs):
         data = kwargs.pop('data') if 'data' in kwargs else {}
@@ -315,6 +317,37 @@ class TestApp(unittest.TestCase):
         self.assertEqual(sorted(output.files), expected_links)
         self.clear(self.upload)
 
+    def test_upload_duplicate(self):
+        c = unichr if PY_LEGACY else chr
+
+        files = (
+            ('testfile.txt', 'something'),
+            ('testfile.txt', 'something_new'),
+        )
+        output = self.post('upload',
+                           path='upload',
+                           data={
+                               'file%d' % n: (io.BytesIO(data.encode('ascii')), name)
+                               for n, (name, data) in enumerate(files)
+                               }
+                           )
+
+        self.assertEqual(len(files), len(output.files))
+
+        first_file_url = self.url_for('open', path='upload/%s' % files[0][0])
+        self.assertIn(first_file_url, output.files)
+
+        file_contents = []
+        for filename in os.listdir(self.upload):
+            with open(os.path.join(self.upload, filename), 'r') as f:
+                file_contents.append(f.read())
+        file_contents.sort()
+
+        expected_file_contents = sorted(content for filename, content in files)
+
+        self.assertEqual(file_contents, expected_file_contents)
+        self.clear(self.upload)
+
 
 class TestFile(unittest.TestCase):
     def setUp(self):
@@ -324,7 +357,7 @@ class TestFile(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.workbench)
 
-    def testMime(self):
+    def test_mime(self):
         f = browsepy.File('non_working_path')
         self.assertEqual(f.mimetype, 'application/octet-stream')
 
@@ -359,7 +392,7 @@ class TestFile(unittest.TestCase):
 
         os.environ['PATH'] = old_path
 
-    def testSize(self):
+    def test_size(self):
         test_file = os.path.join(self.workbench, 'test.csv')
         with open(test_file, 'w') as f:
             f.write(',\n'*512)
@@ -377,7 +410,7 @@ class TestFile(unittest.TestCase):
 
         self.assertEqual(f.encoding, 'default')
 
-    def testProperties(self):
+    def test_properties(self):
         empty_file = os.path.join(self.workbench, 'empty.txt')
         open(empty_file, 'w').close()
         f = browsepy.File(empty_file)
@@ -424,6 +457,13 @@ class TestFunctions(unittest.TestCase):
         else:
             self.assertEqual(browsepy.secure_filename('\xf1', fs_encoding='utf-8'), '\xf1')
 
+    def test_alternative_filename(self):
+        self.assertEqual(browsepy.alternative_filename('test', 2), 'test (2)')
+        self.assertEqual(browsepy.alternative_filename('test.txt', 2), 'test (2).txt')
+        self.assertEqual(browsepy.alternative_filename('test.tar.gz', 2), 'test (2).tar.gz')
+        self.assertEqual(browsepy.alternative_filename('test.longextension', 2), 'test (2).longextension')
+        self.assertEqual(browsepy.alternative_filename('test.tar.tar.tar', 2), 'test.tar (2).tar.tar')
+        self.assertNotEqual(browsepy.alternative_filename('test'), 'test')
 
 if __name__ == '__main__':
     unittest.main()
