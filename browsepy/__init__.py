@@ -488,10 +488,11 @@ def upload(path):
 
 @app.route("/")
 def index():
+    path = app.config["directory_start"] or app.config["directory_base"]
+    if PY_LEGACY and not isinstance(path, unicode):
+        path = path.decode(fs_encoding)
     try:
-        relpath = File(app.config["directory_start"] or
-                       app.config["directory_base"]
-                       ).relpath
+        relpath = File(path).relpath
     except OutsideDirectoryBase:
         return NotFound()
     return browse(relpath)
