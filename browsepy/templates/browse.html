@@ -53,6 +53,9 @@
                         {% if f.can_download %}
                         <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.relpath) }}" class="download button"></a>
                         {% endif %}
+                        {% for action in f.actions %}
+                            <a href="{{ url_for(action.endpoint, path=f.relpath) }}" class="button">{{ action.text|safe }}</a>
+                        {% endfor %}
                     </td>
                     <td>{{ f.type }}</td>
                     <td>{{ f.modified }}</td>

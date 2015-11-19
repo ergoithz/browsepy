@@ -14,29 +14,49 @@ class ArgParse(argparse.ArgumentParser):
         super(ArgParse, self).__init__(
             description = 'Web file browser'
         )
-        self.add_argument('host', nargs='?', default='127.0.0.1', help='address to listen (default: 127.0.0.1)')
-        self.add_argument('port', nargs='?', default=8080, type=int, help='port to listen (default: 8080)')
-        self.add_argument('--directory', metavar='PATH', type=self._directory, help='base serving directory (default: current path)')
-        self.add_argument('--initial', metavar='PATH', type=self._directory, help='initial directory (default: same as --directory)')
-        self.add_argument('--removable', metavar='PATH', type=self._directory, help='base directory for remove (default: none)')
-        self.add_argument('--upload', metavar='PATH', type=self._directory, help='base directory for upload (default: none)')
+        cwd = os.path.abspath(os.getcwd())
+        self.add_argument('host', nargs='?',
+                          default=os.getenv('BROWSEPY_HOST', '127.0.0.1'),
+                          help='address to listen (default: 127.0.0.1)')
+        self.add_argument('port', nargs='?', type=int,
+                          default=os.getenv('BROWSEPY_PORT', '8080'),
+                          help='port to listen (default: 8080)')
+        self.add_argument('--directory', metavar='PATH', type=self._directory,
+                          default=cwd,
+                          help='base serving directory (default: current path)')
+        self.add_argument('--initial', metavar='PATH', type=self._directory,
+                          help='initial directory (default: same as --directory)')
+        self.add_argument('--removable', metavar='PATH', type=self._directory,
+                          default=None,
+                          help='base directory for remove (default: none)')
+        self.add_argument('--upload', metavar='PATH', type=self._directory,
+                          default=None,
+                          help='base directory for upload (default: none)')
+        self.add_argument('--plugin', metavar='PLUGIN_LIST', type=self._plugins,
+                          default=None,
+                          help='comma-separated list of plugins')
         self.add_argument('--debug', action='store_true', help='debug mode')
 
+    def _plugins(self, arg):
+        if arg is None:
+            return []
+        return arg.split(',')
+
     def _directory(self, arg):
+        if arg is None:
+            return None
         if os.path.isdir(arg):
             return os.path.abspath(arg)
         self.error('%s is not a valid directory' % arg)
 
-
 if __name__ == '__main__':
-    cwd = os.path.abspath(os.getcwd())
     args = ArgParse().parse_args(sys.argv[1:])
     app.debug = args.debug
     app.config.update(
-        directory_base = args.directory or cwd,
-        directory_start = args.initial or args.directory or cwd,
-        directory_remove = args.removable if args.removable else None,
-        directory_upload = args.upload if args.upload else None,
+        directory_base = args.directory,
+        directory_start = args.initial or args.directory,
+        directory_remove = args.removable,
+        directory_upload = args.upload,
+        plugin_modules = args.plugin
         )
-    app.run(host=os.getenv('IP', args.host), port=args.port)
-
+    app.run(host=os.getenv('BROWSEPY_HOST', args.host), port=args.port)

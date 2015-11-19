@@ -3,25 +3,20 @@
 
 import re
 import os
-import sys
 import os.path
-import subprocess
-import mimetypes
-import datetime
 import itertools
-import tarfile
-import shutil
-import threading
-import codecs
-import string
-import random
 
 from flask import Flask, Response, request, render_template, redirect, \
-                   url_for, send_from_directory, stream_with_context, make_response
+                  url_for, send_from_directory, stream_with_context, \
+                  make_response
 from werkzeug.exceptions import NotFound
-from werkzeug.utils import cached_property
 
 from .__meta__ import __app__, __version__, __license__, __author__
+from .managers import MimetypeActionManager
+from .file import File, TarFileStream, \
+                  OutsideRemovableBase, OutsideDirectoryBase, \
+                  relativize_path, secure_filename
+from .compat import PY_LEGACY, range
 
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
@@ -38,253 +33,52 @@ app.config.update(
     directory_tar_buffsize = 262144,
     directory_downloadable = True,
     use_binary_multiples = True,
+    plugin_modules = [],
     )
 
 if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
 
-PY_LEGACY = sys.version_info[0] < 3
-if PY_LEGACY:
-    FileNotFoundError = type('FileNotFoundError', (OSError,), {})
-    range = xrange
+mimetype_action_manager = MimetypeActionManager(app)
 
-undescore_replace = '%s:underscore' % __name__
-codecs.register_error(undescore_replace,
-                      (lambda error: (u'_', error.start + 1))
-                      if PY_LEGACY else
-                      (lambda error: ('_', error.start + 1))
-                      )
-
-
-class File(object):
-    re_mime_validate = re.compile('\w+/\w+(; \w+=[^;]+)*')
-    re_charset = re.compile('; charset=(?P<charset>[^;]+)')
-    def __init__(self, path):
-        self.path = path
-
-    def remove(self):
-        if not self.can_remove:
-            raise OutsideRemovableBase("File outside removable base")
-        if self.is_directory:
-            shutil.rmtree(self.path)
-        else:
-            os.unlink(self.path)
-
-    def download(self):
-        if self.is_directory:
-            stream = TarFileStream(
-                self.path,
-                app.config["directory_tar_buffsize"]
-                )
-            return Response(stream, mimetype="application/octet-stream")
-        directory, name = os.path.split(self.path)
-        return send_from_directory(directory, name, as_attachment=True)
-
-    def contains(self, filename):
-        return os.path.exists(os.path.join(self.path, filename))
-
-    def choose_filename(self, filename):
-        new_filename = filename
-        for attempt in range(2, 1000):
-            if not self.contains(new_filename):
-                return new_filename
-            new_filename = alternative_filename(filename, attempt)
-        while self.contains(new_filename):
-            new_filename = alternative_filename(filename)
-        return new_filename
-
-    @cached_property
-    def can_download(self):
-        return app.config['directory_downloadable'] or not self.is_directory
-
-    @cached_property
-    def can_remove(self):
-        dirbase = app.config["directory_remove"]
-        if dirbase:
-            return self.path.startswith(dirbase + os.sep)
-        return False
-
-    @cached_property
-    def can_upload(self):
-        dirbase = app.config["directory_upload"]
-        if self.is_directory and dirbase:
-            return dirbase == self.path or self.path.startswith(dirbase + os.sep)
-        return False
-
-    @cached_property
-    def stats(self):
-        return os.stat(self.path)
-
-    _generic_mimetypes = {
-        None,
-        'application/octet-stream',
-        }
-    @cached_property
-    def mimetype(self):
-        mime, encoding = mimetypes.guess_type(self.path)
-        mimetype = "%s%s%s" % (mime or "application/octet-stream", "; " if encoding else "", encoding or "")
-        if mime in self._generic_mimetypes:
-            try:
-                output = subprocess.check_output(("file", "-ib", self.path)).decode('utf8').strip()
-                if self.re_mime_validate.match(output):
-                    # 'file' command can return status zero with invalid output
-                    mimetype = output
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                pass
-        return mimetype
-
-    @cached_property
-    def is_directory(self):
-        return self.type.endswith("directory") or \
-               self.type.endswith("symlink") and \
-               os.path.isdir(self.path)
-
-    @cached_property
-    def parent(self):
-        return File(os.path.dirname(self.path))
-
-    @property
-    def mtime(self):
-        return self.stats.st_mtime
-
-    @property
-    def modified(self):
-        return datetime.datetime.fromtimestamp(self.mtime).strftime('%Y.%m.%d %H:%M:%S')
-
-    @property
-    def size(self):
-        size, unit = fmt_size(self.stats.st_size, app.config["use_binary_multiples"])
-        if unit == binary_units[0]:
-            return "%d %s" % (size, unit)
-        return "%.2f %s" % (size, unit)
-
-    @property
-    def relpath(self):
-        return relativize_path(self.path)
-
-    @property
-    def basename(self):
-        return os.path.basename(self.path)
-
-    @property
-    def dirname(self):
-        return os.path.dirname(self.path)
-
-    @property
-    def type(self):
-        return self.mimetype.split(";", 1)[0]
-
-    @property
-    def encoding(self):
-        if ";" in self.mimetype:
-            match = self.re_charset.search(self.mimetype)
-            gdict = match.groupdict() if match else {}
-            return gdict.get("charset") or "default"
-        return "default"
-
-    @classmethod
-    def listdir_order(cls, path):
-        return not os.path.isdir(path), os.path.basename(path).lower()
-
-    def listdir(self):
-        pjoin = os.path.join # minimize list comprehension overhead
-        content = [pjoin(self.path, i) for i in os.listdir(self.path)]
-        content.sort(key=self.listdir_order)
-        for i in content:
-            yield self.__class__(i)
-
-
-class TarFileStream(object):
+def urlpath_to_abspath(path, base, os_sep=os.sep):
     '''
-    Tarfile which compresses while reading for streaming.
+    Make uri relative path fs absolute using a given absolute base path.
 
-    Buffsize can be provided, it must be 512 multiple (the tar block size) for
-    compression.
+    :param path: relative path
+    :param base: absolute base path
+    :param os_sep: path component separator, defaults to current OS separator
+    :return: absolute path
+    :rtype: str or unicode
+    :raises OutsideDirectoryBase: if resulting path is not below base
     '''
-    event_class = threading.Event
-    thread_class = threading.Thread
-    tarfile_class = tarfile.open
+    prefix = base if base.endswith(os_sep) else base + os_sep
+    realpath = os.path.abspath(prefix + path.replace('/', os_sep))
+    if base == realpath or realpath.startswith(prefix):
+        return realpath
+    raise OutsideDirectoryBase("%r is not under %r" % (realpath, base))
 
-    def __init__(self, path, buffsize=10240):
-        self.path = path
-        self.name = os.path.basename(path) + ".tgz"
+def abspath_to_urlpath(path, base, os_sep=os.sep):
+    '''
+    Make filesystem absolute path uri relative using given absolute base path.
 
-        self._finished = 0
-        self._want = 0
-        self._data = bytes()
-        self._add = self.event_class()
-        self._result = self.event_class()
-        self._tarfile = self.tarfile_class(fileobj=self, mode="w|gz", bufsize=buffsize) # stream write
-        self._th = self.thread_class(target=self.fill)
-        self._th.start()
-
-    def fill(self):
-        self._tarfile.add(self.path, "")
-        self._tarfile.close() # force stream flush
-        self._finished += 1
-        if not self._result.is_set():
-            self._result.set()
-
-    def write(self, data):
-        self._add.wait()
-        self._data += data
-        if len(self._data) > self._want:
-            self._add.clear()
-            self._result.set()
-        return len(data)
-
-    def read(self, want=0):
-        if self._finished:
-            if self._finished == 1:
-                self._finished += 1
-                return ""
-            return EOFError("EOF reached")
-
-        # Thread communication
-        self._want = want
-        self._add.set()
-        self._result.wait()
-        self._result.clear()
-
-        if want:
-            data = self._data[:want]
-            self._data = self._data[want:]
-        else:
-            data = self._data
-            self._data = bytes()
-        return data
-
-    def __iter__(self):
-        data = self.read()
-        while data:
-            yield data
-            data = self.read()
-
-
-class OutsideDirectoryBase(Exception):
-    pass
-
-
-class OutsideRemovableBase(Exception):
-    pass
-
-
-binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
-standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-def fmt_size(size, binary=True):
-    if binary:
-        fmt_sizes = binary_units
-        fmt_divider = 1024.
-    else:
-        fmt_sizes = standard_units
-        fmt_divider = 1000.
-    for fmt in fmt_sizes[:-1]:
-        if size < 1000:
-            return (size, fmt)
-        size /= fmt_divider
-    return size, fmt_sizes[-1]
+    :param path: absolute path
+    :param base: absolute base path
+    :param os_sep: path component separator, defaults to current OS separator
+    :return: relative uri
+    :rtype: str or unicode
+    :raises OutsideDirectoryBase: if resulting path is not below base
+    '''
+    return relativize_path(path, base, os_sep).replace(os_sep, '/')
 
 def empty_iterable(iterable):
+    '''
+    Get if iterable is empty, and return a new iterable.
+
+    :param iterable: iterable
+    :return: whether iterable is empty or not, and iterable
+    :rtype: tuple of bool and iterable
+    '''
     try:
         rest = iter(iterable)
         first = next(rest)
@@ -292,101 +86,25 @@ def empty_iterable(iterable):
     except StopIteration:
         return True, iter(())
 
-def relativize_path(path):
-    prefix = os.path.commonprefix((path, app.config["directory_base"]))
-    prefix_len = len(prefix)
-    if not prefix.endswith(os.sep):
-        prefix_len += len(os.sep)
-    return path[prefix_len:]
-
-def urlpath_to_abspath(path):
-    dirbase = app.config["directory_base"]
-    prefix = dirbase
-    if not prefix.endswith(os.sep):
-        prefix += os.sep
-    realpath = os.path.abspath(prefix + path)
-    if dirbase == realpath or realpath.startswith(prefix):
-        return realpath
-    raise OutsideDirectoryBase("%r is not under %r" % (realpath, dirbase))
-
-restricted_names = ('.', '..', '::', os.sep)
-restricted_chars = '\/\0'
-common_path_separators = '\\/'
-nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1', 'LPT2', 'LPT3', 'PRN', 'NUL')
-fs_encoding = 'unicode' if os.name == 'nt' else sys.getfilesystemencoding() or 'ascii'
-def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
-    '''
-    Get rid of parent path components and special filenames.
-
-    If path is invalid or protected, return empty string.
-
-    :param path: unsafe path
-    :param destiny_os: destination operative system
-    :param fs_encoding: destination filesystem filename encoding
-    :return: filename or empty string
-    :rtype: str or unicode (depending on python version, destiny_os and fs_encoding)
-    '''
-    for sep in common_path_separators:
-        if sep in path:
-            _, path = path.rsplit(sep, 1)
-
-    for character in restricted_chars:
-        path = path.replace(character, '_')
-
-    if destiny_os == 'nt':
-        fpc = path.split('.', 1)[0].upper()
-        if fpc in nt_device_names:
-            return ''
-
-    if path in restricted_names:
-        return ''
-
-    if fs_encoding != 'unicode':
-        if PY_LEGACY and not isinstance(path, unicode):
-            path = unicode(path, encoding='latin-1')
-        path = path.encode(fs_encoding, errors=undescore_replace).decode(fs_encoding)
-
-    return path
-
-fs_safe_characters = string.ascii_uppercase + string.digits
-def alternative_filename(filename, attempt=None):
-    '''
-    Generates an alternative version of given filename.
-
-    If an number attempt parameter is given, will be used on the alternative
-    name, a random value will be used otherwise.
-
-    :param filename: original filename
-    :param attempt: optional attempt number, defaults to null
-    :return: new filename
-    :rtype: str or unicode
-    '''
-    filename_parts = filename.rsplit('.', 2)
-    name = filename_parts[0]
-    ext = ''.join('.%s' % ext for ext in filename_parts[1:])
-    if attempt is None:
-        extra = ' %s' % ''.join(random.choice(fs_safe_characters) for i in range(8))
-    else:
-        extra = ' (%d)' % attempt
-    return '%s%s%s' % (name, extra, ext)
-
 def stream_template(template_name, **context):
     '''
     Some templates can be huge, this function returns an streaming response,
     sending the content in chunks and preventing from timeout.
 
-    Params:
-        template_name: template
-        **context: parameters for templates.
-
-    Yields:
-        HTML strings
+    :param template_name: template
+    :param **context: parameters for templates.
+    :yields: HTML strings
     '''
     app.update_template_context(context)
     template = app.jinja_env.get_template(template_name)
     stream = template.generate(context)
     return Response(stream_with_context(stream))
 
+@app.before_first_request
+def finish_initialization():
+    mimetype_action_manager = app.extensions['mimetype_action_manager']
+    for module in app.config['plugin_modules']:
+        mimetype_action_manager.load_plugin(module)
 
 @app.context_processor
 def template_globals():
@@ -398,14 +116,15 @@ def template_globals():
 @app.route('/browse/<path:path>')
 def browse(path):
     try:
-        realpath = urlpath_to_abspath(path)
+        realpath = urlpath_to_abspath(path, app.config["directory_base"])
         directory = File(realpath)
         if directory.is_directory:
             files = directory.listdir()
             empty_files, files = empty_iterable(files)
+            path = abspath_to_urlpath(realpath, app.config["directory_base"])
             return stream_template("browse.html",
                 dirbase = os.path.basename(app.config["directory_base"]) or '/',
-                path = relativize_path(realpath),
+                path = path,
                 upload = directory.can_upload,
                 files = files,
                 has_files = not empty_files
@@ -417,7 +136,7 @@ def browse(path):
 @app.route('/open/<path:path>', endpoint="open")
 def open_file(path):
     try:
-        realpath = urlpath_to_abspath(path)
+        realpath = urlpath_to_abspath(path, app.config["directory_base"])
         if os.path.isfile(realpath):
             return send_from_directory(
                 os.path.dirname(realpath),
@@ -430,7 +149,7 @@ def open_file(path):
 @app.route("/download/file/<path:path>")
 def download_file(path):
     try:
-        realpath = urlpath_to_abspath(path)
+        realpath = urlpath_to_abspath(path, app.config["directory_base"])
         return File(realpath).download()
     except OutsideDirectoryBase:
         pass
@@ -440,7 +159,7 @@ def download_file(path):
 def download_directory(path):
     try:
         # Force download whatever is returned
-        realpath = urlpath_to_abspath(path)
+        realpath = urlpath_to_abspath(path, app.config["directory_base"])
         return File(realpath).download()
     except OutsideDirectoryBase:
         pass
@@ -449,7 +168,7 @@ def download_directory(path):
 @app.route("/remove/<path:path>", methods=("GET", "POST"))
 def remove(path):
     try:
-        realpath = urlpath_to_abspath(path)
+        realpath = urlpath_to_abspath(path, app.config["directory_base"])
     except OutsideDirectoryBase:
         return NotFound()
     if request.method == 'GET':
@@ -464,13 +183,14 @@ def remove(path):
         f.remove()
     except OutsideRemovableBase:
         return NotFound()
-    return redirect(url_for(".browse", path=relativize_path(p.path)))
+    path = abspath_to_urlpath(p.path, app.config["directory_base"])
+    return redirect(url_for(".browse", path=path))
 
 @app.route("/upload", defaults={'path': ''}, methods=("POST",))
 @app.route("/upload/<path:path>", methods=("POST",))
 def upload(path):
     try:
-        realpath = urlpath_to_abspath(path)
+        realpath = urlpath_to_abspath(path, app.config["directory_base"])
     except OutsideDirectoryBase:
         return NotFound()
 
@@ -483,8 +203,8 @@ def upload(path):
         if filename:
             definitive_filename = directory.choose_filename(filename)
             f.save(os.path.join(directory.path, definitive_filename))
-    return redirect(url_for(".browse", path=relativize_path(realpath)))
-
+    path = abspath_to_urlpath(realpath, app.config["directory_base"])
+    return redirect(url_for(".browse", path=path))
 
 @app.route("/")
 def index():

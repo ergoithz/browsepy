@@ -15,6 +15,8 @@ import stat
 
 import flask
 import browsepy
+import browsepy.file
+import browsepy.managers
 
 PY_LEGACY = browsepy.PY_LEGACY
 
@@ -88,6 +90,7 @@ class Page404Exception(PageException):
 
 
 class TestApp(unittest.TestCase):
+    module = browsepy
     list_page_class = ListPage
     confirm_page_class = ConfirmPage
     page_exceptions = {
@@ -96,7 +99,7 @@ class TestApp(unittest.TestCase):
     }
 
     def setUp(self):
-        self.app = browsepy.app
+        self.app = self.module.app
         self.base = tempfile.mkdtemp()
         self.start = os.path.join(self.base, 'start')
         self.remove = os.path.join(self.base, 'remove')
@@ -264,7 +267,6 @@ class TestApp(unittest.TestCase):
             self.get, 'remove', path='../shall_not_pass.txt'
         )
 
-
     def test_download_file(self):
         binfile = os.path.join(self.base, 'testfile.bin')
         bindata = bytes(range(256))
@@ -350,27 +352,28 @@ class TestApp(unittest.TestCase):
 
 
 class TestFile(unittest.TestCase):
+    module = browsepy.file
+
     def setUp(self):
-        self.app = browsepy.app
+        self.app = browsepy.app # FIXME
         self.workbench = tempfile.mkdtemp()
 
     def tearDown(self):
         shutil.rmtree(self.workbench)
 
     def test_mime(self):
-        f = browsepy.File('non_working_path')
+        f = self.module.File('non_working_path')
         self.assertEqual(f.mimetype, 'application/octet-stream')
 
-        f = browsepy.File('non_working_path_with_ext.txt')
+        f = self.module.File('non_working_path_with_ext.txt')
         self.assertEqual(f.mimetype, 'text/plain')
-
 
         tmp_txt = os.path.join(self.workbench, 'ascii_text_file')
         with open(tmp_txt, 'w') as f:
             f.write('ascii text')
 
         # test file command
-        f = browsepy.File(tmp_txt)
+        f = self.module.File(tmp_txt)
         self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
         self.assertEqual(f.type, 'text/plain')
         self.assertEqual(f.encoding, 'us-ascii')
@@ -387,7 +390,7 @@ class TestFile(unittest.TestCase):
         old_path = os.environ['PATH']
         os.environ['PATH'] = bad_path + os.pathsep + old_path
 
-        f = browsepy.File(tmp_txt)
+        f = self.module.File(tmp_txt)
         self.assertEqual(f.mimetype, 'application/octet-stream')
 
         os.environ['PATH'] = old_path
@@ -396,7 +399,7 @@ class TestFile(unittest.TestCase):
         test_file = os.path.join(self.workbench, 'test.csv')
         with open(test_file, 'w') as f:
             f.write(',\n'*512)
-        f = browsepy.File(test_file)
+        f = self.module.File(test_file)
 
         default = self.app.config['use_binary_multiples']
 
@@ -413,7 +416,7 @@ class TestFile(unittest.TestCase):
     def test_properties(self):
         empty_file = os.path.join(self.workbench, 'empty.txt')
         open(empty_file, 'w').close()
-        f = browsepy.File(empty_file)
+        f = self.module.File(empty_file)
 
         self.assertEqual(f.basename, 'empty.txt')
         self.assertEqual(f.can_download, True)
@@ -422,17 +425,86 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.dirname, self.workbench)
         self.assertEqual(f.is_directory, False)
 
+    def test_choose_filename(self):
+        f = self.module.File(self.workbench)
+        first_file =  os.path.join(self.workbench, 'testfile.txt')
 
-class TestFunctions(unittest.TestCase):
+        filename = f.choose_filename('testfile.txt', attempts=0)
+        self.assertEqual(filename, 'testfile.txt')
+
+        open(first_file, 'w').close()
+
+        filename = f.choose_filename('testfile.txt', attempts=0)
+        self.assertNotEqual(filename, 'testfile (2).txt')
+
+        filename = f.choose_filename('testfile.txt', attempts=2)
+        self.assertEqual(filename, 'testfile (2).txt')
+
+        second_file = os.path.join(self.workbench, filename)
+        open(second_file, 'w').close()
+
+        filename = f.choose_filename('testfile.txt', attempts=3)
+        self.assertEqual(filename, 'testfile (3).txt')
+
+        filename = f.choose_filename('testfile.txt', attempts=2)
+        self.assertNotEqual(filename, 'testfile (2).txt')
+
+
+class TestFileFunctions(unittest.TestCase):
+    module = browsepy.file
     def test_fmt_size(self):
-        fnc = browsepy.fmt_size
-        for n, unit in enumerate(browsepy.binary_units):
+        fnc = self.module.fmt_size
+        for n, unit in enumerate(self.module.binary_units):
             self.assertEqual(fnc(2**(10*n)), (1, unit))
-        for n, unit in enumerate(browsepy.standard_units):
+        for n, unit in enumerate(self.module.standard_units):
             self.assertEqual(fnc(1000**n, False), (1, unit))
 
+    def test_secure_filename(self):
+        self.assertEqual(self.module.secure_filename('/path'), 'path')
+        self.assertEqual(self.module.secure_filename('..'), '')
+        self.assertEqual(self.module.secure_filename('::'), '')
+        self.assertEqual(self.module.secure_filename('\0'), '_')
+        self.assertEqual(self.module.secure_filename('/'), '')
+        self.assertEqual(self.module.secure_filename('C:\\'), '')
+        self.assertEqual(self.module.secure_filename('COM1.asdf', destiny_os='nt'), '')
+        self.assertEqual(self.module.secure_filename('\xf1', fs_encoding='ascii'), '_')
+
+        if PY_LEGACY:
+            expected = unicode('\xf1', encoding='latin-1')
+            self.assertEqual(self.module.secure_filename('\xf1', fs_encoding='utf-8'), expected)
+            self.assertEqual(self.module.secure_filename(expected, fs_encoding='utf-8'), expected)
+        else:
+            self.assertEqual(self.module.secure_filename('\xf1', fs_encoding='utf-8'), '\xf1')
+
+    def test_alternative_filename(self):
+        self.assertEqual(self.module.alternative_filename('test', 2), 'test (2)')
+        self.assertEqual(self.module.alternative_filename('test.txt', 2), 'test (2).txt')
+        self.assertEqual(self.module.alternative_filename('test.tar.gz', 2), 'test (2).tar.gz')
+        self.assertEqual(self.module.alternative_filename('test.longextension', 2), 'test (2).longextension')
+        self.assertEqual(self.module.alternative_filename('test.tar.tar.tar', 2), 'test.tar (2).tar.tar')
+        self.assertNotEqual(self.module.alternative_filename('test'), 'test')
+
+    def test_relativize_path(self):
+        self.assertEqual(self.module.relativize_path('/parent/child', '/parent'), 'child')
+        self.assertEqual(self.module.relativize_path('/grandpa/parent/child', '/grandpa/parent'), 'child')
+        self.assertEqual(self.module.relativize_path('/grandpa/parent/child', '/grandpa'), 'parent/child')
+        self.assertRaises(
+            browsepy.OutsideDirectoryBase,
+            browsepy.relativize_path, '/other', '/parent'
+        )
+
+    def test_root_path(self):
+        self.assertEqual(self.module.root_path('/some/path', '/'), '/')
+        self.assertEqual(self.module.root_path('/', '/'), '/')
+
+        self.assertEqual(self.module.root_path('C:\\something', '\\'), 'C:')
+        self.assertEqual(self.module.root_path('//MACHINE/something', '\\'), '//MACHINE')
+
+
+class TestFunctions(unittest.TestCase):
+    module = browsepy
     def test_empty_iterable(self):
-        fnc = browsepy.empty_iterable
+        fnc = self.module.empty_iterable
         empty, iterable = fnc(i for i in ())
         self.assertTrue(empty)
         self.assertRaises(StopIteration, next, iterable)
@@ -440,30 +512,6 @@ class TestFunctions(unittest.TestCase):
         self.assertFalse(empty)
         self.assertEqual(tuple(iterable), (1, 2))
 
-    def test_secure_filename(self):
-        self.assertEqual(browsepy.secure_filename('/path'), 'path')
-        self.assertEqual(browsepy.secure_filename('..'), '')
-        self.assertEqual(browsepy.secure_filename('::'), '')
-        self.assertEqual(browsepy.secure_filename('\0'), '_')
-        self.assertEqual(browsepy.secure_filename('/'), '')
-        self.assertEqual(browsepy.secure_filename('C:\\'), '')
-        self.assertEqual(browsepy.secure_filename('COM1.asdf', destiny_os='nt'), '')
-        self.assertEqual(browsepy.secure_filename('\xf1', fs_encoding='ascii'), '_')
-
-        if PY_LEGACY:
-            expected = unicode('\xf1', encoding='latin-1')
-            self.assertEqual(browsepy.secure_filename('\xf1', fs_encoding='utf-8'), expected)
-            self.assertEqual(browsepy.secure_filename(expected, fs_encoding='utf-8'), expected)
-        else:
-            self.assertEqual(browsepy.secure_filename('\xf1', fs_encoding='utf-8'), '\xf1')
-
-    def test_alternative_filename(self):
-        self.assertEqual(browsepy.alternative_filename('test', 2), 'test (2)')
-        self.assertEqual(browsepy.alternative_filename('test.txt', 2), 'test (2).txt')
-        self.assertEqual(browsepy.alternative_filename('test.tar.gz', 2), 'test (2).tar.gz')
-        self.assertEqual(browsepy.alternative_filename('test.longextension', 2), 'test (2).longextension')
-        self.assertEqual(browsepy.alternative_filename('test.tar.tar.tar', 2), 'test.tar (2).tar.tar')
-        self.assertNotEqual(browsepy.alternative_filename('test'), 'test')
 
 if __name__ == '__main__':
     unittest.main()

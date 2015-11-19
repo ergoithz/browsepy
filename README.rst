@@ -8,7 +8,7 @@ browsepy
 .. image:: http://img.shields.io/coveralls/ergoithz/browsepy.svg?style=flat-square
   :target: https://coveralls.io/r/ergoithz/browsepy
   :alt: Test coverage
-  
+
 .. image:: https://img.shields.io/scrutinizer/g/ergoithz/browsepy.svg?style=flat-square
   :target: https://scrutinizer-ci.com/g/ergoithz/browsepy/
   :alt: Code quality
@@ -35,7 +35,8 @@ Features
 
 * **Simple**, like Python's SimpleHTTPServer or Apache's Directory Listing.
 * **Downloadable directories**, streaming tarballs on the fly.
-* **Optional remove**, which can be enabled for files under a given path.
+* **Optional remove** for files under given path.
+* **Optional upload** for directories under given path.
 
 Install
 -------
@@ -63,6 +64,33 @@ Showing help
 .. code-block:: bash
 
    python -m browsepy --help
+
+Command-line arguments
+----------------------
+
+* **--directory=PATH** : directory will be served, defaults to current path
+* **--initial=PATH** : starting directory, defaults to **--directory**
+* **--removable=PATH** : directory where remove will be available, disabled by default
+* **--upload=PATH** : directory where upload will be available, disabled by default
+* **--debug** : enable debug mode
+
+Using as library
+----------------
+
+It's a python module, so you can import **browsepy**, mount **app**, and serve
+it (it's wsgi compliant) using your preferred server.
+
+Browsepy is a Flask application, so it can be served along with any wsgi app
+just setting **APPLICATION_ROOT** in **browsepy.app** config to browsepy prefix
+url, and mounting **browsepy.app** on the appropriate parent *url-resolver*/*router*.
+
+* **directory_base**, directory will be served
+* **directory_start**, starting directory
+* **directory_remove**, directory where remove will be available, defaults to **None**
+* **directory_upload**, directory where upload will be available, defaults to **None**
+* **directory_tar_buffsize**, directory tar streaming buffer size (must be multiple of 512), defaults to **262144**
+* **directory_downloadable** whether enable directory download or not, defaults to **True**
+* **use_binary_multiples** wheter use binary units (-bibytes, like KiB) or not (bytes, like KB), defaults to **True**
 
 Screenshots
 -----------
