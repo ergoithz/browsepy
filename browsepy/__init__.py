@@ -15,7 +15,7 @@ from .__meta__ import __app__, __version__, __license__, __author__
 from .managers import MimetypeActionManager
 from .file import File, TarFileStream, \
                   OutsideRemovableBase, OutsideDirectoryBase, \
-                  relativize_path, secure_filename
+                  relativize_path, secure_filename, fs_encoding
 from .compat import PY_LEGACY, range
 
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
