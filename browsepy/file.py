@@ -16,7 +16,7 @@ import datetime
 from flask import current_app, send_from_directory, Response
 from werkzeug.utils import cached_property
 
-from .compat import PY_LEGACY, range
+from .compat import PY_LEGACY, range, FileNotFoundError
 
 undescore_replace = '%s:underscore' % __name__
 codecs.register_error(undescore_replace,
