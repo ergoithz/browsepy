@@ -12,7 +12,7 @@ from flask import Flask, Response, request, render_template, redirect, \
 from werkzeug.exceptions import NotFound
 
 from .__meta__ import __app__, __version__, __license__, __author__
-from .managers import MimetypeActionManager
+from .managers import PluginManager
 from .file import File, TarFileStream, \
                   OutsideRemovableBase, OutsideDirectoryBase, \
                   relativize_path, secure_filename, fs_encoding
@@ -34,12 +34,16 @@ app.config.update(
     directory_downloadable = True,
     use_binary_multiples = True,
     plugin_modules = [],
+    plugin_namespaces = (
+        'browsepy',
+        '',
+        ),
     )
 
 if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
 
-mimetype_action_manager = MimetypeActionManager(app)
+plugin_manager = PluginManager(app)
 
 def urlpath_to_abspath(path, base, os_sep=os.sep):
     '''
@@ -102,9 +106,9 @@ def stream_template(template_name, **context):
 
 @app.before_first_request
 def finish_initialization():
-    mimetype_action_manager = app.extensions['mimetype_action_manager']
-    for module in app.config['plugin_modules']:
-        mimetype_action_manager.load_plugin(module)
+    plugin_manager = app.extensions['plugin_manager']
+    for plugin in app.config['plugin_modules']:
+        plugin_manager.load_plugin(plugin)
 
 @app.context_processor
 def template_globals():

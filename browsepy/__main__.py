@@ -33,17 +33,17 @@ class ArgParse(argparse.ArgumentParser):
                           default=None,
                           help='base directory for upload (default: none)')
         self.add_argument('--plugin', metavar='PLUGIN_LIST', type=self._plugins,
-                          default=None,
+                          default=[],
                           help='comma-separated list of plugins')
         self.add_argument('--debug', action='store_true', help='debug mode')
 
     def _plugins(self, arg):
-        if arg is None:
+        if not arg:
             return []
         return arg.split(',')
 
     def _directory(self, arg):
-        if arg is None:
+        if not arg:
             return None
         if os.path.isdir(arg):
             return os.path.abspath(arg)
