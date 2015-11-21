@@ -299,11 +299,55 @@ def relativize_path(path, base, os_sep=os.sep):
     relpath = path[prefix_len:]
     return relpath
 
-restricted_names = ('.', '..', '::', os.sep)
-restricted_chars = '\/\0'
 common_path_separators = '\\/'
+def generic_filename(path):
+    '''
+    Extract filename of given path os-indepently, taking care of known path separators.
+
+    :param path: path
+    :return: filename
+    :rtype: str or unicode (depending on given path)
+    '''
+
+    for sep in common_path_separators:
+        if sep in path:
+            _, path = path.rsplit(sep, 1)
+    return path
+
+restricted_chars = '\\/\0'
+def clean_restricted_chars(path, restricted_chars=restricted_chars):
+    '''
+    Get path without restricted characters.
+
+    :param path: path
+    :return: path without restricted characters
+    :rtype: str or unicode (depending on given path)
+    '''
+    for character in restricted_chars:
+        path = path.replace(character, '_')
+    return path
+
+restricted_names = ('.', '..', '::', os.sep)
 nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1', 'LPT2', 'LPT3', 'PRN', 'NUL')
 fs_encoding = 'unicode' if os.name == 'nt' else sys.getfilesystemencoding() or 'ascii'
+def check_forbidden_filename(filename, destiny_os=os.name, fs_encoding=fs_encoding,
+                             restricted_names=restricted_names):
+    '''
+    Get if given filename is forbidden for current OS or filesystem.
+
+    :param filename:
+    :param destiny_os: destination operative system
+    :param fs_encoding: destination filesystem filename encoding
+    :return: whether is forbidden on given OS (or filesystem) or not
+    :rtype: bool
+    '''
+    if destiny_os == 'nt':
+        fpc = filename.split('.', 1)[0].upper()
+        if fpc in nt_device_names:
+            return True
+
+    return filename in restricted_names
+
 def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
     '''
     Get rid of parent path components and special filenames.
@@ -316,19 +360,10 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
     :return: filename or empty string
     :rtype: str or unicode (depending on python version, destiny_os and fs_encoding)
     '''
-    for sep in common_path_separators:
-        if sep in path:
-            _, path = path.rsplit(sep, 1)
+    path = generic_filename(path)
+    path = clean_restricted_chars(path)
 
-    for character in restricted_chars:
-        path = path.replace(character, '_')
-
-    if destiny_os == 'nt':
-        fpc = path.split('.', 1)[0].upper()
-        if fpc in nt_device_names:
-            return ''
-
-    if path in restricted_names:
+    if check_forbidden_filename(path, destiny_os=destiny_os, fs_encoding=fs_encoding):
         return ''
 
     if fs_encoding != 'unicode':
