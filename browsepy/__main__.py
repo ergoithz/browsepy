@@ -5,6 +5,7 @@ import sys
 import os
 import os.path
 import argparse
+import flask
 
 from . import app
 
@@ -15,12 +16,14 @@ class ArgParse(argparse.ArgumentParser):
             description = 'Web file browser'
         )
         cwd = os.path.abspath(os.getcwd())
+        host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
+        port = os.getenv('BROWSEPY_PORT', '8080')
         self.add_argument('host', nargs='?',
-                          default=os.getenv('BROWSEPY_HOST', '127.0.0.1'),
-                          help='address to listen (default: 127.0.0.1)')
+                          default=host,
+                          help='address to listen (default: %s)' % host)
         self.add_argument('port', nargs='?', type=int,
-                          default=os.getenv('BROWSEPY_PORT', '8080'),
-                          help='port to listen (default: 8080)')
+                          default=port,
+                          help='port to listen (default: %s)' % port)
         self.add_argument('--directory', metavar='PATH', type=self._directory,
                           default=cwd,
                           help='base serving directory (default: current path)')
@@ -49,9 +52,8 @@ class ArgParse(argparse.ArgumentParser):
             return os.path.abspath(arg)
         self.error('%s is not a valid directory' % arg)
 
-if __name__ == '__main__':
-    args = ArgParse().parse_args(sys.argv[1:])
-    app.debug = args.debug
+def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
+    args = parser().parse_args(argv)
     app.config.update(
         directory_base = args.directory,
         directory_start = args.initial or args.directory,
@@ -59,4 +61,14 @@ if __name__ == '__main__':
         directory_upload = args.upload,
         plugin_modules = args.plugin
         )
-    app.run(host=os.getenv('BROWSEPY_HOST', args.host), port=args.port)
+    run_fnc(
+        app,
+        host=args.host,
+        port=args.port,
+        debug=args.debug,
+        use_reloader=False,
+        threaded=True
+        )
+
+if __name__ == '__main__':
+    main()

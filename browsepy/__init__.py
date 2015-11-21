@@ -35,7 +35,7 @@ app.config.update(
     use_binary_multiples = True,
     plugin_modules = [],
     plugin_namespaces = (
-        'browsepy',
+        'browsepy.plugin',
         '',
         ),
     )

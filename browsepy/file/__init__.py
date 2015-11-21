@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 
 import sys
 import os
@@ -9,14 +11,13 @@ import threading
 import string
 import tarfile
 import random
-import subprocess
-import mimetypes
 import datetime
 
 from flask import current_app, send_from_directory, Response
 from werkzeug.utils import cached_property
 
-from .compat import PY_LEGACY, range, FileNotFoundError
+from ..compat import PY_LEGACY, range, FileNotFoundError
+from .mimetype import detect_mimetype
 
 undescore_replace = '%s:underscore' % __name__
 codecs.register_error(undescore_replace,
@@ -26,7 +27,6 @@ codecs.register_error(undescore_replace,
                       )
 
 class File(object):
-    re_mime_validate = re.compile('\w+/\w+(; \w+=[^;]+)*')
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     def __init__(self, path, app=None):
         self.path = path
@@ -65,7 +65,8 @@ class File(object):
 
     @property
     def actions(self):
-        return self.app.actions.get(self.mimetype)
+        plugin_manager = self.app.extensions['plugin_manager']
+        return plugin_manager.get_actions(self.mimetype)
 
     @cached_property
     def can_download(self):
@@ -89,29 +90,15 @@ class File(object):
     def stats(self):
         return os.stat(self.path)
 
-    _generic_mimetypes = {
-        None,
-        'application/octet-stream',
-        }
     @cached_property
     def mimetype(self):
-        mime, encoding = mimetypes.guess_type(self.path)
-        mimetype = "%s%s%s" % (mime or "application/octet-stream", "; " if encoding else "", encoding or "")
-        if mime in self._generic_mimetypes:
-            try:
-                output = subprocess.check_output(("file", "-ib", self.path)).decode('utf8').strip()
-                if self.re_mime_validate.match(output):
-                    # 'file' command can return status zero with invalid output
-                    mimetype = output
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                pass
-        return mimetype
+        if self.is_directory:
+            return 'inode/directory'
+        return detect_mimetype(self.path)
 
     @cached_property
     def is_directory(self):
-        return self.type.endswith("directory") or \
-               self.type.endswith("symlink") and \
-               os.path.isdir(self.path)
+        return os.path.isdir(self.path)
 
     @cached_property
     def parent(self):

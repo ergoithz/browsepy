@@ -18,8 +18,10 @@ import browsepy
 import browsepy.file
 import browsepy.managers
 import browsepy.__main__
+import browsepy.compat
 
-PY_LEGACY = browsepy.PY_LEGACY
+PY_LEGACY = browsepy.compat.PY_LEGACY
+range = browsepy.compat.range
 
 class Page(object):
     @classmethod
@@ -516,13 +518,15 @@ class TestFunctions(unittest.TestCase):
 
 class TestMain(unittest.TestCase):
     module = browsepy.__main__
+
     def setUp(self):
+        self.app = browsepy.app
         self.parser = self.module.ArgParse()
         self.base = tempfile.mkdtemp()
-        
+
     def tearDown(self):
         shutil.rmtree(self.base)
-    
+
     def test_defaults(self):
         result = self.parser.parse_args([])
         self.assertEqual(result.host, '127.0.0.1')
@@ -532,12 +536,12 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.removable, None)
         self.assertEqual(result.upload, None)
         self.assertEqual(result.plugin, [])
-    
+
     def test_params(self):
         plugins = ['plugin_1', 'plugin_2', 'namespace.plugin_3']
         result = self.parser.parse_args(['127.1.1.1', '5000',
             '--directory=%s' % self.base,
-            '--initial=%s' % self.base, 
+            '--initial=%s' % self.base,
             '--removable=%s' % self.base,
             '--upload=%s' % self.base,
             '--plugin=%s' % ','.join(plugins),
@@ -549,7 +553,13 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.removable, self.base)
         self.assertEqual(result.upload, self.base)
         self.assertEqual(result.plugin, plugins)
-    
+
+    def test_main(self):
+        params = {}
+        self.module.main(argv=[], run_fnc=lambda app, **kwargs: params.update(kwargs))
+
+        defaults = {'host': '127.0.0.1', 'port': 8080, 'debug': False, 'threaded': True}
+        self.assertDictContainsSubset(defaults, params)
 
 class TestPlugins(unittest.TestCase):
     app_module = browsepy
@@ -560,25 +570,25 @@ class TestPlugins(unittest.TestCase):
         self.original_namespaces = self.app.config['plugin_namespaces']
         self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
         self.app.config['plugin_namespaces'] = (self.plugin_namespace,)
-        
+
     def tearDown(self):
         self.app.config['plugin_namespaces'] = self.original_namespaces
-    
+
     def test_manager(self):
         self.manager.load_plugin(self.plugin_name)
         self.assertTrue(self.manager._actions_loaded)
-        
+
         endpoints = sorted(
             action.endpoint
             for action in self.manager.get_actions('a/a')
             )
-        
+
         self.assertEqual(endpoints, sorted(['test_x_x', 'test_a_x', 'test_x_a', 'test_a_a']))
         self.assertTrue(self.manager._blueprints_loaded)
-        
+
         self.assertEqual(self.app.view_functions['test_plugin.root'](), 'test_plugin_root')
         self.assertIn('test_plugin', self.app.blueprints)
-        
+
         self.assertRaises(
             self.managers_module.PluginNotFoundError,
             self.manager.load_plugin,
@@ -596,10 +606,10 @@ def load_actions(manager):
 
 def load_blueprints(manager):
     manager._blueprints_loaded = True
-    
+
     test_plugin_blueprint = flask.Blueprint('test_plugin', __name__, url_prefix = '/test_plugin_blueprint')
     test_plugin_blueprint.add_url_rule('/', endpoint='root', view_func=lambda: 'test_plugin_root')
-    
+
     manager.register_blueprint(test_plugin_blueprint)
 
 if __name__ == '__main__':

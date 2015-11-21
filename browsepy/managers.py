@@ -26,7 +26,7 @@ class PluginManagerBase(object):
         if not hasattr(app, 'extensions'):
             app.extensions = {}
         app.extensions['plugin_manager'] = self
-            
+
     def import_plugin(self, plugin):
         names = [
             '%s.%s' % (namespace, plugin) if namespace else plugin
@@ -39,7 +39,7 @@ class PluginManagerBase(object):
             except (ImportError, IndexError):
                 pass
         raise PluginNotFoundError('No plugin module %r found, tried %r' % (plugin, names), plugin, names)
-    
+
     def load_plugin(self, plugin):
         return self.import_plugin(plugin)
 
@@ -50,14 +50,14 @@ class BlueprintPluginManager(PluginManagerBase):
         if hasattr(module, 'load_blueprints'):
             module.load_blueprints(self)
         return module
-        
+
     def register_blueprint(self, blueprint):
         self.app.register_blueprint(blueprint)
-        
-        
+
+
 class MimetypeActionPluginManager(PluginManagerBase):
     action_class = collections.namedtuple('MimetypeAction', ('endpoint', 'text'))
-    
+
     def __init__(self, app=None):
         self.root = {}
         super(MimetypeActionPluginManager, self).__init__(app=app)
@@ -82,8 +82,7 @@ class MimetypeActionPluginManager(PluginManagerBase):
         for mimetype in mimetypes:
             category, variant = mimetype.split('/')
             self.root.setdefault(category, {}).setdefault(variant, []).append(action)
-    
+
 
 class PluginManager(BlueprintPluginManager, MimetypeActionPluginManager):
     pass
-    
