@@ -559,7 +559,8 @@ class TestMain(unittest.TestCase):
         self.module.main(argv=[], run_fnc=lambda app, **kwargs: params.update(kwargs))
 
         defaults = {'host': '127.0.0.1', 'port': 8080, 'debug': False, 'threaded': True}
-        self.assertDictContainsSubset(defaults, params)
+        params_subset = {k: v for k, v in params.items() if k in defaults}
+        self.assertEqual(defaults, params_subset)
 
 class TestPlugins(unittest.TestCase):
     app_module = browsepy
