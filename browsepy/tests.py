@@ -568,12 +568,12 @@ class TestPlugins(unittest.TestCase):
         self.manager.load_plugin(self.plugin_name)
         self.assertTrue(self.manager._actions_loaded)
         
-        endpoints = [
+        endpoints = sorted(
             action.endpoint
             for action in self.manager.get_actions('a/a')
-            ]
+            )
         
-        self.assertItemsEqual(endpoints, ['test_x_x', 'test_a_x', 'test_x_a', 'test_a_a'])
+        self.assertEqual(endpoints, sorted(['test_x_x', 'test_a_x', 'test_x_a', 'test_a_a']))
         self.assertTrue(self.manager._blueprints_loaded)
         
         self.assertEqual(self.app.view_functions['test_plugin.root'](), 'test_plugin_root')
