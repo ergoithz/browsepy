@@ -11,21 +11,23 @@ from . import app
 
 
 class ArgParse(argparse.ArgumentParser):
+    default_directory = os.path.abspath(os.getcwd())
+    default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
+    default_port = os.getenv('BROWSEPY_PORT', '8080')
+
+    description = 'extendable web filre browser'
+
     def __init__(self):
-        super(ArgParse, self).__init__(
-            description = 'Web file browser'
-        )
-        cwd = os.path.abspath(os.getcwd())
-        host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
-        port = os.getenv('BROWSEPY_PORT', '8080')
+        super(ArgParse, self).__init__(description = self.description)
+
         self.add_argument('host', nargs='?',
-                          default=host,
-                          help='address to listen (default: %s)' % host)
+                          default=self.default_host,
+                          help='address to listen (default: %s)' % self.default_host)
         self.add_argument('port', nargs='?', type=int,
-                          default=port,
-                          help='port to listen (default: %s)' % port)
+                          default=self.default_port,
+                          help='port to listen (default: %s)' % self.default_port)
         self.add_argument('--directory', metavar='PATH', type=self._directory,
-                          default=cwd,
+                          default=self.default_directory,
                           help='base serving directory (default: current path)')
         self.add_argument('--initial', metavar='PATH', type=self._directory,
                           help='initial directory (default: same as --directory)')

@@ -72,6 +72,7 @@ Command-line arguments
 * **--initial=PATH** : starting directory, defaults to **--directory**
 * **--removable=PATH** : directory where remove will be available, disabled by default
 * **--upload=PATH** : directory where upload will be available, disabled by default
+* **--plugins=PLUGIN_LIST** : comma-separated plugin modules
 * **--debug** : enable debug mode
 
 Using as library
@@ -84,6 +85,9 @@ Browsepy is a Flask application, so it can be served along with any wsgi app
 just setting **APPLICATION_ROOT** in **browsepy.app** config to browsepy prefix
 url, and mounting **browsepy.app** on the appropriate parent *url-resolver*/*router*.
 
+Browsepy app config (available at browsepy.app.config) provides the following
+configuration options.
+
 * **directory_base**, directory will be served
 * **directory_start**, starting directory
 * **directory_remove**, directory where remove will be available, defaults to **None**
@@ -91,6 +95,13 @@ url, and mounting **browsepy.app** on the appropriate parent *url-resolver*/*rou
 * **directory_tar_buffsize**, directory tar streaming buffer size (must be multiple of 512), defaults to **262144**
 * **directory_downloadable** whether enable directory download or not, defaults to **True**
 * **use_binary_multiples** wheter use binary units (-bibytes, like KiB) or not (bytes, like KB), defaults to **True**
+* **plugin_modules** module names (absolute or relative to plugin_namespaces) which comply the plugin spec
+* **plugin_namespaces** namespaces where relative plugin_modules are searched
+
+Plugins
+-------
+
+Not ready yet...
 
 Screenshots
 -----------
