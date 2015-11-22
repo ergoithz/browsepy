@@ -1,0 +1,19 @@
+.jp-audio{
+    width: auto;
+}
+.jp-audio .jp-controls{
+    width: auto;
+}
+.jp-audio .jp-type-single .jp-progress {
+    width: auto;
+    right: 130px;
+}
+.jp-volume-controls{
+    left: auto;
+    right: 15px;
+    width: 100px;
+}
+.jp-audio .jp-type-single .jp-time-holder{
+    width: auto;
+    right: 130px;
+}

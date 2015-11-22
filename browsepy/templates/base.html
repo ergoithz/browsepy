@@ -11,6 +11,8 @@
     {% block header %}{% endblock %}
     {% block content %}{% endblock %}
     {% block footer %}{% endblock %}
-    <script src="{{ url_for('static', filename='base.js') }}"></script>
+    {% block scripts %}
+        <script src="{{ url_for('static', filename='base.js') }}"></script>
+    {% endblock %}
 </body>
 </html>
