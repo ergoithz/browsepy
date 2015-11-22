@@ -69,16 +69,20 @@ class ListPage(Page):
 
 
 class ConfirmPage(Page):
-    def __init__(self, path, back):
+    def __init__(self, path, name, back):
         self.path = path
+        self.name = name
         self.back = back
 
     @classmethod
     def from_source(cls, source):
         html = ET.fromstring(source)
+        name = cls.innerText(html.find('.//form//strong')).strip()
+        prefix = html.find('.//form//strong').attrib.get('data-prefix', '')
 
         return cls(
-            cls.innerText(html.find('.//form//strong')).strip(),
+            prefix+name,
+            name,
             html.find('.//form//a').attrib['href']
         )
 
@@ -233,6 +237,7 @@ class TestApp(unittest.TestCase):
     def test_remove(self):
         open(os.path.join(self.remove, 'testfile2.txt'), 'w').close()
         page = self.get('remove', path='remove/testfile2.txt')
+        self.assertEqual(page.name, 'testfile2.txt')
         self.assertEqual(page.path, 'remove/testfile2.txt')
         self.assertEqual(page.back, self.url_for('browse', path='remove'))
 
@@ -421,11 +426,11 @@ class TestFile(unittest.TestCase):
         open(empty_file, 'w').close()
         f = self.module.File(empty_file)
 
-        self.assertEqual(f.basename, 'empty.txt')
+        self.assertEqual(f.name, 'empty.txt')
         self.assertEqual(f.can_download, True)
         self.assertEqual(f.can_remove, False)
         self.assertEqual(f.can_upload, False)
-        self.assertEqual(f.dirname, self.workbench)
+        self.assertEqual(f.parent.path, self.workbench)
         self.assertEqual(f.is_directory, False)
 
     def test_choose_filename(self):

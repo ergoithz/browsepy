@@ -5,7 +5,6 @@ import os.path
 
 from flask import Blueprint, render_template, current_app
 
-from browsepy import urlpath_to_abspath
 from browsepy.file import File
 
 __basedir__= os.path.dirname(os.path.abspath(__file__))
@@ -32,9 +31,9 @@ media_map = {
 
 @player.route('/audio/<path:path>')
 def audio(path):
-    f = File(urlpath_to_abspath(path, current_app.config['directory_base']))
+    f = File.from_urlpath(path)
     m = media_map[f.type]
-    return render_template('audio.player.html', file=f, media_format=m)
+    return render_template('audio.player.html', file=f, directory=f, media_format=m)
 
 @player.route('/video/<path:path>')
 def video(path):

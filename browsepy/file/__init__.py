@@ -101,12 +101,27 @@ class File(object):
         return os.path.isdir(self.path)
 
     @cached_property
-    def parent(self):
-        return File(os.path.dirname(self.path))
+    def is_file(self):
+        return os.path.isfile(self.path)
 
-    @property
-    def mtime(self):
-        return self.stats.st_mtime
+    @cached_property
+    def is_empty(self):
+        return not self._listdir
+
+    @cached_property
+    def parent(self):
+        if self.path == self.app.config['directory_base']:
+            return None
+        return self.__class__(os.path.dirname(self.path), self.app)
+
+    @cached_property
+    def ancestors(self):
+        ancestors = []
+        parent = self.parent
+        while parent:
+            ancestors.append(parent)
+            parent = parent.parent
+        return tuple(ancestors)
 
     @property
     def modified(self):
@@ -120,16 +135,12 @@ class File(object):
         return "%.2f %s" % (size, unit)
 
     @property
-    def relpath(self):
-        return relativize_path(self.path, self.app.config['directory_base'])
+    def urlpath(self):
+        return abspath_to_urlpath(self.path, self.app.config['directory_base'])
 
     @property
-    def basename(self):
+    def name(self):
         return os.path.basename(self.path)
-
-    @property
-    def dirname(self):
-        return os.path.dirname(self.path)
 
     @property
     def type(self):
@@ -143,16 +154,26 @@ class File(object):
             return gdict.get("charset") or "default"
         return "default"
 
+    @cached_property
+    def _list(self):
+        pjoin = os.path.join # minimize list comprehension overhead
+        content = [pjoin(self.path, i) for i in os.listdir(self.path)]
+        content.sort(key=self._list_order)
+        return content
+
     @classmethod
-    def listdir_order(cls, path):
+    def _list_order(cls, path):
         return not os.path.isdir(path), os.path.basename(path).lower()
 
     def listdir(self):
-        pjoin = os.path.join # minimize list comprehension overhead
-        content = [pjoin(self.path, i) for i in os.listdir(self.path)]
-        content.sort(key=self.listdir_order)
-        for i in content:
-            yield self.__class__(i)
+        for path in self._list:
+            yield self.__class__(path, self.app)
+
+    @classmethod
+    def from_urlpath(cls, path, app=None):
+        app = app or current_app
+        base = app.config['directory_base']
+        return cls( urlpath_to_abspath(path, base), app)
 
 
 class TarFileStream(object):
@@ -285,6 +306,36 @@ def relativize_path(path, base, os_sep=os.sep):
         prefix_len += len(os_sep)
     relpath = path[prefix_len:]
     return relpath
+
+def abspath_to_urlpath(path, base, os_sep=os.sep):
+    '''
+    Make filesystem absolute path uri relative using given absolute base path.
+
+    :param path: absolute path
+    :param base: absolute base path
+    :param os_sep: path component separator, defaults to current OS separator
+    :return: relative uri
+    :rtype: str or unicode
+    :raises OutsideDirectoryBase: if resulting path is not below base
+    '''
+    return relativize_path(path, base, os_sep).replace(os_sep, '/')
+
+def urlpath_to_abspath(path, base, os_sep=os.sep):
+    '''
+    Make uri relative path fs absolute using a given absolute base path.
+
+    :param path: relative path
+    :param base: absolute base path
+    :param os_sep: path component separator, defaults to current OS separator
+    :return: absolute path
+    :rtype: str or unicode
+    :raises OutsideDirectoryBase: if resulting path is not below base
+    '''
+    prefix = base if base.endswith(os_sep) else base + os_sep
+    realpath = os.path.abspath(prefix + path.replace('/', os_sep))
+    if base == realpath or realpath.startswith(prefix):
+        return realpath
+    raise OutsideDirectoryBase("%r is not under %r" % (realpath, base))
 
 common_path_separators = '\\/'
 def generic_filename(path):

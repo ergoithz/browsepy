@@ -1,25 +1,18 @@
 {% extends "base.html" %}
 
-{% block content %}
+{% block header %}
 <h1>
-    {% if path %}
-        {% set parts = path.split("/") %}
-        <a href="{{ url_for('browse') }}">{{ dirbase }}</a>
-        {% if parts and dirbase != "/" %}
-            <span> / </span>
-        {% endif %}
-        {% for p in range(len(parts)-1) %}
-            {% set parent = "/".join(parts[:p+1]) %}
-            <a href="{{ url_for('browse', path=parent) }}">{{ parts[p] }}</a>
-            <span> / </span>
-        {% endfor %}
-        {{ parts[-1] }}
-    {% else %}
-        {{ dirbase }}
-    {% endif %}
+    {% for parent in file.ancestors[::-1] %}
+        <a href="{{ url_for('browse', path=parent.urlpath) }}">{{ parent.name }}</a>
+        <span> / </span>
+    {% endfor %}
+    {{ file.name }}
 </h1>
-{% if upload %}
-    <form class="upload" method="post" action="{{ url_for('upload', path=path) if path else url_for('upload') }}" enctype="multipart/form-data">
+{% endblock %}
+
+{% block content %}
+{% if file.can_upload %}
+    <form class="upload" method="post" action="{{ url_for('upload', path=file.urlpath) }}" enctype="multipart/form-data">
         <label>
             <h2>Upload</h2>
             <input type="file" name="file"/>
@@ -27,7 +20,7 @@
         <input type="submit"/>
     </form>
 {% endif %}
-{% if not has_files %}
+{% if file.is_empty %}
     <p>No files in directory</p>
 {% else %}
     <table class="browser">
@@ -40,21 +33,21 @@
             </tr>
         </thead>
         <tbody>
-            {% for f in files %}
+            {% for f in file.listdir() %}
                 <tr>
                     <td class="{{ 'dir' if f.is_directory else 'file' }}-icon"></td>
                     <td>
-                        <a href="{{ url_for('browse' if f.is_directory else 'open', path=f.relpath) if f.relpath else url_for('base') }}">{{ f.basename }}</a>
+                        <a href="{{ url_for('browse' if f.is_directory else 'open', path=f.urlpath) }}">{{ f.name }}</a>
                     </td>
                     <td>
                         {% if f.can_remove %}
-                        <a href="{{ url_for('remove', path=f.relpath) }}" class="remove button"></a>
+                        <a href="{{ url_for('remove', path=f.urlpath) }}" class="remove button"></a>
                         {% endif %}
                         {% if f.can_download %}
-                        <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.relpath) }}" class="download button"></a>
+                        <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.urlpath) }}" class="download button"></a>
                         {% endif %}
                         {% for action in f.actions %}
-                            <a href="{{ url_for(action.endpoint, path=f.relpath) }}" class="button">{{ action.text|safe }}</a>
+                            <a href="{{ url_for(action.endpoint, path=f.urlpath) }}" class="button">{{ action.text|safe }}</a>
                         {% endfor %}
                     </td>
                     <td>{{ f.type }}</td>

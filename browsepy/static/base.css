@@ -151,13 +151,10 @@ ul.navbar > li, ul.footer > li{
     width:100%;
     }
 .file-icon:after{
-    content: "\25B6";
+    content: "\1F4C4";
     }
 .dir-icon:after{
-    content: "\25B7";
-    }
-.dir-icon-parent:after{
-    content: "\25C1";
+    content: "\1f4c1";
     }
 a.button{
     color:white;
@@ -169,7 +166,7 @@ a.button{
     vertical-align:middle;
     line-height:1.5em;
     text-align:center;
-    border-radius:0.5em;
+    border-radius:0.25em;
     border:1px solid gray;
     box-shadow: 1px  1px 0 black,
                  -1px -1px 0 black,
@@ -194,3 +191,27 @@ a.button.download:after{
 a.button.remove:after{
     content: "\2A2F";
     }
+strong[data-prefix]{
+    display: inline-block;
+}
+strong[data-prefix]:after{
+    display: inline-block;
+    position: relative;
+    top: -0.5em;
+    margin: 0 0.25em;
+    width: 1.2em;
+    height: 1.2em;
+    font-size: 0.75em;
+    text-align: center;
+    line-height: 1.2em;
+    content: 'i';
+    border-radius: 0.5em;
+    color: white;
+    background-color: darkgray;
+}
+strong[data-prefix]:hover:after{
+    display: none;
+}
+strong[data-prefix]:hover:before{
+    content: attr(data-prefix);
+}

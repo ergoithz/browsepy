@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "browse.html" %}
 
 {% block style %}
     {{ super() }}
@@ -7,9 +7,8 @@
 {% endblock %}
 
 {% block content %}
-<h1>{{ file.basename }}</h1>
 <div data-player-swf="{{ url_for('player.static', filename='js') }}"
-     data-player-url="{{ url_for('download_file', path=file.relpath) }}"
+     data-player-url="{{ url_for('download_file', path=file.urlpath) }}"
      data-player-format="{{ media_format }}"
      class="jp-jplayer"></div>
 <div class="jp-audio" role="application" aria-label="media player">

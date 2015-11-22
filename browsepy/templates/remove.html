@@ -3,7 +3,9 @@
 {% block content %}
     <h1>Remove</h1>
     <form method="post">
-        <p>Do you really want to remove <strong>{{ path }}</strong> ?</p>
-        <input type="submit" value="Yes" /> <a href="{{ backurl }}" alt="Go back">Cancel</a>
+        <p>Do you really want to remove <strong
+            {%- if file.parent %} data-prefix="{{ file.parent.urlpath }}/"{%- endif -%}
+            >{{ file.name }}</strong>?</p>
+        <input type="submit" value="Yes" /> <a href="{{ url_for('browse', path=file.parent.urlpath) }}" alt="Go back">Cancel</a>
     </form>
 {% endblock %}

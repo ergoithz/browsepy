@@ -45,36 +45,6 @@ if "BROWSEPY_SETTINGS" in os.environ:
 
 plugin_manager = PluginManager(app)
 
-def urlpath_to_abspath(path, base, os_sep=os.sep):
-    '''
-    Make uri relative path fs absolute using a given absolute base path.
-
-    :param path: relative path
-    :param base: absolute base path
-    :param os_sep: path component separator, defaults to current OS separator
-    :return: absolute path
-    :rtype: str or unicode
-    :raises OutsideDirectoryBase: if resulting path is not below base
-    '''
-    prefix = base if base.endswith(os_sep) else base + os_sep
-    realpath = os.path.abspath(prefix + path.replace('/', os_sep))
-    if base == realpath or realpath.startswith(prefix):
-        return realpath
-    raise OutsideDirectoryBase("%r is not under %r" % (realpath, base))
-
-def abspath_to_urlpath(path, base, os_sep=os.sep):
-    '''
-    Make filesystem absolute path uri relative using given absolute base path.
-
-    :param path: absolute path
-    :param base: absolute base path
-    :param os_sep: path component separator, defaults to current OS separator
-    :return: relative uri
-    :rtype: str or unicode
-    :raises OutsideDirectoryBase: if resulting path is not below base
-    '''
-    return relativize_path(path, base, os_sep).replace(os_sep, '/')
-
 def empty_iterable(iterable):
     '''
     Get if iterable is empty, and return a new iterable.
@@ -120,19 +90,11 @@ def template_globals():
 @app.route('/browse/<path:path>')
 def browse(path):
     try:
-        realpath = urlpath_to_abspath(path, app.config["directory_base"])
-        directory = File(realpath)
+        directory = File.from_urlpath(path)
         if directory.is_directory:
             files = directory.listdir()
             empty_files, files = empty_iterable(files)
-            path = abspath_to_urlpath(realpath, app.config["directory_base"])
-            return stream_template("browse.html",
-                dirbase = os.path.basename(app.config["directory_base"]) or '/',
-                path = path,
-                upload = directory.can_upload,
-                files = files,
-                has_files = not empty_files
-                )
+            return stream_template("browse.html", file=directory)
     except OutsideDirectoryBase:
         pass
     return NotFound()
@@ -140,12 +102,9 @@ def browse(path):
 @app.route('/open/<path:path>', endpoint="open")
 def open_file(path):
     try:
-        realpath = urlpath_to_abspath(path, app.config["directory_base"])
-        if os.path.isfile(realpath):
-            return send_from_directory(
-                os.path.dirname(realpath),
-                os.path.basename(realpath)
-                )
+        file = File.from_urlpath(path)
+        if file.is_file:
+            return send_from_directory(file.parent.path, file.name)
     except OutsideDirectoryBase:
         pass
     return NotFound()
@@ -153,8 +112,9 @@ def open_file(path):
 @app.route("/download/file/<path:path>")
 def download_file(path):
     try:
-        realpath = urlpath_to_abspath(path, app.config["directory_base"])
-        return File(realpath).download()
+        file = File.from_urlpath(path)
+        if file.is_file:
+            return file.download()
     except OutsideDirectoryBase:
         pass
     return NotFound()
@@ -162,9 +122,9 @@ def download_file(path):
 @app.route("/download/directory/<path:path>.tgz")
 def download_directory(path):
     try:
-        # Force download whatever is returned
-        realpath = urlpath_to_abspath(path, app.config["directory_base"])
-        return File(realpath).download()
+        directory = File.from_urlpath(path)
+        if directory.is_directory:
+            return directory.download()
     except OutsideDirectoryBase:
         pass
     return NotFound()
@@ -172,33 +132,33 @@ def download_directory(path):
 @app.route("/remove/<path:path>", methods=("GET", "POST"))
 def remove(path):
     try:
-        realpath = urlpath_to_abspath(path, app.config["directory_base"])
+        file = File.from_urlpath(path)
     except OutsideDirectoryBase:
         return NotFound()
     if request.method == 'GET':
-        if not File(realpath).can_remove:
+        if not file.can_remove:
             return NotFound()
-        return render_template('remove.html',
-                               backurl = url_for("browse", path=path).rsplit("/", 1)[0],
-                               path = path)
+        return render_template('remove.html', file=file)
+    parent = file.parent
+    if parent is None:
+        # base is not removable
+        return NotFound()
+
     try:
-        f = File(realpath)
-        p = f.parent
-        f.remove()
+        file.remove()
     except OutsideRemovableBase:
         return NotFound()
-    path = abspath_to_urlpath(p.path, app.config["directory_base"])
-    return redirect(url_for(".browse", path=path))
+
+    return redirect(url_for(".browse", path=parent.urlpath))
 
 @app.route("/upload", defaults={'path': ''}, methods=("POST",))
 @app.route("/upload/<path:path>", methods=("POST",))
 def upload(path):
     try:
-        realpath = urlpath_to_abspath(path, app.config["directory_base"])
+        directory = File.from_urlpath(path)
     except OutsideDirectoryBase:
         return NotFound()
 
-    directory = File(realpath)
     if not directory.is_directory or not directory.can_upload:
         return NotFound()
 
@@ -207,8 +167,7 @@ def upload(path):
         if filename:
             definitive_filename = directory.choose_filename(filename)
             f.save(os.path.join(directory.path, definitive_filename))
-    path = abspath_to_urlpath(realpath, app.config["directory_base"])
-    return redirect(url_for(".browse", path=path))
+    return redirect(url_for(".browse", path=directory.urlpath))
 
 @app.route("/")
 def index():
@@ -216,10 +175,10 @@ def index():
     if PY_LEGACY and not isinstance(path, unicode):
         path = path.decode(fs_encoding)
     try:
-        relpath = File(path).relpath
+        urlpath = File(path).urlpath
     except OutsideDirectoryBase:
         return NotFound()
-    return browse(relpath)
+    return browse(urlpath)
 
 @app.after_request
 def page_not_found(response):
