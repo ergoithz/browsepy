@@ -4,6 +4,9 @@
 import sys
 import collections
 
+from markupsafe import Markup
+from flask import url_for
+
 from .__meta__ import __app__
 
 
@@ -55,11 +58,44 @@ class BlueprintPluginManager(PluginManagerBase):
         self.app.register_blueprint(blueprint)
 
 
+class WidgetBase(object):
+    place = None
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+
+class ButtonWidget(WidgetBase):
+    place = 'button'
+    def __init__(self, html='', text='', css=""):
+        self.content = Markup(html) if html else text
+        self.css = css
+
+
+class StyleWidget(WidgetBase):
+    place = 'style'
+
+    @property
+    def href(self):
+        return url_for(*self.args, **self.kwargs)
+
+class JavascriptWidget(WidgetBase):
+    place = 'javascript'
+
+    @property
+    def src(self):
+        return url_for(*self.args, **self.kwargs)
+
+
 class MimetypeActionPluginManager(PluginManagerBase):
-    action_class = collections.namedtuple('MimetypeAction', ('endpoint', 'text'))
+    action_class = collections.namedtuple('MimetypeAction', ('endpoint', 'widget'))
+    button_class = ButtonWidget
+    style_class = StyleWidget
+    javascript_class = JavascriptWidget
 
     def __init__(self, app=None):
-        self.root = {}
+        self._root = {}
+        self._widgets = {}
         super(MimetypeActionPluginManager, self).__init__(app=app)
 
     def load_plugin(self, plugin):
@@ -68,20 +104,26 @@ class MimetypeActionPluginManager(PluginManagerBase):
             module.load_actions(self)
         return module
 
+    def get_widgets(self, place):
+        return self._widgets.get(place, [])
+
     def get_actions(self, mimetype):
         category, variant = mimetype.split('/')
         return [
             action
             for tree_category in (category, '*')
             for tree_variant in (variant, '*')
-            for action in self.root.get(tree_category, {}).get(tree_variant, ())
+            for action in self._root.get(tree_category, {}).get(tree_variant, ())
             ]
 
-    def register_action(self, endpoint, text, mimetypes=(), **kwargs):
-        action = self.action_class(endpoint, text)
+    def register_widget(self, widget):
+        self._widgets.setdefault(widget.place, []).append(widget)
+
+    def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
+        action = self.action_class(endpoint, widget)
         for mimetype in mimetypes:
             category, variant = mimetype.split('/')
-            self.root.setdefault(category, {}).setdefault(variant, []).append(action)
+            self._root.setdefault(category, {}).setdefault(variant, []).append(action)
 
 
 class PluginManager(BlueprintPluginManager, MimetypeActionPluginManager):

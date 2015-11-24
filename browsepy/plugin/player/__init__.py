@@ -3,7 +3,7 @@
 
 import os.path
 
-from flask import Blueprint, render_template, current_app
+from flask import Blueprint, render_template, current_app, url_for
 
 from browsepy.file import File
 
@@ -47,9 +47,12 @@ def load_blueprints(manager):
     manager.register_blueprint(player)
 
 def load_actions(manager):
+    style = manager.style_class('player.static', filename='css/browse.css')
+    manager.register_widget(style)
+    widget = manager.button_class(css='play')
     manager.register_action(
-        endpoint='player.audio',
-        text='&#9658;',
+        'player.audio',
+        widget,
         mimetypes=(
             'audio/mpeg',
             'audio/mp4',
@@ -58,8 +61,8 @@ def load_actions(manager):
             'audio/wav',
         ))
     manager.register_action(
-        endpoint='player.video',
-        text='&#9658;',
+        'player.video',
+        widget,
         mimetypes=(
             'video/mpeg',
             'video/mp4',
@@ -68,8 +71,8 @@ def load_actions(manager):
             'video/webm',
         ))
     manager.register_action(
-        endpoint='player.playlist',
-        text='&#9658;',
+        'player.playlist',
+        widget,
         mimetypes=(
             'audio/x-mpegurl', # m3u, m3u8
             'audio/x-scpls', # pls

@@ -83,6 +83,7 @@ def finish_initialization():
 @app.context_processor
 def template_globals():
     return {
+        'manager': app.extensions['plugin_manager'],
         'len': len,
         }
 

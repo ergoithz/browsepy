@@ -52,8 +52,22 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     keywords = ['web', 'file', 'browser'],
-    packages=['browsepy'],
-    package_data={'browsepy': ['templates/*', 'static/*']}, # ignored by sdist (see MANIFEST.in), used by bdist_wheel
+    packages=[
+        'browsepy',
+        'browsepy.file',
+        'browsepy.plugin',
+        'browsepy.plugin.player',
+        ],
+    package_data={ # ignored by sdist (see MANIFEST.in), used by bdist_wheel
+        'browsepy': [
+            'templates/*',
+            'static/fonts/*',
+            'static/*.*',
+        ],
+        'browsepy.plugin.player': [
+            'templates/*',
+            'static/*/*',
+        ]},
     install_requires=['flask'],
     test_suite='browsepy.tests',
     zip_safe=False,

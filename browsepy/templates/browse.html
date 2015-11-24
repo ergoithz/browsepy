@@ -1,5 +1,19 @@
 {% extends "base.html" %}
 
+{% block style %}
+    {{ super() }}
+    {% for widget in manager.get_widgets('style') %}
+        <link rel="stylesheet" type="text/css" href="{{ widget.href }}"/>
+    {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    {% for widget in manager.get_widgets('javascript') %}
+        <script src="{{ widget.src }}"></script>
+    {% endfor %}
+{% endblock %}
+
 {% block header %}
 <h1>
     {% for parent in file.ancestors[::-1] %}
@@ -46,8 +60,12 @@
                         {% if f.can_download %}
                         <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.urlpath) }}" class="download button"></a>
                         {% endif %}
-                        {% for action in f.actions %}
-                            <a href="{{ url_for(action.endpoint, path=f.urlpath) }}" class="button">{{ action.text|safe }}</a>
+                        {% for endpoint, widget in f.actions %}
+                            {% if widget.place == 'button' %}
+                                <a href="{{ url_for(endpoint, path=f.urlpath) }}"
+                                   class="button{% if widget.css %} {{widget.css}}{% endif %}"
+                                   >{{ widget.content }}</a>
+                            {% endif %}
                         {% endfor %}
                     </td>
                     <td>{{ f.type }}</td>

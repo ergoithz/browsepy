@@ -1,3 +1,5 @@
 include README.rst
-include browsepy/templates/*
-include browsepy/static/*
+graft browsepy/templates
+graft browsepy/static
+graft browsepy/plugin/player/templates
+graft browsepy/plugin/player/static
