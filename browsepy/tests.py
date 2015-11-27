@@ -582,7 +582,7 @@ class TestPlugins(unittest.TestCase):
 
     def test_manager(self):
         self.manager.load_plugin(self.plugin_name)
-        self.assertTrue(self.manager._actions_loaded)
+        self.assertTrue(self.manager._plugin_loaded)
 
         endpoints = sorted(
             action.endpoint
@@ -590,8 +590,6 @@ class TestPlugins(unittest.TestCase):
             )
 
         self.assertEqual(endpoints, sorted(['test_x_x', 'test_a_x', 'test_x_a', 'test_a_a']))
-        self.assertTrue(self.manager._blueprints_loaded)
-
         self.assertEqual(self.app.view_functions['test_plugin.root'](), 'test_plugin_root')
         self.assertIn('test_plugin', self.app.blueprints)
 
@@ -602,21 +600,19 @@ class TestPlugins(unittest.TestCase):
             )
 
 
-def load_actions(manager):
-    manager._actions_loaded = True
+def register_plugin(manager):
+    manager._plugin_loaded = True
     manager.register_action('test_x_x', 'test_x_x', ('*/*',))
     manager.register_action('test_a_x', 'test_a_x', ('a/*',))
     manager.register_action('test_x_a', 'test_x_a', ('*/a',))
     manager.register_action('test_a_a', 'test_a_a', ('a/a',))
     manager.register_action('test_b_x', 'test_b_x', ('b/*',))
 
-def load_blueprints(manager):
-    manager._blueprints_loaded = True
-
     test_plugin_blueprint = flask.Blueprint('test_plugin', __name__, url_prefix = '/test_plugin_blueprint')
     test_plugin_blueprint.add_url_rule('/', endpoint='root', view_func=lambda: 'test_plugin_root')
 
     manager.register_blueprint(test_plugin_blueprint)
+
 
 if __name__ == '__main__':
     unittest.main()

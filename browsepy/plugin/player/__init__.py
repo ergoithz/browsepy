@@ -43,12 +43,12 @@ def video(path):
 def playlist(path):
     return render_template('list.player.html')
 
-def load_blueprints(manager):
+def register_plugin(manager):
     manager.register_blueprint(player)
 
-def load_actions(manager):
     style = manager.style_class('player.static', filename='css/browse.css')
     manager.register_widget(style)
+    
     widget = manager.button_class(css='play')
     manager.register_action(
         'player.audio',

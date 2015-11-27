@@ -44,16 +44,13 @@ class PluginManagerBase(object):
         raise PluginNotFoundError('No plugin module %r found, tried %r' % (plugin, names), plugin, names)
 
     def load_plugin(self, plugin):
-        return self.import_plugin(plugin)
+        module = self.import_plugin(plugin)
+        if hasattr(module, 'register_plugin'):
+            module.register_plugin(self)
+        return module
 
 
 class BlueprintPluginManager(PluginManagerBase):
-    def load_plugin(self, plugin):
-        module = super(BlueprintPluginManager, self).load_plugin(plugin)
-        if hasattr(module, 'load_blueprints'):
-            module.load_blueprints(self)
-        return module
-
     def register_blueprint(self, blueprint):
         self.app.register_blueprint(blueprint)
 
@@ -97,12 +94,6 @@ class MimetypeActionPluginManager(PluginManagerBase):
         self._root = {}
         self._widgets = {}
         super(MimetypeActionPluginManager, self).__init__(app=app)
-
-    def load_plugin(self, plugin):
-        module = super(MimetypeActionPluginManager, self).load_plugin(plugin)
-        if hasattr(module, 'load_actions'):
-            module.load_actions(self)
-        return module
 
     def get_widgets(self, place):
         return self._widgets.get(place, [])
