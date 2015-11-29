@@ -1,5 +1,5 @@
 test:
-	python -m unittest browsepy.tests
+	python -m unittest discover
 
 coverage:
 	coverage run --source=browsepy setup.py test

@@ -9,7 +9,7 @@
 {% block content %}
 <div data-player-swf="{{ url_for('player.static', filename='js') }}"
      data-player-url="{{ url_for('download_file', path=file.urlpath) }}"
-     data-player-format="{{ media_format }}"
+     data-player-format="{{ file.media_format }}"
      class="jp-jplayer"></div>
 <div class="jp-audio" role="application" aria-label="media player">
 	<div class="jp-type-single">

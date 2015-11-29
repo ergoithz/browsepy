@@ -154,26 +154,19 @@ class File(object):
             return gdict.get("charset") or "default"
         return "default"
 
-    @cached_property
-    def _list(self):
-        pjoin = os.path.join # minimize list comprehension overhead
-        content = [pjoin(self.path, i) for i in os.listdir(self.path)]
-        content.sort(key=self._list_order)
-        return content
-
-    @classmethod
-    def _list_order(cls, path):
-        return not os.path.isdir(path), os.path.basename(path).lower()
-
     def listdir(self):
-        for path in self._list:
-            yield self.__class__(path, self.app)
+        content = [
+            self.__class__(path=os.path.join(self.path, path), app=self.app)
+            for path in os.listdir(self.path)
+            ]
+        content.sort(key=lambda f: (f.is_directory, f.name.lower()))
+        return content
 
     @classmethod
     def from_urlpath(cls, path, app=None):
         app = app or current_app
         base = app.config['directory_base']
-        return cls( urlpath_to_abspath(path, base), app)
+        return cls(path=urlpath_to_abspath(path, base), app=app)
 
 
 class TarFileStream(object):
@@ -274,19 +267,6 @@ def fmt_size(size, binary=True):
         size /= fmt_divider
     return size, fmt_sizes[-1]
 
-def root_path(path, os_sep=os.sep):
-    '''
-    Get root of given path.
-
-    :param path: absolute path
-    :param os_sep: path component separator, defaults to current OS separator
-    :return: path
-    :rtype: str or unicode
-    '''
-    if os_sep == '\\' and path.startswith('//'):
-        return '//%s' % path[2:].split('/')[0]
-    return path.split(os_sep)[0] or '/'
-
 def relativize_path(path, base, os_sep=os.sep):
     '''
     Make absolute path relative to an absolute base.
@@ -298,14 +278,12 @@ def relativize_path(path, base, os_sep=os.sep):
     :rtype: str or unicode
     :raises OutsideDirectoryBase: if path is not below base
     '''
-    prefix = os.path.commonprefix((path, base))
-    if not prefix or prefix == root_path(base, os_sep):
+    if not check_under_base(path, base, os_sep):
         raise OutsideDirectoryBase("%r is not under %r" % (path, base))
-    prefix_len = len(prefix)
-    if not prefix.endswith(os_sep):
+    prefix_len = len(base)
+    if not base.endswith(os_sep):
         prefix_len += len(os_sep)
-    relpath = path[prefix_len:]
-    return relpath
+    return path[prefix_len:]
 
 def abspath_to_urlpath(path, base, os_sep=os.sep):
     '''
@@ -376,7 +354,7 @@ def check_forbidden_filename(filename, destiny_os=os.name, fs_encoding=fs_encodi
     :param filename:
     :param destiny_os: destination operative system
     :param fs_encoding: destination filesystem filename encoding
-    :return: whether is forbidden on given OS (or filesystem) or not
+    :return: wether is forbidden on given OS (or filesystem) or not
     :rtype: bool
     '''
     if destiny_os == 'nt':
@@ -385,6 +363,18 @@ def check_forbidden_filename(filename, destiny_os=os.name, fs_encoding=fs_encodi
             return True
 
     return filename in restricted_names
+
+def check_under_base(path, base, os_sep=os.sep):
+    '''
+    Check if given absolute path is under given base.
+
+    :param path: absolute path
+    :param base: absolute base path
+    :return: wether file is under given base or not
+    :rtype: bool
+    '''
+    prefix = base if base.endswith(os_sep) else base + os_sep
+    return path == base or path.startswith(prefix)
 
 def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
     '''

@@ -501,12 +501,12 @@ class TestFileFunctions(unittest.TestCase):
             browsepy.relativize_path, '/other', '/parent'
         )
 
-    def test_root_path(self):
-        self.assertEqual(self.module.root_path('/some/path', '/'), '/')
-        self.assertEqual(self.module.root_path('/', '/'), '/')
+    def test_under_base(self):
+        self.assertTrue(self.module.check_under_base('C:\\as\\df\\gf', 'C:\\as\\df', '\\'))
+        self.assertTrue(self.module.check_under_base('/as/df', '/as', '/'))
 
-        self.assertEqual(self.module.root_path('C:\\something', '\\'), 'C:')
-        self.assertEqual(self.module.root_path('//MACHINE/something', '\\'), '//MACHINE')
+        self.assertFalse(self.module.check_under_base('C:\\cc\\df\\gf', 'C:\\as\\df', '\\'))
+        self.assertFalse(self.module.check_under_base('/cc/df', '/as', '/'))
 
 
 class TestFunctions(unittest.TestCase):

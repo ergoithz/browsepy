@@ -2,10 +2,14 @@
 # -*- coding: UTF-8 -*-
 
 import os.path
+import codecs
+import mimetypes
 
 from flask import Blueprint, render_template, current_app, url_for
 
-from browsepy.file import File
+from browsepy.file import File, check_under_base
+
+from .playable import PlayableFile
 
 __basedir__= os.path.dirname(os.path.abspath(__file__))
 
@@ -15,40 +19,27 @@ player = Blueprint('player', __name__,
     static_folder=os.path.join(__basedir__, 'static'),
     )
 
-media_map = {
-    'audio/mpeg': 'mp3',
-    'audio/mp4': 'mp4',
-    'audio/ogg': 'ogg',
-    'audio/webm': 'webm',
-    'audio/wav': 'wav',
-
-    'video/mpeg': 'mp4',
-    'video/mp4': 'mp4',
-    'video/ogg': 'ogg',
-    'video/ogv': 'ogg',
-    'video/webm': 'webm',
-}
-
 @player.route('/audio/<path:path>')
 def audio(path):
-    f = File.from_urlpath(path)
-    m = media_map[f.type]
-    return render_template('audio.player.html', file=f, directory=f, media_format=m)
+    f = PlayableFile.from_urlpath(path)
+    return render_template('audio.player.html', file=f)
 
 @player.route('/video/<path:path>')
 def video(path):
-    return render_template('video.player.html')
+    f = PlayableFile.from_urlpath(path)
+    return render_template('video.player.html', file=f)
 
 @player.route('/list/<path:path>')
 def playlist(path):
-    return render_template('list.player.html')
+    f = PlayListFile.from_urlpath(url)
+    return render_template('list.player.html', file=f)
 
 def register_plugin(manager):
     manager.register_blueprint(player)
 
     style = manager.style_class('player.static', filename='css/browse.css')
     manager.register_widget(style)
-    
+
     widget = manager.button_class(css='play')
     manager.register_action(
         'player.audio',
