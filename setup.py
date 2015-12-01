@@ -54,6 +54,7 @@ setup(
     keywords = ['web', 'file', 'browser'],
     packages=[
         'browsepy',
+        'browsepy.tests',
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],
