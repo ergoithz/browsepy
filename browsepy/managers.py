@@ -7,7 +7,8 @@ import collections
 from markupsafe import Markup
 from flask import url_for
 
-from .__meta__ import __app__
+from . import mimetype
+from .compat import isnonstriterable
 
 
 class PluginNotFoundError(ImportError):
@@ -93,7 +94,19 @@ class MimetypeActionPluginManager(PluginManagerBase):
     def __init__(self, app=None):
         self._root = {}
         self._widgets = {}
+        self._mimetype_functions = [
+            mimetype.by_default,
+            mimetype.by_file,
+            mimetype.by_python
+        ]
         super(MimetypeActionPluginManager, self).__init__(app=app)
+
+    def get_mimetype(self, path):
+        for fnc in reversed(self._mimetype_functions):
+            mimetype = fnc(path)
+            if mimetype:
+                return mimetype
+        return mimetype_by_default(path)
 
     def get_widgets(self, place):
         return self._widgets.get(place, [])
@@ -107,10 +120,14 @@ class MimetypeActionPluginManager(PluginManagerBase):
             for action in self._root.get(tree_category, {}).get(tree_variant, ())
             ]
 
+    def register_mimetype_function(self, fnc):
+        self._mimetype_functions.append(fnc)
+
     def register_widget(self, widget):
         self._widgets.setdefault(widget.place, []).append(widget)
 
     def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
+        mimetypes = mimetypes if isnonstriterable(mimetypes) else (mimetypes,)
         action = self.action_class(endpoint, widget)
         for mimetype in mimetypes:
             category, variant = mimetype.split('/')

@@ -16,8 +16,7 @@ import datetime
 from flask import current_app, send_from_directory, Response
 from werkzeug.utils import cached_property
 
-from ..compat import PY_LEGACY, range, FileNotFoundError
-from .mimetype import detect_mimetype
+from .compat import PY_LEGACY, range, FileNotFoundError
 
 undescore_replace = '%s:underscore' % __name__
 codecs.register_error(undescore_replace,
@@ -28,7 +27,7 @@ codecs.register_error(undescore_replace,
 
 class File(object):
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
-    def __init__(self, path, app=None):
+    def __init__(self, path=None, app=None):
         self.path = path
         self.app = current_app if app is None else app
 
@@ -64,9 +63,12 @@ class File(object):
         return new_filename
 
     @property
+    def plugin_manager(self):
+        return self.app.extensions['plugin_manager']
+
+    @property
     def actions(self):
-        plugin_manager = self.app.extensions['plugin_manager']
-        return plugin_manager.get_actions(self.mimetype)
+        return self.plugin_manager.get_actions(self.mimetype)
 
     @cached_property
     def can_download(self):
@@ -94,7 +96,7 @@ class File(object):
     def mimetype(self):
         if self.is_directory:
             return 'inode/directory'
-        return detect_mimetype(self.path)
+        return self.plugin_manager.get_mimetype(self.path)
 
     @cached_property
     def is_directory(self):

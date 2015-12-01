@@ -9,7 +9,7 @@ from flask import Blueprint, render_template, current_app, url_for
 
 from browsepy.file import File, check_under_base
 
-from .playable import PlayableFile
+from .playable import PlayableFile, mimetypes
 
 __basedir__= os.path.dirname(os.path.abspath(__file__))
 
@@ -24,18 +24,21 @@ def audio(path):
     f = PlayableFile.from_urlpath(path)
     return render_template('audio.player.html', file=f)
 
-@player.route('/video/<path:path>')
-def video(path):
-    f = PlayableFile.from_urlpath(path)
-    return render_template('video.player.html', file=f)
-
 @player.route('/list/<path:path>')
 def playlist(path):
     f = PlayListFile.from_urlpath(url)
     return render_template('list.player.html', file=f)
 
+def detect_playable_mimetype(path, os_sep=os.sep):
+    basename = path.rsplit(os_sep)[-1]
+    if '.' in basename:
+        ext = basename.rsplit('.')[-1]
+        return mimetypes.get(ext, None)
+    return None
+
 def register_plugin(manager):
     manager.register_blueprint(player)
+    manager.register_mimetype_function(detect_playable_mimetype)
 
     style = manager.style_class('player.static', filename='css/browse.css')
     manager.register_widget(style)
@@ -46,20 +49,8 @@ def register_plugin(manager):
         widget,
         mimetypes=(
             'audio/mpeg',
-            'audio/mp4',
             'audio/ogg',
-            'audio/webm',
             'audio/wav',
-        ))
-    manager.register_action(
-        'player.video',
-        widget,
-        mimetypes=(
-            'video/mpeg',
-            'video/mp4',
-            'video/ogg',
-            'video/ogv',
-            'video/webm',
         ))
     manager.register_action(
         'player.playlist',

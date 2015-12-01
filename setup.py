@@ -54,7 +54,6 @@ setup(
     keywords = ['web', 'file', 'browser'],
     packages=[
         'browsepy',
-        'browsepy.file',
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],
@@ -62,7 +61,7 @@ setup(
         'browsepy': [
             'templates/*',
             'static/fonts/*',
-            'static/*.*',
+            'static/*.*', # do not capture directories
         ],
         'browsepy.plugin.player': [
             'templates/*',
