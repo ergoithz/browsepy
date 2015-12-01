@@ -15,7 +15,7 @@ class TestPlayerBase(unittest.TestCase):
             player_module.register_plugin(cls.app.extensions['plugin_manager'])
 
 
-def TestPlayer(TestPlayerBase):
+class TestPlayer(TestPlayerBase):
     def test_register_plugin(self):
         self.assertIn(self.module.player.name, self.app.blueprints)
 
