@@ -7,8 +7,8 @@ python:
   - "3.5"
 
 install:
-  - pip install coveralls
-  - python setup.py install
+  - pip install coveralls --download-cache $HOME/.cache/pip
+  - pip install . --download-cache $HOME/.cache/pip
 
 script:
   - make coverage
@@ -18,3 +18,7 @@ after_success:
 
 notifications:
   email: false
+
+cache:
+  directories:
+    - $HOME/.cache/pip
