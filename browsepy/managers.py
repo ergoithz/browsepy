@@ -31,7 +31,7 @@ class PluginManagerBase(object):
             app.extensions = {}
         app.extensions['plugin_manager'] = self
 
-    def import_plugin(self, plugin):
+    def load_plugin(self, plugin):
         names = [
             '%s.%s' % (namespace, plugin) if namespace else plugin
             for namespace in self.namespaces
@@ -44,16 +44,16 @@ class PluginManagerBase(object):
                 pass
         raise PluginNotFoundError('No plugin module %r found, tried %r' % (plugin, names), plugin, names)
 
-    def load_plugin(self, plugin):
-        module = self.import_plugin(plugin)
-        if hasattr(module, 'register_plugin'):
-            module.register_plugin(self)
-        return module
-
 
 class BlueprintPluginManager(PluginManagerBase):
     def register_blueprint(self, blueprint):
         self.app.register_blueprint(blueprint)
+
+    def load_plugin(self, plugin):
+        module = super(BlueprintPluginManager, self).load_plugin(plugin)
+        if hasattr(module, 'register_plugin'):
+            module.register_plugin(self)
+        return module
 
 
 class WidgetBase(object):
