@@ -509,18 +509,6 @@ class TestFileFunctions(unittest.TestCase):
         self.assertFalse(self.module.check_under_base('/cc/df', '/as', '/'))
 
 
-class TestFunctions(unittest.TestCase):
-    module = browsepy
-    def test_empty_iterable(self):
-        fnc = self.module.empty_iterable
-        empty, iterable = fnc(i for i in ())
-        self.assertTrue(empty)
-        self.assertRaises(StopIteration, next, iterable)
-        empty, iterable = fnc(i for i in (1, 2))
-        self.assertFalse(empty)
-        self.assertEqual(tuple(iterable), (1, 2))
-
-
 class TestMain(unittest.TestCase):
     module = browsepy.__main__
 

@@ -1,10 +1,12 @@
 
 import sys
+import codecs
+import os.path
 
 from flask._compat import with_metaclass
 from werkzeug.utils import cached_property
 from browsepy.compat import range, str_base, PY_LEGACY
-from browsepy.file import File, undescore_replace
+from browsepy.file import File, undescore_replace, check_under_base
 
 
 if PY_LEGACY:
@@ -24,6 +26,7 @@ mimetypes = {
 
 
 class PlayableFile(File):
+    parent_class = File
     media_map = {
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg',
@@ -31,9 +34,9 @@ class PlayableFile(File):
     }
 
     def __init__(self, duration=None, title=None, **kwargs):
-        super(PlayableFile, self).__init__(**kwargs)
         self.duration = duration
         self.title = title
+        super(PlayableFile, self).__init__(**kwargs)
 
     @property
     def title(self):

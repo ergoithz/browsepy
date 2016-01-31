@@ -4,10 +4,8 @@
 import sys
 import collections
 
-from markupsafe import Markup
-from flask import url_for
-
 from . import mimetype
+from . import widget
 from .compat import isnonstriterable
 
 
@@ -30,18 +28,29 @@ class PluginManagerBase(object):
         if not hasattr(app, 'extensions'):
             app.extensions = {}
         app.extensions['plugin_manager'] = self
+        self.reload()
+
+    def reload(self):
+        for plugin in self.app.config.get('plugin_modules', ()):
+            self.load_plugin(plugin)
 
     def load_plugin(self, plugin):
         names = [
             '%s.%s' % (namespace, plugin) if namespace else plugin
             for namespace in self.namespaces
             ]
+
+        for name in names:
+            if name in sys.modules:
+                return sys.modules[name]
+
         for name in names:
             try:
                 __import__(name)
                 return sys.modules[name]
             except (ImportError, IndexError):
                 pass
+
         raise PluginNotFoundError('No plugin module %r found, tried %r' % (plugin, names), plugin, names)
 
 
@@ -56,40 +65,11 @@ class BlueprintPluginManager(PluginManagerBase):
         return module
 
 
-class WidgetBase(object):
-    place = None
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-
-
-class ButtonWidget(WidgetBase):
-    place = 'button'
-    def __init__(self, html='', text='', css=""):
-        self.content = Markup(html) if html else text
-        self.css = css
-
-
-class StyleWidget(WidgetBase):
-    place = 'style'
-
-    @property
-    def href(self):
-        return url_for(*self.args, **self.kwargs)
-
-class JavascriptWidget(WidgetBase):
-    place = 'javascript'
-
-    @property
-    def src(self):
-        return url_for(*self.args, **self.kwargs)
-
-
 class MimetypeActionPluginManager(PluginManagerBase):
     action_class = collections.namedtuple('MimetypeAction', ('endpoint', 'widget'))
-    button_class = ButtonWidget
-    style_class = StyleWidget
-    javascript_class = JavascriptWidget
+    button_class = widget.ButtonWidget
+    style_class = widget.StyleWidget
+    javascript_class = widget.JavascriptWidget
 
     def __init__(self, app=None):
         self._root = {}
@@ -103,10 +83,10 @@ class MimetypeActionPluginManager(PluginManagerBase):
 
     def get_mimetype(self, path):
         for fnc in reversed(self._mimetype_functions):
-            mimetype = fnc(path)
-            if mimetype:
-                return mimetype
-        return mimetype_by_default(path)
+            mime = fnc(path)
+            if mime:
+                return mime
+        return mimetype.by_default(path)
 
     def get_widgets(self, place):
         return self._widgets.get(place, [])

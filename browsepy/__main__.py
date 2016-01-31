@@ -7,7 +7,7 @@ import os.path
 import argparse
 import flask
 
-from . import app
+from . import app, plugin_manager
 
 
 class ArgParse(argparse.ArgumentParser):
@@ -63,6 +63,7 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         directory_upload = args.upload,
         plugin_modules = args.plugin
         )
+    plugin_manager.reload()
     run_fnc(
         app,
         host=args.host,

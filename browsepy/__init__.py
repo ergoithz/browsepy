@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import re
 import os
 import os.path
-import itertools
 
 from flask import Flask, Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
@@ -12,11 +10,9 @@ from flask import Flask, Response, request, render_template, redirect, \
 from werkzeug.exceptions import NotFound
 
 from .__meta__ import __app__, __version__, __license__, __author__
-from .managers import PluginManager
-from .file import File, TarFileStream, \
-                  OutsideRemovableBase, OutsideDirectoryBase, \
-                  relativize_path, secure_filename, fs_encoding
-from .compat import PY_LEGACY, range
+from .manager import PluginManager
+from .file import File, OutsideRemovableBase, OutsideDirectoryBase, secure_filename, fs_encoding
+from .compat import PY_LEGACY
 
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
@@ -45,21 +41,6 @@ if "BROWSEPY_SETTINGS" in os.environ:
 
 plugin_manager = PluginManager(app)
 
-def empty_iterable(iterable):
-    '''
-    Get if iterable is empty, and return a new iterable.
-
-    :param iterable: iterable
-    :return: whether iterable is empty or not, and iterable
-    :rtype: tuple of bool and iterable
-    '''
-    try:
-        rest = iter(iterable)
-        first = next(rest)
-        return False, itertools.chain((first,), rest)
-    except StopIteration:
-        return True, iter(())
-
 def stream_template(template_name, **context):
     '''
     Some templates can be huge, this function returns an streaming response,
@@ -73,12 +54,6 @@ def stream_template(template_name, **context):
     template = app.jinja_env.get_template(template_name)
     stream = template.generate(context)
     return Response(stream_with_context(stream))
-
-@app.before_first_request
-def finish_initialization():
-    plugin_manager = app.extensions['plugin_manager']
-    for plugin in app.config['plugin_modules']:
-        plugin_manager.load_plugin(plugin)
 
 @app.context_processor
 def template_globals():
@@ -94,7 +69,6 @@ def browse(path):
         directory = File.from_urlpath(path)
         if directory.is_directory:
             files = directory.listdir()
-            empty_files, files = empty_iterable(files)
             return stream_template("browse.html", file=directory)
     except OutsideDirectoryBase:
         pass

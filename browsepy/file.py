@@ -12,6 +12,7 @@ import string
 import tarfile
 import random
 import datetime
+import functools
 
 from flask import current_app, send_from_directory, Response
 from werkzeug.utils import cached_property
@@ -24,9 +25,14 @@ codecs.register_error(undescore_replace,
                       if PY_LEGACY else
                       (lambda error: ('_', error.start + 1))
                       )
+if not PY_LEGACY:
+    unicode = str
+
 
 class File(object):
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
+    parent_class = None # none means current class
+
     def __init__(self, path=None, app=None):
         self.path = path
         self.app = current_app if app is None else app
@@ -114,7 +120,8 @@ class File(object):
     def parent(self):
         if self.path == self.app.config['directory_base']:
             return None
-        return self.__class__(os.path.dirname(self.path), self.app)
+        parent_class = self.parent_class or self.__class__
+        return parent_class(os.path.dirname(self.path), self.app)
 
     @cached_property
     def ancestors(self):
@@ -127,7 +134,7 @@ class File(object):
 
     @property
     def modified(self):
-        return datetime.datetime.fromtimestamp(self.mtime).strftime('%Y.%m.%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.stats.st_mtime).strftime('%Y.%m.%d %H:%M:%S')
 
     @property
     def size(self):
@@ -157,8 +164,9 @@ class File(object):
         return "default"
 
     def listdir(self):
+        path_joiner = functools.partial(os.path.join, self.path)
         content = [
-            self.__class__(path=os.path.join(self.path, path), app=self.app)
+            self.__class__(path=path_joiner(path), app=self.app)
             for path in os.listdir(self.path)
             ]
         content.sort(key=lambda f: (f.is_directory, f.name.lower()))
