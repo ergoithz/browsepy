@@ -37,6 +37,7 @@ Features
 * **Downloadable directories**, streaming tarballs on the fly.
 * **Optional remove** for files under given path.
 * **Optional upload** for directories under given path.
+* **Player** a simple player plugin is provided (without transcoding).
 
 Install
 -------
@@ -101,7 +102,12 @@ configuration options.
 Plugins
 -------
 
-Not ready yet...
+Starting from version 0.4.0, browsepy is extensible via plugins. An functional 'player' plugin is provided as example,
+and some more are planned.s
+
+Plugins are able to load Javascript and CSS files on browsepy, add Flask endpoints, and add links to them on the file
+browser (modifying the default link or adding buttons) based on the file mimetype. Look at tests and bundled plugins
+for reference.
 
 Screenshots
 -----------

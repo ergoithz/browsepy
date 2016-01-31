@@ -81,7 +81,7 @@ class MimetypeActionPluginManager(PluginManagerBase):
     def __init__(self, app=None):
         self._root = {}
         self._widgets = {}
-        self._mimetype_functions = self._default_mimetype_functions.copy()
+        self._mimetype_functions = list(self._default_mimetype_functions)
         super(MimetypeActionPluginManager, self).__init__(app=app)
 
     def get_mimetype(self, path):
