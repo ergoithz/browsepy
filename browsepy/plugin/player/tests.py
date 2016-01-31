@@ -5,7 +5,7 @@ import flask
 import unittest
 
 import browsepy
-import browsepy.managers as browsepy_managers
+import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
 import browsepy.plugin.player.playable as player_playable
 
@@ -24,6 +24,9 @@ class ManagerMock(object):
 
     def javascript_class(self, endpoint, **kwargs):
         return ('javascript', endpoint, kwargs)
+
+    def link_class(self, *args, **kwargs):
+        return ('link', args, kwargs)
 
     def register_blueprint(self, blueprint):
         self.blueprints.append(blueprint)
@@ -67,7 +70,7 @@ class TestPlayer(TestPlayerBase):
 class TestIntegrationBase(TestPlayerBase):
     player_module = player
     browsepy_module = browsepy
-    manager_module = browsepy_managers
+    manager_module = browsepy_manager
 
 
 class TestIntegration(TestIntegrationBase):

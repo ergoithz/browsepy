@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import sys
 import unittest
 import re
 import os
@@ -16,12 +15,18 @@ import stat
 import flask
 import browsepy
 import browsepy.file
-import browsepy.managers
+import browsepy.manager
+import browsepy.widget
 import browsepy.__main__
 import browsepy.compat
 
 PY_LEGACY = browsepy.compat.PY_LEGACY
 range = browsepy.compat.range
+
+
+class FileMock(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 class Page(object):
     @classmethod
@@ -498,7 +503,7 @@ class TestFileFunctions(unittest.TestCase):
         self.assertEqual(self.module.relativize_path('/grandpa/parent/child', '/grandpa'), 'parent/child')
         self.assertRaises(
             browsepy.OutsideDirectoryBase,
-            browsepy.relativize_path, '/other', '/parent'
+            self.module.relativize_path, '/other', '/parent'
         )
 
     def test_under_base(self):
@@ -557,10 +562,10 @@ class TestMain(unittest.TestCase):
 
 class TestPlugins(unittest.TestCase):
     app_module = browsepy
-    managers_module = browsepy.managers
+    manager_module = browsepy.manager
     def setUp(self):
         self.app = self.app_module.app
-        self.manager = self.managers_module.PluginManager(self.app)
+        self.manager = self.manager_module.PluginManager(self.app)
         self.original_namespaces = self.app.config['plugin_namespaces']
         self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
         self.app.config['plugin_namespaces'] = (self.plugin_namespace,)
@@ -574,7 +579,7 @@ class TestPlugins(unittest.TestCase):
 
         endpoints = sorted(
             action.endpoint
-            for action in self.manager.get_actions('a/a')
+            for action in self.manager.get_actions(FileMock(mimetype='a/a'))
             )
 
         self.assertEqual(endpoints, sorted(['test_x_x', 'test_a_x', 'test_x_a', 'test_a_a']))
@@ -582,19 +587,21 @@ class TestPlugins(unittest.TestCase):
         self.assertIn('test_plugin', self.app.blueprints)
 
         self.assertRaises(
-            self.managers_module.PluginNotFoundError,
+            self.manager_module.PluginNotFoundError,
             self.manager.load_plugin,
             'non_existent_plugin_module'
             )
 
 
 def register_plugin(manager):
+    widget_class = browsepy.widget.WidgetBase
+
     manager._plugin_loaded = True
-    manager.register_action('test_x_x', 'test_x_x', ('*/*',))
-    manager.register_action('test_a_x', 'test_a_x', ('a/*',))
-    manager.register_action('test_x_a', 'test_x_a', ('*/a',))
-    manager.register_action('test_a_a', 'test_a_a', ('a/a',))
-    manager.register_action('test_b_x', 'test_b_x', ('b/*',))
+    manager.register_action('test_x_x', widget_class('test_x_x'), ('*/*',))
+    manager.register_action('test_a_x', widget_class('test_a_x'), ('a/*',))
+    manager.register_action('test_x_a', widget_class('test_x_a'), ('*/a',))
+    manager.register_action('test_a_a', widget_class('test_a_a'), ('a/a',))
+    manager.register_action('test_b_x', widget_class('test_b_x'), ('b/*',))
 
     test_plugin_blueprint = flask.Blueprint('test_plugin', __name__, url_prefix = '/test_plugin_blueprint')
     test_plugin_blueprint.add_url_rule('/', endpoint='root', view_func=lambda: 'test_plugin_root')
