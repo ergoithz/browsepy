@@ -82,13 +82,13 @@ class ConfirmPage(Page):
     @classmethod
     def from_source(cls, source):
         html = ET.fromstring(source)
-        name = cls.innerText(html.find('.//form//strong')).strip()
-        prefix = html.find('.//form//strong').attrib.get('data-prefix', '')
+        name = cls.innerText(html.find('.//strong')).strip()
+        prefix = html.find('.//strong').attrib.get('data-prefix', '')
 
         return cls(
             prefix+name,
             name,
-            html.find('.//form//a').attrib['href']
+            html.find('.//form[@method=\'get\']').attrib['action']
         )
 
 
