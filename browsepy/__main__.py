@@ -8,6 +8,7 @@ import argparse
 import flask
 
 from . import app, plugin_manager
+from .compat import PY_LEGACY
 
 
 class ArgParse(argparse.ArgumentParser):
@@ -50,6 +51,8 @@ class ArgParse(argparse.ArgumentParser):
     def _directory(self, arg):
         if not arg:
             return None
+        if PY_LEGACY and hasattr(sys.stdin, 'encoding'):
+            arg = arg.decode(sys.stdin.encoding)
         if os.path.isdir(arg):
             return os.path.abspath(arg)
         self.error('%s is not a valid directory' % arg)

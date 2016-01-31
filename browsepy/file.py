@@ -17,7 +17,7 @@ import functools
 from flask import current_app, send_from_directory, Response
 from werkzeug.utils import cached_property
 
-from .compat import PY_LEGACY, range, FileNotFoundError
+from .compat import PY_LEGACY, range
 
 undescore_replace = '%s:underscore' % __name__
 codecs.register_error(undescore_replace,
@@ -123,7 +123,7 @@ class File(object):
 
     @cached_property
     def is_empty(self):
-        return not self._listdir
+        return not self.raw_listdir
 
     @cached_property
     def parent(self):
@@ -140,6 +140,10 @@ class File(object):
             ancestors.append(parent)
             parent = parent.parent
         return tuple(ancestors)
+
+    @cached_property
+    def raw_listdir(self):
+        return os.listdir(self.path)
 
     @property
     def modified(self):
@@ -176,7 +180,7 @@ class File(object):
         path_joiner = functools.partial(os.path.join, self.path)
         content = [
             self.__class__(path=path_joiner(path), app=self.app)
-            for path in os.listdir(self.path)
+            for path in self.raw_listdir
             ]
         content.sort(key=lambda f: (f.is_directory, f.name.lower()))
         return content
