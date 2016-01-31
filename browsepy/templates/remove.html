@@ -2,10 +2,14 @@
 
 {% block content %}
     <h1>Remove</h1>
-    <form method="post">
-        <p>Do you really want to remove <strong
-            {%- if file.parent %} data-prefix="{{ file.parent.urlpath }}/"{%- endif -%}
-            >{{ file.name }}</strong>?</p>
-        <input type="submit" value="Yes" /> <a href="{{ url_for('browse', path=file.parent.urlpath) }}" alt="Go back">Cancel</a>
+
+    <p>Do you really want to remove <strong
+        {%- if file.parent.urlpath %} data-prefix="{{ file.parent.urlpath }}/"{%- endif -%}
+        >{{ file.name }}</strong>?</p>
+    <form method="post" class="remove">
+        <input type="submit" value="Yes" />
+    </form>
+    <form method="get" class="remove" action="{{ url_for('browse', path=file.parent.urlpath) }}">
+        <input type="submit" class="cancel" alt="Go back" value="Cancel" />
     </form>
 {% endblock %}

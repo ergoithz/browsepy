@@ -80,6 +80,12 @@ form.upload label input{
 form.upload input{
     margin: 0.5em 1em;
 }
+form.remove{
+    display: inline-block;
+}
+form.remove input[type=submit]{
+    min-width: 10em;
+}
 table.browser{
     display:block;
     table-layout:fixed;
@@ -120,7 +126,7 @@ h1{
     margin:0;padding:0 0 0.3em;
     display:block;
     color:black;
-    text-shadow: 1px  1px 0 white,
+    text-shadow:  1px  1px 0 white,
                  -1px -1px 0 white,
                   1px -1px 0 white,
                  -1px  1px 0 white,
@@ -216,6 +222,7 @@ a.button.remove:after{
     }
 strong[data-prefix]{
     display: inline-block;
+    cursor: help;
 }
 strong[data-prefix]:after{
     display: inline-block;
