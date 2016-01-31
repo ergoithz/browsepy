@@ -49,9 +49,12 @@
         <tbody>
             {% for f in file.listdir() %}
                 <tr>
-                    <td class="{{ 'dir' if f.is_directory else 'file' }}-icon"></td>
+                    {% set endpoint, widget = f.default_action %}
+                    <td class="{{ widget.icon }}"></td>
                     <td>
-                        <a href="{{ url_for('browse' if f.is_directory else 'open', path=f.urlpath) }}">{{ f.name }}</a>
+                        <a href="{{ url_for(endpoint, path=f.urlpath) }}"
+                           {% if widget.css %}class="{{ widget.css }}"{% endif %}
+                           >{{ widget.text }}</a>
                     </td>
                     <td>
                         {% if f.can_remove %}

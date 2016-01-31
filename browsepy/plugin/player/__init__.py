@@ -2,14 +2,10 @@
 # -*- coding: UTF-8 -*-
 
 import os.path
-import codecs
-import mimetypes
 
-from flask import Blueprint, render_template, current_app, url_for
+from flask import Blueprint, render_template
 
-from browsepy.file import File, check_under_base
-
-from .playable import PlayableFile, mimetypes
+from .playable import PlayableFile, MetaPlayListFile, mimetypes
 
 __basedir__= os.path.dirname(os.path.abspath(__file__))
 
@@ -37,25 +33,33 @@ def detect_playable_mimetype(path, os_sep=os.sep):
     return None
 
 def register_plugin(manager):
+    '''
+    Register blueprints and actions using given plugin manager.
+
+    :param manager: plugin manager
+    :type manager: browsepy.manager.PluginManager
+    '''
     manager.register_blueprint(player)
     manager.register_mimetype_function(detect_playable_mimetype)
 
     style = manager.style_class('player.static', filename='css/browse.css')
     manager.register_widget(style)
 
-    widget = manager.button_class(css='play')
-    manager.register_action(
-        'player.audio',
-        widget,
-        mimetypes=(
-            'audio/mpeg',
-            'audio/ogg',
-            'audio/wav',
-        ))
-    manager.register_action(
-        'player.playlist',
-        widget,
-        mimetypes=(
-            'audio/x-mpegurl', # m3u, m3u8
-            'audio/x-scpls', # pls
-        ))
+    button_widget = manager.button_class(css='play')
+    link_widget = manager.link_class()
+    for widget in (link_widget, button_widget):
+        manager.register_action(
+            'player.audio',
+            widget,
+            mimetypes=(
+                'audio/mpeg',
+                'audio/ogg',
+                'audio/wav',
+            ))
+        manager.register_action(
+            'player.playlist',
+            widget,
+            mimetypes=(
+                'audio/x-mpegurl', # m3u, m3u8
+                'audio/x-scpls', # pls
+            ))

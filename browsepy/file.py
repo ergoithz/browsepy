@@ -73,8 +73,17 @@ class File(object):
         return self.app.extensions['plugin_manager']
 
     @property
+    def default_action(self):
+        for action in self.actions:
+            if action.widget.place == 'link':
+                return action
+        endpoint = 'browse' if self.is_directory else 'open'
+        widget = self.plugin_manager.link_class.from_file(self)
+        return self.plugin_manager.action_class(endpoint, widget)
+
+    @cached_property
     def actions(self):
-        return self.plugin_manager.get_actions(self.mimetype)
+        return self.plugin_manager.get_actions(self)
 
     @cached_property
     def can_download(self):
