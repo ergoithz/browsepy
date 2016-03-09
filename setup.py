@@ -18,6 +18,9 @@ repository from `github`_::
 
 .. _github: https://github.com/ergoithz/browsepy
 """
+
+import os
+
 try:
     from setuptools import setup
 except ImportError:
@@ -25,14 +28,19 @@ except ImportError:
 
 with open('browsepy/__meta__.py') as f:
     data = {}
-    code = compile(f.read(), 'browsepy/__meta__.py', 'exec')
+    code = compile(f.read(), f.name, 'exec')
     exec(code, data, data)
     __app__ = data['__app__']
     __version__ = data['__version__']
     __license__ = data['__license__']
-
+    
 with open('README.rst') as f:
     __doc__ = f.read()
+    
+extra_requires = []
+
+if not hasattr(os, 'scandir'):
+    extra_requires.append('scandir')
 
 setup(
     name=__app__,
@@ -68,7 +76,7 @@ setup(
             'templates/*',
             'static/*/*',
         ]},
-    install_requires=['flask'],
+    install_requires=['flask'] + extra_requires,
     test_suite='browsepy.tests',
     zip_safe=False,
     platforms='any'

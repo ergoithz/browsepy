@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import logging
 import os
 import os.path
 
@@ -11,10 +12,13 @@ from werkzeug.exceptions import NotFound
 
 from .__meta__ import __app__, __version__, __license__, __author__
 from .manager import PluginManager
-from .file import File, OutsideRemovableBase, OutsideDirectoryBase, secure_filename, fs_encoding
-from .compat import PY_LEGACY
+from .file import File, OutsideRemovableBase, OutsideDirectoryBase, \
+                  secure_filename
+from . import compat
 
-__basedir__ = os.path.abspath(os.path.dirname(__file__))
+__basedir__ = os.path.abspath(os.path.dirname(compat.fsdecode(__file__)))
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__,
     static_url_path = '/static',
@@ -22,8 +26,8 @@ app = Flask(__name__,
     template_folder = os.path.join(__basedir__, "templates")
     )
 app.config.update(
-    directory_base = os.path.abspath(os.getcwd()),
-    directory_start = os.path.abspath(os.getcwd()),
+    directory_base = compat.getcwd(),
+    directory_start = compat.getcwd(),
     directory_remove = None,
     directory_upload = None,
     directory_tar_buffsize = 262144,
@@ -140,15 +144,14 @@ def upload(path):
     for f in request.files.values():
         filename = secure_filename(f.filename)
         if filename:
-            definitive_filename = directory.choose_filename(filename)
-            f.save(os.path.join(directory.path, definitive_filename))
+            filename = directory.choose_filename(filename)
+            filepath = os.path.join(directory.path, filename)
+            f.save(filepath)
     return redirect(url_for(".browse", path=directory.urlpath))
 
 @app.route("/")
 def index():
     path = app.config["directory_start"] or app.config["directory_base"]
-    if PY_LEGACY and not isinstance(path, unicode):
-        path = path.decode(fs_encoding)
     try:
         urlpath = File(path).urlpath
     except OutsideDirectoryBase:
@@ -167,6 +170,5 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e): # pragma: no cover
-    import traceback
-    traceback.print_exc()
+    logger.exception(e)
     return getattr(e, 'message', 'Internal server error'), 500

@@ -146,3 +146,7 @@ class M3UFile(PlayListFile):
                     if line and self._extract_line(line, pf):
                         yield pf
                         pf = PlayableFile()
+
+
+class PlayableDirectory(PlayListFile):
+    pass

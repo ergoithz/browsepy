@@ -26,6 +26,7 @@ browsepy
   :alt: Downloads
 
 .. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.3%2B-FFC100.svg?style=flat-square
+  :target: https://pypi.python.org/pypi/browsepy/
   :alt: Python 2.7+, 3.3+
 
 Simple web file browser using flask

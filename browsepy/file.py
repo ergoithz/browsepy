@@ -13,29 +13,31 @@ import tarfile
 import random
 import datetime
 import functools
+import logging
+import warnings
 
 from flask import current_app, send_from_directory, Response
 from werkzeug.utils import cached_property
 
-from .compat import PY_LEGACY, range
+from . import compat
+from .compat import range
 
-undescore_replace = '%s:underscore' % __name__
-codecs.register_error(undescore_replace,
-                      (lambda error: (u'_', error.start + 1))
-                      if PY_LEGACY else
-                      (lambda error: ('_', error.start + 1))
+
+logger = logging.getLogger(__name__)
+unicode_underscore = '_'.decode('utf-8') if compat.PY_LEGACY else '_'
+underscore_replace = '%s:underscore' % __name__
+codecs.register_error(underscore_replace,
+                      lambda error: (unicode_underscore, error.start + 1)
                       )
-if not PY_LEGACY:
-    unicode = str
-
 
 class File(object):
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     parent_class = None # none means current class
 
-    def __init__(self, path=None, app=None):
-        self.path = path
+    def __init__(self, path=None, app=None, **defaults):
+        self.path = compat.fsdecode(path) if path else None
         self.app = current_app if app is None else app
+        self.__dict__.update(defaults)
 
     def remove(self):
         if not self.can_remove:
@@ -123,7 +125,9 @@ class File(object):
 
     @cached_property
     def is_empty(self):
-        return not self.raw_listdir
+        for entry in compat.scandir(self.path):
+            return True
+        return False
 
     @cached_property
     def parent(self):
@@ -139,10 +143,11 @@ class File(object):
         while parent:
             ancestors.append(parent)
             parent = parent.parent
-        return tuple(ancestors)
+        return ancestors
 
     @cached_property
     def raw_listdir(self):
+        warnings.warn("Deprecated property File.raw_listdir", DeprecationWarning)
         return os.listdir(self.path)
 
     @property
@@ -151,7 +156,10 @@ class File(object):
 
     @property
     def size(self):
-        size, unit = fmt_size(self.stats.st_size, self.app.config["use_binary_multiples"])
+        size, unit = fmt_size(
+            self.stats.st_size,
+            self.app.config["use_binary_multiples"]
+            )
         if unit == binary_units[0]:
             return "%d %s" % (size, unit)
         return "%.2f %s" % (size, unit)
@@ -177,16 +185,43 @@ class File(object):
         return "default"
 
     def listdir(self):
-        path_joiner = functools.partial(os.path.join, self.path)
+        '''
+        Get sorted list (by `is_directory` and `name` properties) of File
+        objects.
+        
+        :return: sorted list of File instances
+        :rtype: list of File
+        '''
+        if hasattr(self.listdir, 'cache'):
+            return self.listdir.cache
+        precomputed_stats = os.name == 'nt'
         content = [
-            self.__class__(path=path_joiner(path), app=self.app)
-            for path in self.raw_listdir
+            self.__class__(
+                path=entry.path,
+                app=self.app,
+                is_directory=entry.is_dir(),
+                parent=self,
+                **( {'stats': entry.stat()}
+                    if precomputed_stats and not entry.is_symlink() else
+                    {})
+                )
+            for entry in compat.scandir(self.path)
             ]
         content.sort(key=lambda f: (f.is_directory, f.name.lower()))
+        self.listdir.cache = content
         return content
 
     @classmethod
     def from_urlpath(cls, path, app=None):
+        '''
+        Alternative constructor which accepts a path as taken from URL and uses
+        the given app or the current app config to get the real path.
+        
+        :param path: relative path as from URL
+        :param app: optional, flask application
+        :return: file object pointing to path
+        :rtype: File
+        '''
         app = app or current_app
         base = app.config['directory_base']
         return cls(path=urlpath_to_abspath(path, base), app=app)
@@ -367,9 +402,11 @@ def clean_restricted_chars(path, restricted_chars=restricted_chars):
     return path
 
 restricted_names = ('.', '..', '::', os.sep)
-nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1', 'LPT2', 'LPT3', 'PRN', 'NUL')
-fs_encoding = 'unicode' if os.name == 'nt' else sys.getfilesystemencoding() or 'ascii'
-def check_forbidden_filename(filename, destiny_os=os.name, fs_encoding=fs_encoding,
+nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
+                   'LPT2', 'LPT3', 'PRN', 'NUL')
+
+def check_forbidden_filename(filename,
+                             destiny_os=os.name,
                              restricted_names=restricted_names):
     '''
     Get if given filename is forbidden for current OS or filesystem.
@@ -399,30 +436,38 @@ def check_under_base(path, base, os_sep=os.sep):
     prefix = base if base.endswith(os_sep) else base + os_sep
     return path == base or path.startswith(prefix)
 
-def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
+def secure_filename(path, destiny_os=os.name, fs_encoding=compat.fs_encoding):
     '''
     Get rid of parent path components and special filenames.
 
     If path is invalid or protected, return empty string.
 
     :param path: unsafe path
+    :type: str
     :param destiny_os: destination operative system
-    :param fs_encoding: destination filesystem filename encoding
+    :type destiny_os: str
     :return: filename or empty string
-    :rtype: str or unicode (depending on python version, destiny_os and fs_encoding)
+    :rtype: str
     '''
     path = generic_filename(path)
     path = clean_restricted_chars(path)
 
-    if check_forbidden_filename(path, destiny_os=destiny_os, fs_encoding=fs_encoding):
+    if check_forbidden_filename(path, destiny_os=destiny_os):
         return ''
-
-    if fs_encoding != 'unicode':
-        if PY_LEGACY and not isinstance(path, unicode):
-            path = unicode(path, encoding='latin-1')
-        path = path.encode(fs_encoding, errors=undescore_replace).decode(fs_encoding)
-
-    return path
+    
+    if isinstance(path, bytes):
+        path = path.decode('latin-1', errors=underscore_replace)
+    
+    # Decode and recover from filesystem encoding in order to strip unwanted
+    # characters out
+    kwargs = dict(
+        os_name=destiny_os,
+        fs_encoding=fs_encoding,
+        errors=underscore_replace
+        )
+    fs_encoded_path = compat.fsencode(path, **kwargs)
+    fs_decoded_path = compat.fsdecode(fs_encoded_path, **kwargs)
+    return fs_decoded_path
 
 fs_safe_characters = string.ascii_uppercase + string.digits
 def alternative_filename(filename, attempt=None):
@@ -437,11 +482,11 @@ def alternative_filename(filename, attempt=None):
     :return: new filename
     :rtype: str or unicode
     '''
-    filename_parts = filename.rsplit('.', 2)
+    filename_parts = filename.rsplit(u'.', 2)
     name = filename_parts[0]
-    ext = ''.join('.%s' % ext for ext in filename_parts[1:])
+    ext = ''.join(u'.%s' % ext for ext in filename_parts[1:])
     if attempt is None:
-        extra = ' %s' % ''.join(random.choice(fs_safe_characters) for i in range(8))
+        extra = u' %s' % ''.join(random.choice(fs_safe_characters) for i in range(8))
     else:
-        extra = ' (%d)' % attempt
-    return '%s%s%s' % (name, extra, ext)
+        extra = u' (%d)' % attempt
+    return u'%s%s%s' % (name, extra, ext)

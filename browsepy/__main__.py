@@ -7,12 +7,12 @@ import os.path
 import argparse
 import flask
 
-from . import app, plugin_manager
+from . import app, compat, plugin_manager
 from .compat import PY_LEGACY
 
 
 class ArgParse(argparse.ArgumentParser):
-    default_directory = os.path.abspath(os.getcwd())
+    default_directory = os.path.abspath(compat.getcwd())
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
 

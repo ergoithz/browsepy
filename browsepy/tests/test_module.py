@@ -375,10 +375,10 @@ class TestFile(unittest.TestCase):
         shutil.rmtree(self.workbench)
 
     def test_mime(self):
-        f = self.module.File('non_working_path')
+        f = self.module.File('non_working_path', app=self.app)
         self.assertEqual(f.mimetype, 'application/octet-stream')
 
-        f = self.module.File('non_working_path_with_ext.txt')
+        f = self.module.File('non_working_path_with_ext.txt', app=self.app)
         self.assertEqual(f.mimetype, 'text/plain')
 
         tmp_txt = os.path.join(self.workbench, 'ascii_text_file')
@@ -386,7 +386,7 @@ class TestFile(unittest.TestCase):
             f.write('ascii text')
 
         # test file command
-        f = self.module.File(tmp_txt)
+        f = self.module.File(tmp_txt, app=self.app)
         self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
         self.assertEqual(f.type, 'text/plain')
         self.assertEqual(f.encoding, 'us-ascii')
@@ -403,7 +403,7 @@ class TestFile(unittest.TestCase):
         old_path = os.environ['PATH']
         os.environ['PATH'] = bad_path + os.pathsep + old_path
 
-        f = self.module.File(tmp_txt)
+        f = self.module.File(tmp_txt, app=self.app)
         self.assertEqual(f.mimetype, 'application/octet-stream')
 
         os.environ['PATH'] = old_path
@@ -412,10 +412,10 @@ class TestFile(unittest.TestCase):
         test_file = os.path.join(self.workbench, 'test.csv')
         with open(test_file, 'w') as f:
             f.write(',\n'*512)
-        f = self.module.File(test_file)
+        f = self.module.File(test_file, app=self.app)
 
         default = self.app.config['use_binary_multiples']
-
+        
         self.app.config['use_binary_multiples'] = True
         self.assertEqual(f.size, '1.00 KiB')
 
@@ -429,7 +429,7 @@ class TestFile(unittest.TestCase):
     def test_properties(self):
         empty_file = os.path.join(self.workbench, 'empty.txt')
         open(empty_file, 'w').close()
-        f = self.module.File(empty_file)
+        f = self.module.File(empty_file, app=self.app)
 
         self.assertEqual(f.name, 'empty.txt')
         self.assertEqual(f.can_download, True)
@@ -439,7 +439,7 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.is_directory, False)
 
     def test_choose_filename(self):
-        f = self.module.File(self.workbench)
+        f = self.module.File(self.workbench, app=self.app)
         first_file =  os.path.join(self.workbench, 'testfile.txt')
 
         filename = f.choose_filename('testfile.txt', attempts=0)
