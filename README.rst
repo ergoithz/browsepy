@@ -1,7 +1,7 @@
 browsepy
 ========
 
-.. image:: http://img.shields.io/travis/ergoithz/browsepy.svg?style=flat-square
+.. image:: http://img.shields.io/travis/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://travis-ci.org/ergoithz/browsepy
   :alt: Build status
 
@@ -9,7 +9,7 @@ browsepy
   :target: https://coveralls.io/r/ergoithz/browsepy
   :alt: Test coverage
 
-.. image:: https://img.shields.io/scrutinizer/g/ergoithz/browsepy.svg?style=flat-square
+.. image:: https://img.shields.io/scrutinizer/g/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://scrutinizer-ci.com/g/ergoithz/browsepy/
   :alt: Code quality
 
