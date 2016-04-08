@@ -5,7 +5,7 @@ browsepy
   :target: https://travis-ci.org/ergoithz/browsepy
   :alt: Build status
 
-.. image:: http://img.shields.io/coveralls/ergoithz/browsepy.svg?style=flat-square
+.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://coveralls.io/r/ergoithz/browsepy
   :alt: Test coverage
 
