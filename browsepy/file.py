@@ -30,13 +30,15 @@ codecs.register_error(underscore_replace,
                       lambda error: (unicode_underscore, error.start + 1)
                       )
 
+
 class File(object):
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
-    parent_class = None # none means current class
+    parent_class = None  # none means current class
 
     def __init__(self, path=None, app=None, **defaults):
         self.path = compat.fsdecode(path) if path else None
         self.app = current_app if app is None else app
+        self.cache = {}
         self.__dict__.update(defaults)
 
     def remove(self):
@@ -89,7 +91,8 @@ class File(object):
 
     @cached_property
     def can_download(self):
-        return self.app.config['directory_downloadable'] or not self.is_directory
+        return self.app.config['directory_downloadable'] or \
+               not self.is_directory
 
     @cached_property
     def can_remove(self):
@@ -102,7 +105,8 @@ class File(object):
     def can_upload(self):
         dirbase = self.app.config["directory_upload"]
         if self.is_directory and dirbase:
-            return dirbase == self.path or self.path.startswith(dirbase + os.sep)
+            return dirbase == self.path or \
+                   self.path.startswith(dirbase + os.sep)
         return False
 
     @cached_property
@@ -125,9 +129,11 @@ class File(object):
 
     @cached_property
     def is_empty(self):
+        if 'listdir' in self.cache:
+            return bool(self.cache['listdir'])
         for entry in compat.scandir(self.path):
-            return True
-        return False
+            return False
+        return True
 
     @cached_property
     def parent(self):
@@ -188,12 +194,13 @@ class File(object):
         '''
         Get sorted list (by `is_directory` and `name` properties) of File
         objects.
-        
+
         :return: sorted list of File instances
         :rtype: list of File
         '''
-        if hasattr(self.listdir, 'cache'):
-            return self.listdir.cache
+        if 'listdir' in self.cache:
+            return self.cache['listdir']
+
         precomputed_stats = os.name == 'nt'
         content = [
             self.__class__(
@@ -201,14 +208,14 @@ class File(object):
                 app=self.app,
                 is_directory=entry.is_dir(),
                 parent=self,
-                **( {'stats': entry.stat()}
-                    if precomputed_stats and not entry.is_symlink() else
-                    {})
+                **({'stats': entry.stat()}
+                   if precomputed_stats and not entry.is_symlink() else
+                   {})
                 )
             for entry in compat.scandir(self.path)
             ]
-        content.sort(key=lambda f: (f.is_directory, f.name.lower()))
-        self.listdir.cache = content
+        content.sort(key=lambda f: (not f.is_directory, f.name.lower()))
+        self.cache['listdir'] = content
         return content
 
     @classmethod
@@ -216,7 +223,7 @@ class File(object):
         '''
         Alternative constructor which accepts a path as taken from URL and uses
         the given app or the current app config to get the real path.
-        
+
         :param path: relative path as from URL
         :param app: optional, flask application
         :return: file object pointing to path
@@ -454,10 +461,10 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.fs_encoding):
 
     if check_forbidden_filename(path, destiny_os=destiny_os):
         return ''
-    
+
     if isinstance(path, bytes):
         path = path.decode('latin-1', errors=underscore_replace)
-    
+
     # Decode and recover from filesystem encoding in order to strip unwanted
     # characters out
     kwargs = dict(

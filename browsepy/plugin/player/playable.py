@@ -6,7 +6,7 @@ import os.path
 from flask._compat import with_metaclass
 from werkzeug.utils import cached_property
 from browsepy.compat import range, str_base, PY_LEGACY
-from browsepy.file import File, undescore_replace, check_under_base
+from browsepy.file import File, underscore_replace, check_under_base
 
 
 if PY_LEGACY:
@@ -111,11 +111,11 @@ class PLSFile(PlayListFile):
         maxsize = self._parser.getint('playlist', 'NumberOfEntries', None)
         for i in range(self.maxsize if maxsize is None else maxsize):
             pf = self.playable_class(
-                path = self.normalize_playable_path(
+                path=self.normalize_playable_path(
                     self._parser.get('playlist', 'File%d' % i, None)
                     ),
-                duration = self._parser.getint('playlist', 'Length%d' % i, None),
-                title =  self._parser.get('playlist', 'Title%d' % i, None),
+                duration=self._parser.getint('playlist', 'Length%d' % i, None),
+                title=self._parser.get('playlist', 'Title%d' % i, None),
                 )
             if pf.path:
                 yield pf
@@ -133,12 +133,16 @@ class M3UFile(PlayListFile):
             file.title = title
             return False
         file.path = self.normalize_playable_path(line)
-        return not file.path is None
+        return file.path is not None
 
     def iter_files(self):
         prefix = '#EXTM3U\n'
         encoding = 'utf-8' if self.path.endswith('.m3u8') else 'ascii'
-        with codecs.open(self.path, 'r', encoding=encoding, errors=undescore_replace) as f:
+        with codecs.open(
+          self.path, 'r',
+          encoding=encoding,
+          errors=underscore_replace
+          ) as f:
             if f.read(len(prefix)) == prefix:
                 pf = PlayableFile()
                 for line in f:

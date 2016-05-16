@@ -20,7 +20,7 @@ class PluginManagerBase(object):
         return self.app.config['plugin_namespaces']
 
     def __init__(self, app=None):
-        if not app is None:
+        if app is not None:
             self.init_app(app)
 
     def init_app(self, app):
@@ -51,7 +51,9 @@ class PluginManagerBase(object):
             except (ImportError, IndexError):
                 pass
 
-        raise PluginNotFoundError('No plugin module %r found, tried %r' % (plugin, names), plugin, names)
+        raise PluginNotFoundError(
+            'No plugin module %r found, tried %r' % (plugin, names),
+            plugin, names)
 
 
 class BlueprintPluginManager(PluginManagerBase):
@@ -66,7 +68,8 @@ class BlueprintPluginManager(PluginManagerBase):
 
 
 class MimetypeActionPluginManager(PluginManagerBase):
-    action_class = collections.namedtuple('MimetypeAction', ('endpoint', 'widget'))
+    action_class = collections.namedtuple(
+        'MimetypeAction', ('endpoint', 'widget'))
     button_class = widget.ButtonWidget
     style_class = widget.StyleWidget
     javascript_class = widget.JavascriptWidget
@@ -100,7 +103,8 @@ class MimetypeActionPluginManager(PluginManagerBase):
             self.action_class(endpoint, widget.for_file(file))
             for tree_category in (category, '*')
             for tree_variant in (variant, '*')
-            for endpoint, widget in self._root.get(tree_category, {}).get(tree_variant, ())
+            for endpoint, widget in
+            self._root.get(tree_category, {}).get(tree_variant, ())
             ]
 
     def register_mimetype_function(self, fnc):
@@ -114,7 +118,9 @@ class MimetypeActionPluginManager(PluginManagerBase):
         action = (endpoint, widget)
         for mimetype in mimetypes:
             category, variant = mimetype.split('/')
-            self._root.setdefault(category, {}).setdefault(variant, []).append(action)
+            self._root.setdefault(
+                category, {}
+                ).setdefault(variant, []).append(action)
 
 
 class PluginManager(BlueprintPluginManager, MimetypeActionPluginManager):

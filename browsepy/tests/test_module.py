@@ -28,6 +28,7 @@ class FileMock(object):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
+
 class Page(object):
     @classmethod
     def itertext(cls, element):
@@ -45,13 +46,14 @@ class Page(object):
 
 class ListPage(Page):
     path_strip_re = re.compile('\s+/\s+')
-    def __init__(self, path, directories, files, removable, upload):
+
+    def __init__(self, path, directories, files, removable, upload, source):
         self.path = path
         self.directories = directories
         self.files = files
         self.removable = removable
         self.upload = upload
-
+        self.source = source
 
     @classmethod
     def from_source(cls, source):
@@ -60,24 +62,32 @@ class ListPage(Page):
             (
                 row[0].attrib.get('class') == 'dir-icon',
                 row[1].find('.//a').attrib['href'],
-                any(button.attrib.get('class') == 'remove button' for button in row[2].findall('.//a'))
+                any(button.attrib.get('class') == 'remove button'
+                    for button in row[2].findall('.//a'))
             )
             for row in html.findall('.//table/tbody/tr')
         ]
         return cls(
-            cls.path_strip_re.sub('/', cls.innerText(html.find('.//h1'))).strip(),
+            cls.path_strip_re.sub(
+                '/',
+                cls.innerText(html.find('.//h1'))
+                ).strip(),
             [url for isdir, url, removable in rows if isdir],
             [url for isdir, url, removable in rows if not isdir],
-            all(removable for isdir, url, removable in rows) if rows else False,
-            html.find('.//form//input[@type=\'file\']') is not None
+            all(removable
+                for isdir, url, removable in rows
+                ) if rows else False,
+            html.find('.//form//input[@type=\'file\']') is not None,
+            source
         )
 
 
 class ConfirmPage(Page):
-    def __init__(self, path, name, back):
+    def __init__(self, path, name, back, source):
         self.path = path
         self.name = name
         self.back = back
+        self.source = source
 
     @classmethod
     def from_source(cls, source):
@@ -88,13 +98,15 @@ class ConfirmPage(Page):
         return cls(
             prefix+name,
             name,
-            html.find('.//form[@method=\'get\']').attrib['action']
+            html.find('.//form[@method=\'get\']').attrib['action'],
+            source
         )
 
 
 class PageException(Exception):
-    def __init__(self, status):
+    def __init__(self, status, *args):
         self.status = status
+        super(PageException, self).__init__(status, *args)
 
 
 class Page404Exception(PageException):
@@ -125,11 +137,11 @@ class TestApp(unittest.TestCase):
         open(os.path.join(self.remove, 'testfile.txt'), 'w').close()
 
         self.app.config.update(
-            directory_base = self.base,
-            directory_start = self.start,
-            directory_remove = self.remove,
-            directory_upload = self.upload,
-            SERVER_NAME = 'test',
+            directory_base=self.base,
+            directory_start=self.start,
+            directory_remove=self.remove,
+            directory_upload=self.upload,
+            SERVER_NAME='test',
         )
 
         self.base_directories = [
@@ -142,7 +154,8 @@ class TestApp(unittest.TestCase):
         self.upload_files = []
 
     def clear(self, path):
-        assert path.startswith(self.base + os.sep), 'Cannot clear directories out of base'
+        assert path.startswith(self.base + os.sep), \
+               'Cannot clear directories out of base'
 
         for sub in os.listdir(path):
             sub = os.path.join(path, sub)
@@ -165,17 +178,31 @@ class TestApp(unittest.TestCase):
         with self.app.test_client() as client:
             response = client.get(self.url_for(endpoint, **kwargs))
             if response.status_code != 200:
-                raise self.page_exceptions.get(response.status_code, self.page_exceptions[None])(response.status_code)
-            result = response.data if page_class is None else page_class.from_source(response.data)
+                raise self.page_exceptions.get(
+                    response.status_code,
+                    self.page_exceptions[None]
+                    )(response.status_code)
+            result = (
+                response.data
+                if page_class is None else
+                page_class.from_source(response.data)
+                )
             response.close()
             return result
 
     def post(self, endpoint, **kwargs):
         data = kwargs.pop('data') if 'data' in kwargs else {}
         with self.app.test_client() as client:
-            response = client.post(self.url_for(endpoint, **kwargs), data=data, follow_redirects=True)
+            response = client.post(
+                self.url_for(endpoint, **kwargs),
+                data=data,
+                follow_redirects=True
+                )
             if response.status_code != 200:
-                raise self.page_exceptions.get(response.status_code, self.page_exceptions[None])(response.status_code)
+                raise self.page_exceptions.get(
+                    response.status_code,
+                    self.page_exceptions[None]
+                    )(response.status_code)
             return self.list_page_class.from_source(response.data)
 
     def url_for(self, endpoint, **kwargs):
@@ -307,10 +334,14 @@ class TestApp(unittest.TestCase):
 
         iodata = io.BytesIO(data)
         with tarfile.open('start.tgz', mode="r:gz", fileobj=iodata) as tgz:
-            tgz_files = [member.name for member in tgz.getmembers() if member.name]
+            tgz_files = [
+                member.name
+                for member in tgz.getmembers()
+                if member.name
+                ]
         tgz_files.sort()
 
-        self.assertEqual(tgz_files, ['testfile.bin', 'testfile.txt',])
+        self.assertEqual(tgz_files, ['testfile.bin', 'testfile.txt'])
 
         self.assertRaises(
             Page404Exception,
@@ -318,17 +349,26 @@ class TestApp(unittest.TestCase):
         )
 
     def test_upload(self):
-        c = unichr if PY_LEGACY else chr
+        def genbytesio(nbytes, encoding):
+            c = unichr if PY_LEGACY else chr
+            return io.BytesIO(''.join(map(c, range(nbytes))).encode(encoding))
 
         files = {
-            'testfile.txt': io.BytesIO(''.join(map(c, range(127))).encode('ascii')),
-            'testfile.bin': io.BytesIO(''.join(map(c, range(255))).encode('utf-8')),
+            'testfile.txt': genbytesio(127, 'ascii'),
+            'testfile.bin': genbytesio(255, 'utf-8'),
         }
-        output = self.post('upload',
-                           path='upload',
-                           data={'file%d' % n: (data, name) for n, (name, data) in enumerate(files.items())}
-                           )
-        expected_links = sorted(self.url_for('open', path='upload/%s' % i) for i in files)
+        output = self.post(
+            'upload',
+            path='upload',
+            data={
+                'file%d' % n: (data, name)
+                for n, (name, data) in enumerate(files.items())
+                }
+            )
+        expected_links = sorted(
+            self.url_for('open', path='upload/%s' % i)
+            for i in files
+            )
         self.assertEqual(sorted(output.files), expected_links)
         self.clear(self.upload)
 
@@ -339,13 +379,14 @@ class TestApp(unittest.TestCase):
             ('testfile.txt', 'something'),
             ('testfile.txt', 'something_new'),
         )
-        output = self.post('upload',
-                           path='upload',
-                           data={
-                               'file%d' % n: (io.BytesIO(data.encode('ascii')), name)
-                               for n, (name, data) in enumerate(files)
-                               }
-                           )
+        output = self.post(
+            'upload',
+            path='upload',
+            data={
+               'file%d' % n: (io.BytesIO(data.encode('ascii')), name)
+               for n, (name, data) in enumerate(files)
+               }
+            )
 
         self.assertEqual(len(files), len(output.files))
 
@@ -368,7 +409,7 @@ class TestFile(unittest.TestCase):
     module = browsepy.file
 
     def setUp(self):
-        self.app = browsepy.app # FIXME
+        self.app = browsepy.app  # FIXME
         self.workbench = tempfile.mkdtemp()
 
     def tearDown(self):
@@ -415,7 +456,7 @@ class TestFile(unittest.TestCase):
         f = self.module.File(test_file, app=self.app)
 
         default = self.app.config['use_binary_multiples']
-        
+
         self.app.config['use_binary_multiples'] = True
         self.assertEqual(f.size, '1.00 KiB')
 
@@ -440,7 +481,7 @@ class TestFile(unittest.TestCase):
 
     def test_choose_filename(self):
         f = self.module.File(self.workbench, app=self.app)
-        first_file =  os.path.join(self.workbench, 'testfile.txt')
+        first_file = os.path.join(self.workbench, 'testfile.txt')
 
         filename = f.choose_filename('testfile.txt', attempts=0)
         self.assertEqual(filename, 'testfile.txt')
@@ -465,6 +506,7 @@ class TestFile(unittest.TestCase):
 
 class TestFileFunctions(unittest.TestCase):
     module = browsepy.file
+
     def test_fmt_size(self):
         fnc = self.module.fmt_size
         for n, unit in enumerate(self.module.binary_units):
@@ -479,38 +521,70 @@ class TestFileFunctions(unittest.TestCase):
         self.assertEqual(self.module.secure_filename('\0'), '_')
         self.assertEqual(self.module.secure_filename('/'), '')
         self.assertEqual(self.module.secure_filename('C:\\'), '')
-        self.assertEqual(self.module.secure_filename('COM1.asdf', destiny_os='nt'), '')
-        self.assertEqual(self.module.secure_filename('\xf1', fs_encoding='ascii'), '_')
+        self.assertEqual(
+            self.module.secure_filename('COM1.asdf', destiny_os='nt'),
+            '')
+        self.assertEqual(
+            self.module.secure_filename('\xf1', fs_encoding='ascii'),
+            '_')
 
         if PY_LEGACY:
             expected = unicode('\xf1', encoding='latin-1')
-            self.assertEqual(self.module.secure_filename('\xf1', fs_encoding='utf-8'), expected)
-            self.assertEqual(self.module.secure_filename(expected, fs_encoding='utf-8'), expected)
+            self.assertEqual(
+                self.module.secure_filename('\xf1', fs_encoding='utf-8'),
+                expected)
+            self.assertEqual(
+                self.module.secure_filename(expected, fs_encoding='utf-8'),
+                expected)
         else:
-            self.assertEqual(self.module.secure_filename('\xf1', fs_encoding='utf-8'), '\xf1')
+            self.assertEqual(
+                self.module.secure_filename('\xf1', fs_encoding='utf-8'),
+                '\xf1')
 
     def test_alternative_filename(self):
-        self.assertEqual(self.module.alternative_filename('test', 2), 'test (2)')
-        self.assertEqual(self.module.alternative_filename('test.txt', 2), 'test (2).txt')
-        self.assertEqual(self.module.alternative_filename('test.tar.gz', 2), 'test (2).tar.gz')
-        self.assertEqual(self.module.alternative_filename('test.longextension', 2), 'test (2).longextension')
-        self.assertEqual(self.module.alternative_filename('test.tar.tar.tar', 2), 'test.tar (2).tar.tar')
-        self.assertNotEqual(self.module.alternative_filename('test'), 'test')
+        self.assertEqual(
+            self.module.alternative_filename('test', 2),
+            'test (2)')
+        self.assertEqual(
+            self.module.alternative_filename('test.txt', 2),
+            'test (2).txt')
+        self.assertEqual(
+            self.module.alternative_filename('test.tar.gz', 2),
+            'test (2).tar.gz')
+        self.assertEqual(
+            self.module.alternative_filename('test.longextension', 2),
+            'test (2).longextension')
+        self.assertEqual(
+            self.module.alternative_filename('test.tar.tar.tar', 2),
+            'test.tar (2).tar.tar')
+        self.assertNotEqual(
+            self.module.alternative_filename('test'),
+            'test')
 
     def test_relativize_path(self):
-        self.assertEqual(self.module.relativize_path('/parent/child', '/parent'), 'child')
-        self.assertEqual(self.module.relativize_path('/grandpa/parent/child', '/grandpa/parent'), 'child')
-        self.assertEqual(self.module.relativize_path('/grandpa/parent/child', '/grandpa'), 'parent/child')
+        self.assertEqual(
+            self.module.relativize_path('/parent/child', '/parent'),
+            'child')
+        self.assertEqual(
+            self.module.relativize_path(
+                '/grandpa/parent/child',
+                '/grandpa/parent'),
+            'child')
+        self.assertEqual(
+            self.module.relativize_path('/grandpa/parent/child', '/grandpa'),
+            'parent/child')
         self.assertRaises(
             browsepy.OutsideDirectoryBase,
             self.module.relativize_path, '/other', '/parent'
         )
 
     def test_under_base(self):
-        self.assertTrue(self.module.check_under_base('C:\\as\\df\\gf', 'C:\\as\\df', '\\'))
+        self.assertTrue(
+            self.module.check_under_base('C:\\as\\df\\gf', 'C:\\as\\df', '\\'))
         self.assertTrue(self.module.check_under_base('/as/df', '/as', '/'))
 
-        self.assertFalse(self.module.check_under_base('C:\\cc\\df\\gf', 'C:\\as\\df', '\\'))
+        self.assertFalse(
+            self.module.check_under_base('C:\\cc\\df\\gf', 'C:\\as\\df', '\\'))
         self.assertFalse(self.module.check_under_base('/cc/df', '/as', '/'))
 
 
@@ -537,7 +611,9 @@ class TestMain(unittest.TestCase):
 
     def test_params(self):
         plugins = ['plugin_1', 'plugin_2', 'namespace.plugin_3']
-        result = self.parser.parse_args(['127.1.1.1', '5000',
+        result = self.parser.parse_args([
+            '127.1.1.1',
+            '5000',
             '--directory=%s' % self.base,
             '--initial=%s' % self.base,
             '--removable=%s' % self.base,
@@ -554,15 +630,25 @@ class TestMain(unittest.TestCase):
 
     def test_main(self):
         params = {}
-        self.module.main(argv=[], run_fnc=lambda app, **kwargs: params.update(kwargs))
+        self.module.main(
+            argv=[],
+            run_fnc=lambda app, **kwargs: params.update(kwargs)
+            )
 
-        defaults = {'host': '127.0.0.1', 'port': 8080, 'debug': False, 'threaded': True}
+        defaults = {
+            'host': '127.0.0.1',
+            'port': 8080,
+            'debug': False,
+            'threaded': True
+            }
         params_subset = {k: v for k, v in params.items() if k in defaults}
         self.assertEqual(defaults, params_subset)
+
 
 class TestPlugins(unittest.TestCase):
     app_module = browsepy
     manager_module = browsepy.manager
+
     def setUp(self):
         self.app = self.app_module.app
         self.manager = self.manager_module.PluginManager(self.app)
@@ -582,8 +668,14 @@ class TestPlugins(unittest.TestCase):
             for action in self.manager.get_actions(FileMock(mimetype='a/a'))
             )
 
-        self.assertEqual(endpoints, sorted(['test_x_x', 'test_a_x', 'test_x_a', 'test_a_a']))
-        self.assertEqual(self.app.view_functions['test_plugin.root'](), 'test_plugin_root')
+        self.assertEqual(
+            endpoints,
+            sorted(('test_x_x', 'test_a_x', 'test_x_a', 'test_a_a'))
+            )
+        self.assertEqual(
+            self.app.view_functions['test_plugin.root'](),
+            'test_plugin_root'
+            )
         self.assertIn('test_plugin', self.app.blueprints)
 
         self.assertRaises(
@@ -603,8 +695,14 @@ def register_plugin(manager):
     manager.register_action('test_a_a', widget_class('test_a_a'), ('a/a',))
     manager.register_action('test_b_x', widget_class('test_b_x'), ('b/*',))
 
-    test_plugin_blueprint = flask.Blueprint('test_plugin', __name__, url_prefix = '/test_plugin_blueprint')
-    test_plugin_blueprint.add_url_rule('/', endpoint='root', view_func=lambda: 'test_plugin_root')
+    test_plugin_blueprint = flask.Blueprint(
+        'test_plugin',
+        __name__,
+        url_prefix='/test_plugin_blueprint')
+    test_plugin_blueprint.add_url_rule(
+        '/',
+        endpoint='root',
+        view_func=lambda: 'test_plugin_root')
 
     manager.register_blueprint(test_plugin_blueprint)
 

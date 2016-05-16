@@ -20,6 +20,7 @@ repository from `github`_::
 """
 
 import os
+import sys
 
 try:
     from setuptools import setup
@@ -28,25 +29,30 @@ except ImportError:
 
 with open('browsepy/__meta__.py') as f:
     data = {}
-    code = compile(f.read(), f.name, 'exec')
-    exec(code, data, data)
+    exec(compile(f.read(), f.name, 'exec'), data, data)
     __app__ = data['__app__']
     __version__ = data['__version__']
     __license__ = data['__license__']
-    
+
 with open('README.rst') as f:
     __doc__ = f.read()
-    
+
 extra_requires = []
 
 if not hasattr(os, 'scandir'):
     extra_requires.append('scandir')
 
+for debugger in ('ipdb', 'pudb', 'pdb'):
+    opt = '--debug=%s' % debugger
+    if opt in sys.argv:
+        os.environ['UNITTEST_DEBUG'] = debugger
+        sys.argv.remove(opt)
+
 setup(
     name=__app__,
     version=__version__,
     url='https://github.com/ergoithz/browsepy',
-    download_url = 'https://github.com/ergoithz/browsepy/tarball/0.3.2',
+    download_url='https://github.com/ergoithz/browsepy/tarball/0.3.2',
     license=__license__,
     author='Felipe A. Hernandez',
     author_email='ergoithz@gmail.com',
@@ -59,18 +65,18 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
     ],
-    keywords = ['web', 'file', 'browser'],
+    keywords=['web', 'file', 'browser'],
     packages=[
         'browsepy',
         'browsepy.tests',
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],
-    package_data={ # ignored by sdist (see MANIFEST.in), used by bdist_wheel
+    package_data={  # ignored by sdist (see MANIFEST.in), used by bdist_wheel
         'browsepy': [
             'templates/*',
             'static/fonts/*',
-            'static/*.*', # do not capture directories
+            'static/*.*',  # do not capture directories
         ],
         'browsepy.plugin.player': [
             'templates/*',
@@ -78,6 +84,7 @@ setup(
         ]},
     install_requires=['flask'] + extra_requires,
     test_suite='browsepy.tests',
+    test_runner='browsepy.tests.runner:DebuggerTextTestRunner',
     zip_safe=False,
     platforms='any'
 )

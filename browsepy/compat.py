@@ -7,7 +7,7 @@ import sys
 import itertools
 
 PY_LEGACY = sys.version_info < (3, )
-ENV_PATH = [] # populated later
+ENV_PATH = []  # populated later
 
 try:
     from scandir import scandir
@@ -18,21 +18,23 @@ except ImportError:
 
 fs_encoding = sys.getfilesystemencoding()
 
+
 def isnonstriterable(iterable):
     '''
     Check if given object is a non-str iterable.
-    
+
     :param iterable: potential iterable object
     :type iterable: object or builtin
     :return: True if given objects is not str but iterable, False otherwise
     :rtype: bool
     '''
     return hasattr(iterable, '__iter__') and not isinstance(iterable, str_base)
-    
+
+
 def isexec(path):
     '''
     Check if given path points to an executable file.
-    
+
     :param path: file path
     :type path: str
     :return: True if executable, False otherwise
@@ -40,13 +42,14 @@ def isexec(path):
     '''
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
+
 def which(name,
           env_path=ENV_PATH,
           is_executable_fnc=isexec,
           path_join_fnc=os.path.join):
     '''
     Get command absolute path.
-    
+
     :param name: name of executable command
     :type name: str
     :param env_path: OS environment executable paths, defaults to autodetected
@@ -65,10 +68,11 @@ def which(name,
             return exe_file
     return None
 
+
 def fsdecode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
     '''
     Decode given path.
-    
+
     :param path: path will be decoded if using bytes
     :type path: bytes or str
     :param os_name: operative system name, defaults to os.name
@@ -82,13 +86,14 @@ def fsdecode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
         return path
     if not errors:
         use_strict = PY_LEGACY or os_name == 'nt'
-        errors = 'strict' if use_strict else 'surrogateescape' 
+        errors = 'strict' if use_strict else 'surrogateescape'
     return path.decode(fs_encoding, errors=errors)
+
 
 def fsencode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
     '''
     Encode given path.
-    
+
     :param path: path will be encoded if not using bytes
     :type path: bytes or str
     :param os_name: operative system name, defaults to os.name
@@ -102,14 +107,15 @@ def fsencode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
         return path
     if not errors:
         use_strict = PY_LEGACY or os_name == 'nt'
-        errors = 'strict' if use_strict else 'surrogateescape' 
+        errors = 'strict' if use_strict else 'surrogateescape'
     return path.encode(fs_encoding, errors=errors)
-    
+
+
 def getcwd(fs_encoding=fs_encoding, cwd_fnc=os.getcwd):
     '''
     Get current work directory's absolute path.
     Like os.getcwd but garanteed to return an unicode-str object.
-    
+
     :param fs_encoding: filesystem encoding, defaults to autodetected
     :type fs_encoding: str
     :param cwd_fnc: callable used to get the path, defaults to os.getcwd
@@ -121,7 +127,7 @@ def getcwd(fs_encoding=fs_encoding, cwd_fnc=os.getcwd):
     if isinstance(path, bytes):
         path = fsdecode(path, fs_encoding=fs_encoding)
     return os.path.abspath(path)
-    
+
 ENV_PATH[:] = (
   fsdecode(path.strip('"'))
   for path in os.environ['PATH'].split(os.pathsep)
