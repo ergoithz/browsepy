@@ -4,4 +4,5 @@ checks:
         duplicate_code: true
 filter:
     excluded_paths:
-        - "*/test*.py"
+        - "*/tests.py"
+        - "*/tests/*"
