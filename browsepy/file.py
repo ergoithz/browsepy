@@ -16,7 +16,7 @@ import functools
 import logging
 import warnings
 
-from flask import current_app, send_from_directory, Response
+from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
 
 from . import compat
@@ -170,10 +170,20 @@ class File(Node):
         return "default"
 
     def remove(self):
+        '''
+        Remove file.
+        :raises OutsideRemovableBase: when not under removable base directory
+        '''
         super(File, self).remove()
         os.unlink(self.path)
 
     def download(self):
+        '''
+        Get a Flask's send_file Response object pointing to this file.
+
+        :returns: Response object as returned by flask's send_file
+        :rtype: flask.Response
+        '''
         directory, name = os.path.split(self.path)
         return send_from_directory(directory, name, as_attachment=True)
 
@@ -216,20 +226,52 @@ class Directory(Node):
         return True
 
     def remove(self):
+        '''
+        Remove directory tree.
+
+        :raises OutsideRemovableBase: when not under removable base directory
+        '''
         super(Directory, self).remove()
         shutil.rmtree(self.path)
 
     def download(self):
-        stream = TarFileStream(
-            self.path,
-            self.app.config["directory_tar_buffsize"]
+        '''
+        Get a Flask Response object streaming a tarball of this directory.
+
+        :returns: Response object
+        :rtype: flask.Response
+        '''
+        return self.app.response_class(
+            TarFileStream(
+                self.path,
+                self.app.config["directory_tar_buffsize"]
+                ),
+            mimetype="application/octet-stream"
             )
-        return Response(stream, mimetype="application/octet-stream")
 
     def contains(self, filename):
+        '''
+        Check if directory contains an entry with given filename.
+
+        :param filename: filename will be check
+        :type filename: str
+        :returns: True if exists, False otherwise.
+        :rtype: bool
+        '''
         return os.path.exists(os.path.join(self.path, filename))
 
     def choose_filename(self, filename, attempts=999):
+        '''
+        Get a new filename which does not colide with any entry on directory,
+        based on given filename.
+
+        :param filename: base filename
+        :type filename: str
+        :param attempts: number of attempts, defaults to 999
+        :type attempts: int
+        :returns: filename
+        :rtype: str
+        '''
         new_filename = filename
         for attempt in range(2, attempts+1):
             if not self.contains(new_filename):
