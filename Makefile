@@ -11,4 +11,4 @@ clean:
 	find . -type d -name "__pycache__" -delete
 
 coverage:
-	coverage run --source=browsepy setup.py test --omit=browsepy/tests/runner.py
+	coverage run --source=browsepy setup.py test
