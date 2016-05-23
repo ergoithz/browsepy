@@ -67,13 +67,41 @@ class BlueprintPluginManager(PluginManagerBase):
         return module
 
 
-class MimetypeActionPluginManager(PluginManagerBase):
+class ActionPluginManager(PluginManagerBase):
     action_class = collections.namedtuple(
-        'MimetypeAction', ('endpoint', 'widget'))
+        'CallbackAction', ('endpoint', 'widget'))
     button_class = widget.ButtonWidget
     style_class = widget.StyleWidget
     javascript_class = widget.JavascriptWidget
     link_class = widget.LinkWidget
+
+    def __init__(self, app=None):
+        self._widgets = {}
+        self._callback_actions = []
+        super(ActionPluginManager, self).__init__(app=app)
+
+    def get_actions(self, file):
+        return list(self.iter_actions(file))
+
+    def iter_actions(self, file):
+        for callback, endpoint, widget in self._callback_actions:
+            if callback(file):
+                yield self.action_class(endpoint, widget.for_file(file))
+
+    def get_widgets(self, place):
+        return self._widgets.get(place, [])
+
+    def register_widget(self, widget):
+        self._widgets.setdefault(widget.place, []).append(widget)
+
+    def register_action(self, endpoint, widget, callback=None, **kwargs):
+        if callable(callback):
+            self._callback_actions.append((callback, endpoint, widget))
+
+
+class MimetypeActionPluginManager(ActionPluginManager):
+    action_class = collections.namedtuple(
+        'MimetypeAction', ('endpoint', 'widget'))
 
     _default_mimetype_functions = [
         mimetype.by_python,
@@ -83,7 +111,6 @@ class MimetypeActionPluginManager(PluginManagerBase):
 
     def __init__(self, app=None):
         self._root = {}
-        self._widgets = {}
         self._mimetype_functions = list(self._default_mimetype_functions)
         super(MimetypeActionPluginManager, self).__init__(app=app)
 
@@ -94,26 +121,26 @@ class MimetypeActionPluginManager(PluginManagerBase):
                 return mime
         return mimetype.by_default(path)
 
-    def get_widgets(self, place):
-        return self._widgets.get(place, [])
+    def iter_actions(self, file):
+        for action in super(MimetypeActionPluginManager, self)\
+                        .iter_actions(file):
+            yield action
 
-    def get_actions(self, file):
         category, variant = file.mimetype.split('/')
-        return [
-            self.action_class(endpoint, widget.for_file(file))
-            for tree_category in (category, '*')
-            for tree_variant in (variant, '*')
-            for endpoint, widget in
-            self._root.get(tree_category, {}).get(tree_variant, ())
-            ]
+        for tree_category in (category, '*'):
+            for tree_variant in (variant, '*'):
+                acts = self._root.get(tree_category, {}).get(tree_variant, ())
+                for endpoint, widget in acts:
+                    yield self.action_class(endpoint, widget.for_file(file))
 
     def register_mimetype_function(self, fnc):
         self._mimetype_functions.insert(0, fnc)
 
-    def register_widget(self, widget):
-        self._widgets.setdefault(widget.place, []).append(widget)
-
     def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
+        if not mimetypes:
+            super(MimetypeActionPluginManager, self)\
+                    .register_action(endpoint, widget, **kwargs)
+            return
         mimetypes = mimetypes if isnonstriterable(mimetypes) else (mimetypes,)
         action = (endpoint, widget)
         for mimetype in mimetypes:

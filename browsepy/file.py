@@ -29,16 +29,24 @@ underscore_replace = '%s:underscore' % __name__
 codecs.register_error(underscore_replace,
                       lambda error: (unicode_underscore, error.start + 1)
                       )
+binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
+standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+common_path_separators = '\\/'
+restricted_chars = '\\/\0'
+restricted_names = ('.', '..', '::', os.sep)
+nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
+                   'LPT2', 'LPT3', 'PRN', 'NUL')
+fs_safe_characters = string.ascii_uppercase + string.digits
 
 
 class File(object):
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     parent_class = None  # none means current class
+    _listdir_cache = None
 
     def __init__(self, path=None, app=None, **defaults):
         self.path = compat.fsdecode(path) if path else None
         self.app = current_app if app is None else app
-        self.cache = {}
         self.__dict__.update(defaults)
 
     def remove(self):
@@ -129,8 +137,8 @@ class File(object):
 
     @cached_property
     def is_empty(self):
-        if 'listdir' in self.cache:
-            return bool(self.cache['listdir'])
+        if self._listdir_cache is not None:
+            return bool(self._listdir_cache)
         for entry in compat.scandir(self.path):
             return False
         return True
@@ -153,12 +161,16 @@ class File(object):
 
     @cached_property
     def raw_listdir(self):
-        warnings.warn("Deprecated property File.raw_listdir", DeprecationWarning)
+        warnings.warn(
+            "Deprecated property File.raw_listdir",
+            DeprecationWarning
+        )
         return os.listdir(self.path)
 
     @property
     def modified(self):
-        return datetime.datetime.fromtimestamp(self.stats.st_mtime).strftime('%Y.%m.%d %H:%M:%S')
+        dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
+        return dt.strftime('%Y.%m.%d %H:%M:%S')
 
     @property
     def size(self):
@@ -198,8 +210,8 @@ class File(object):
         :return: sorted list of File instances
         :rtype: list of File
         '''
-        if 'listdir' in self.cache:
-            return self.cache['listdir']
+        if self._listdir_cache is not None:
+            return self._listdir_cache
 
         precomputed_stats = os.name == 'nt'
         content = [
@@ -215,7 +227,7 @@ class File(object):
             for entry in compat.scandir(self.path)
             ]
         content.sort(key=lambda f: (not f.is_directory, f.name.lower()))
-        self.cache['listdir'] = content
+        self._listdir_cache = content
         return content
 
     @classmethod
@@ -254,13 +266,17 @@ class TarFileStream(object):
         self._data = bytes()
         self._add = self.event_class()
         self._result = self.event_class()
-        self._tarfile = self.tarfile_class(fileobj=self, mode="w|gz", bufsize=buffsize) # stream write
+        self._tarfile = self.tarfile_class(
+            fileobj=self,
+            mode="w|gz",
+            bufsize=buffsize
+            )  # stream write
         self._th = self.thread_class(target=self.fill)
         self._th.start()
 
     def fill(self):
         self._tarfile.add(self.path, "")
-        self._tarfile.close() # force stream flush
+        self._tarfile.close()  # force stream flush
         self._finished += 1
         if not self._result.is_set():
             self._result.set()
@@ -309,8 +325,6 @@ class OutsideRemovableBase(Exception):
     pass
 
 
-binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
-standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 def fmt_size(size, binary=True):
     '''
     Get size and unit.
@@ -332,6 +346,7 @@ def fmt_size(size, binary=True):
         size /= fmt_divider
     return size, fmt_sizes[-1]
 
+
 def relativize_path(path, base, os_sep=os.sep):
     '''
     Make absolute path relative to an absolute base.
@@ -350,6 +365,7 @@ def relativize_path(path, base, os_sep=os.sep):
         prefix_len += len(os_sep)
     return path[prefix_len:]
 
+
 def abspath_to_urlpath(path, base, os_sep=os.sep):
     '''
     Make filesystem absolute path uri relative using given absolute base path.
@@ -362,6 +378,7 @@ def abspath_to_urlpath(path, base, os_sep=os.sep):
     :raises OutsideDirectoryBase: if resulting path is not below base
     '''
     return relativize_path(path, base, os_sep).replace(os_sep, '/')
+
 
 def urlpath_to_abspath(path, base, os_sep=os.sep):
     '''
@@ -380,10 +397,11 @@ def urlpath_to_abspath(path, base, os_sep=os.sep):
         return realpath
     raise OutsideDirectoryBase("%r is not under %r" % (realpath, base))
 
-common_path_separators = '\\/'
+
 def generic_filename(path):
     '''
-    Extract filename of given path os-indepently, taking care of known path separators.
+    Extract filename of given path os-indepently, taking care of known path
+    separators.
 
     :param path: path
     :return: filename
@@ -395,7 +413,7 @@ def generic_filename(path):
             _, path = path.rsplit(sep, 1)
     return path
 
-restricted_chars = '\\/\0'
+
 def clean_restricted_chars(path, restricted_chars=restricted_chars):
     '''
     Get path without restricted characters.
@@ -408,9 +426,6 @@ def clean_restricted_chars(path, restricted_chars=restricted_chars):
         path = path.replace(character, '_')
     return path
 
-restricted_names = ('.', '..', '::', os.sep)
-nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
-                   'LPT2', 'LPT3', 'PRN', 'NUL')
 
 def check_forbidden_filename(filename,
                              destiny_os=os.name,
@@ -431,6 +446,7 @@ def check_forbidden_filename(filename,
 
     return filename in restricted_names
 
+
 def check_under_base(path, base, os_sep=os.sep):
     '''
     Check if given absolute path is under given base.
@@ -442,6 +458,7 @@ def check_under_base(path, base, os_sep=os.sep):
     '''
     prefix = base if base.endswith(os_sep) else base + os_sep
     return path == base or path.startswith(prefix)
+
 
 def secure_filename(path, destiny_os=os.name, fs_encoding=compat.fs_encoding):
     '''
@@ -476,7 +493,7 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.fs_encoding):
     fs_decoded_path = compat.fsdecode(fs_encoded_path, **kwargs)
     return fs_decoded_path
 
-fs_safe_characters = string.ascii_uppercase + string.digits
+
 def alternative_filename(filename, attempt=None):
     '''
     Generates an alternative version of given filename.
@@ -493,7 +510,8 @@ def alternative_filename(filename, attempt=None):
     name = filename_parts[0]
     ext = ''.join(u'.%s' % ext for ext in filename_parts[1:])
     if attempt is None:
-        extra = u' %s' % ''.join(random.choice(fs_safe_characters) for i in range(8))
+        choose = random.choice
+        extra = u' %s' % ''.join(choose(fs_safe_characters) for i in range(8))
     else:
         extra = u' (%d)' % attempt
     return u'%s%s%s' % (name, extra, ext)

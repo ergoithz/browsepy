@@ -5,7 +5,7 @@ import os.path
 
 from flask._compat import with_metaclass
 from werkzeug.utils import cached_property
-from browsepy.compat import range, str_base, PY_LEGACY
+from browsepy.compat import walk, range, str_base, PY_LEGACY
 from browsepy.file import File, underscore_replace, check_under_base
 
 
@@ -32,6 +32,7 @@ class PlayableFile(File):
         'audio/ogg': 'ogg',
         'audio/wav': 'wav',
     }
+    mimetypes = tuple(media_map)
 
     def __init__(self, duration=None, title=None, **kwargs):
         self.duration = duration
@@ -68,6 +69,7 @@ class MetaPlayListFile(type):
 class PlayListFile(with_metaclass(MetaPlayListFile, File)):
     abstract_class = None
     playable_class = PlayableFile
+    mimetypes = ('audio/x-mpegurl', 'audio/x-scpls')
 
     def __new__(cls, *args, **kwargs):
         '''
@@ -81,8 +83,8 @@ class PlayListFile(with_metaclass(MetaPlayListFile, File)):
         return self
 
     def iter_files(self):
-        if False:
-            yield
+        return
+        yield
 
     def normalize_playable_path(self, path):
         if not os.path.isabs(path):
@@ -153,4 +155,12 @@ class M3UFile(PlayListFile):
 
 
 class PlayableDirectory(PlayListFile):
-    pass
+    @classmethod
+    def detect(self, file):
+        max_level = file.path.rstrip('/').count('/') + 5
+        for root, directories, files in walk(file.path, followlinks=True):
+            for filename in files:
+                if filename.rsplit('.', 1)[-1] in mimetypes:
+                    return True
+            if root.rstrip('/').count('/') >= max_level:
+                del dirs[:]

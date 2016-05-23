@@ -1,9 +1,14 @@
 
+import os
+import os.path
 import unittest
+import shutil
 
 import flask
+import tempfile
 
 import browsepy
+import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
 import browsepy.plugin.player.playable as player_playable
@@ -106,6 +111,20 @@ class TestPlayable(TestIntegrationBase):
         for ext, media_format in exts.items():
             pf = self.module.PlayableFile(path='asdf.%s' % ext, app=self.app)
             self.assertEqual(pf.media_format, media_format)
+
+    def test_playabledirectory(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            folder = os.path.join(tmpdir, 'test')
+            os.mkdir(folder)
+            file = os.path.join(folder, 'playable.mp3')
+            open(file, 'w').close()
+            tmpfile = browsepy_file.File(tmpdir)
+            self.assertTrue(self.module.PlayableDirectory.detect(tmpfile))
+            os.remove(file)
+            self.assertFalse(self.module.PlayableDirectory.detect(tmpfile))
+        finally:
+            shutil.rmtree(tmpdir)
 
     def test_playlistfile(self):
         pf = self.module.PlayListFile(path='filename.m3u', app=self.app)

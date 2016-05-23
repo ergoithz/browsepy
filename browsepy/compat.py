@@ -10,11 +10,12 @@ PY_LEGACY = sys.version_info < (3, )
 ENV_PATH = []  # populated later
 
 try:
-    from scandir import scandir
+    from scandir import scandir, walk
 except ImportError:
     if not hasattr(os, 'scandir'):
         raise
     scandir = os.scandir
+    walk = os.walk
 
 fs_encoding = sys.getfilesystemencoding()
 
