@@ -21,6 +21,7 @@ from werkzeug.utils import cached_property
 
 from . import compat
 from .compat import range
+from .functional import psetattr
 
 
 logger = logging.getLogger(__name__)
@@ -39,46 +40,12 @@ nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
 fs_safe_characters = string.ascii_uppercase + string.digits
 
 
-class File(object):
+class Node(object):
+    directory_class = None  # set later at import time
+    file_class = None  # set later at import time
+
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
-    parent_class = None  # none means current class
-    _listdir_cache = None
-
-    def __init__(self, path=None, app=None, **defaults):
-        self.path = compat.fsdecode(path) if path else None
-        self.app = current_app if app is None else app
-        self.__dict__.update(defaults)
-
-    def remove(self):
-        if not self.can_remove:
-            raise OutsideRemovableBase("File outside removable base")
-        if self.is_directory:
-            shutil.rmtree(self.path)
-        else:
-            os.unlink(self.path)
-
-    def download(self):
-        if self.is_directory:
-            stream = TarFileStream(
-                self.path,
-                self.app.config["directory_tar_buffsize"]
-                )
-            return Response(stream, mimetype="application/octet-stream")
-        directory, name = os.path.split(self.path)
-        return send_from_directory(directory, name, as_attachment=True)
-
-    def contains(self, filename):
-        return os.path.exists(os.path.join(self.path, filename))
-
-    def choose_filename(self, filename, attempts=999):
-        new_filename = filename
-        for attempt in range(2, attempts+1):
-            if not self.contains(new_filename):
-                return new_filename
-            new_filename = alternative_filename(filename, attempt)
-        while self.contains(new_filename):
-            new_filename = alternative_filename(filename)
-        return new_filename
+    can_download = False
 
     @property
     def plugin_manager(self):
@@ -89,66 +56,25 @@ class File(object):
         for action in self.actions:
             if action.widget.place == 'link':
                 return action
-        endpoint = 'browse' if self.is_directory else 'open'
-        widget = self.plugin_manager.link_class.from_file(self)
-        return self.plugin_manager.action_class(endpoint, widget)
 
     @cached_property
     def actions(self):
         return self.plugin_manager.get_actions(self)
 
     @cached_property
-    def can_download(self):
-        return self.app.config['directory_downloadable'] or \
-               not self.is_directory
-
-    @cached_property
     def can_remove(self):
         dirbase = self.app.config["directory_remove"]
-        if dirbase:
-            return self.path.startswith(dirbase + os.sep)
-        return False
-
-    @cached_property
-    def can_upload(self):
-        dirbase = self.app.config["directory_upload"]
-        if self.is_directory and dirbase:
-            return dirbase == self.path or \
-                   self.path.startswith(dirbase + os.sep)
-        return False
+        return dirbase and self.path.startswith(dirbase + os.sep)
 
     @cached_property
     def stats(self):
         return os.stat(self.path)
 
     @cached_property
-    def mimetype(self):
-        if self.is_directory:
-            return 'inode/directory'
-        return self.plugin_manager.get_mimetype(self.path)
-
-    @cached_property
-    def is_directory(self):
-        return os.path.isdir(self.path)
-
-    @cached_property
-    def is_file(self):
-        return os.path.isfile(self.path)
-
-    @cached_property
-    def is_empty(self):
-        if self._listdir_cache is not None:
-            return bool(self._listdir_cache)
-        for entry in compat.scandir(self.path):
-            return False
-        return True
-
-    @cached_property
     def parent(self):
         if self.path == self.app.config['directory_base']:
             return None
-        parent_class = self.parent_class or self.__class__
-        return parent_class(os.path.dirname(self.path), self.app)
+        return self.directory_class(os.path.dirname(self.path), self.app)
 
     @cached_property
     def ancestors(self):
@@ -159,28 +85,10 @@ class File(object):
             parent = parent.parent
         return ancestors
 
-    @cached_property
-    def raw_listdir(self):
-        warnings.warn(
-            "Deprecated property File.raw_listdir",
-            DeprecationWarning
-        )
-        return os.listdir(self.path)
-
     @property
     def modified(self):
         dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
         return dt.strftime('%Y.%m.%d %H:%M:%S')
-
-    @property
-    def size(self):
-        size, unit = fmt_size(
-            self.stats.st_size,
-            self.app.config["use_binary_multiples"]
-            )
-        if unit == binary_units[0]:
-            return "%d %s" % (size, unit)
-        return "%.2f %s" % (size, unit)
 
     @property
     def urlpath(self):
@@ -194,41 +102,14 @@ class File(object):
     def type(self):
         return self.mimetype.split(";", 1)[0]
 
-    @property
-    def encoding(self):
-        if ";" in self.mimetype:
-            match = self.re_charset.search(self.mimetype)
-            gdict = match.groupdict() if match else {}
-            return gdict.get("charset") or "default"
-        return "default"
+    def __init__(self, path=None, app=None, **defaults):
+        self.path = compat.fsdecode(path) if path else None
+        self.app = current_app if app is None else app
+        self.__dict__.update(defaults)
 
-    def listdir(self):
-        '''
-        Get sorted list (by `is_directory` and `name` properties) of File
-        objects.
-
-        :return: sorted list of File instances
-        :rtype: list of File
-        '''
-        if self._listdir_cache is not None:
-            return self._listdir_cache
-
-        precomputed_stats = os.name == 'nt'
-        content = [
-            self.__class__(
-                path=entry.path,
-                app=self.app,
-                is_directory=entry.is_dir(),
-                parent=self,
-                **({'stats': entry.stat()}
-                   if precomputed_stats and not entry.is_symlink() else
-                   {})
-                )
-            for entry in compat.scandir(self.path)
-            ]
-        content.sort(key=lambda f: (not f.is_directory, f.name.lower()))
-        self._listdir_cache = content
-        return content
+    def remove(self):
+        if not self.can_remove:
+            raise OutsideRemovableBase("File outside removable base")
 
     @classmethod
     def from_urlpath(cls, path, app=None):
@@ -243,7 +124,152 @@ class File(object):
         '''
         app = app or current_app
         base = app.config['directory_base']
-        return cls(path=urlpath_to_abspath(path, base), app=app)
+        path = urlpath_to_abspath(path, base)
+        kls = cls.directory_class if os.path.isdir(path) else cls.file_class
+        return kls(path=path, app=app)
+
+
+@psetattr(Node, 'file_class')
+class File(Node):
+    can_download = True
+    can_upload = False
+    is_directory = False
+
+    @property
+    def default_action(self):
+        action = super(File, self).default_action
+        if action is None:
+            widget = self.plugin_manager.link_class.from_file(self)
+            action = self.plugin_manager.action_class('open', widget)
+        return action
+
+    @cached_property
+    def mimetype(self):
+        return self.plugin_manager.get_mimetype(self.path)
+
+    @cached_property
+    def is_file(self):
+        return os.path.isfile(self.path)
+
+    @property
+    def size(self):
+        size, unit = fmt_size(
+            self.stats.st_size,
+            self.app.config["use_binary_multiples"]
+            )
+        if unit == binary_units[0]:
+            return "%d %s" % (size, unit)
+        return "%.2f %s" % (size, unit)
+
+    @property
+    def encoding(self):
+        if ";" in self.mimetype:
+            match = self.re_charset.search(self.mimetype)
+            gdict = match.groupdict() if match else {}
+            return gdict.get("charset") or "default"
+        return "default"
+
+    def remove(self):
+        super(File, self).remove()
+        os.unlink(self.path)
+
+    def download(self):
+        directory, name = os.path.split(self.path)
+        return send_from_directory(directory, name, as_attachment=True)
+
+
+@psetattr(Node, 'directory_class')
+class Directory(Node):
+    _listdir_cache = None
+    mimetype = 'inode/directory'
+    is_directory = True
+    is_file = False
+    size = 0
+    encoding = 'default'
+
+    @property
+    def default_action(self):
+        action = super(Directory, self).default_action
+        if action is None:
+            widget = self.plugin_manager.link_class.from_file(self)
+            action = self.plugin_manager.action_class('browse', widget)
+        return action
+
+    @cached_property
+    def can_download(self):
+        return self.app.config['directory_downloadable']
+
+    @cached_property
+    def can_upload(self):
+        dirbase = self.app.config["directory_upload"]
+        return dirbase and (
+            dirbase == self.path or
+            self.path.startswith(dirbase + os.sep)
+            )
+
+    @cached_property
+    def is_empty(self):
+        if self._listdir_cache is not None:
+            return bool(self._listdir_cache)
+        for entry in compat.scandir(self.path):
+            return False
+        return True
+
+    def remove(self):
+        super(Directory, self).remove()
+        shutil.rmtree(self.path)
+
+    def download(self):
+        stream = TarFileStream(
+            self.path,
+            self.app.config["directory_tar_buffsize"]
+            )
+        return Response(stream, mimetype="application/octet-stream")
+
+    def contains(self, filename):
+        return os.path.exists(os.path.join(self.path, filename))
+
+    def choose_filename(self, filename, attempts=999):
+        new_filename = filename
+        for attempt in range(2, attempts+1):
+            if not self.contains(new_filename):
+                return new_filename
+            new_filename = alternative_filename(filename, attempt)
+        while self.contains(new_filename):
+            new_filename = alternative_filename(filename)
+        return new_filename
+
+    def _listdir(self):
+        '''
+        Iter unsorted entries on this directory.
+
+        :yields: Directory or File instance for each entry in directory
+        :ytype: Node
+        '''
+        precomputed_stats = os.name == 'nt'
+        for entry in compat.scandir(self.path):
+            kwargs = {'path': entry.path, 'app': self.app, 'parent': self}
+            if precomputed_stats and not entry.is_symlink():
+                kwargs['stats'] = entry.stats()
+            if entry.is_dir(follow_symlinks=True):
+                yield self.directory_class(**kwargs)
+                continue
+            yield self.file_class(**kwargs)
+
+    def listdir(self):
+        '''
+        Get sorted list (by `is_directory` and `name` properties) of File
+        objects.
+
+        :return: sorted list of File instances
+        :rtype: list of File
+        '''
+        if self._listdir_cache is None:
+            self._listdir_cache = sorted(
+                self._listdir(),
+                key=lambda f: (not f.is_directory, f.name.lower())
+                )
+        return self._listdir_cache
 
 
 class TarFileStream(object):

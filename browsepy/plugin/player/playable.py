@@ -6,7 +6,7 @@ import os.path
 from flask._compat import with_metaclass
 from werkzeug.utils import cached_property
 from browsepy.compat import walk, range, str_base, PY_LEGACY
-from browsepy.file import File, underscore_replace, check_under_base
+from browsepy.file import File, Directory, underscore_replace, check_under_base
 
 
 if PY_LEGACY:
@@ -26,7 +26,6 @@ mimetypes = {
 
 
 class PlayableFile(File):
-    parent_class = File
     media_map = {
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg',
@@ -154,7 +153,7 @@ class M3UFile(PlayListFile):
                         pf = PlayableFile()
 
 
-class PlayableDirectory(PlayListFile):
+class PlayableDirectory(Directory):
     @classmethod
     def detect(self, file):
         max_level = file.path.rstrip('/').count('/') + 5

@@ -12,7 +12,7 @@ from werkzeug.exceptions import NotFound
 
 from .__meta__ import __app__, __version__, __license__, __author__
 from .manager import PluginManager
-from .file import File, OutsideRemovableBase, OutsideDirectoryBase, \
+from .file import Node, OutsideRemovableBase, OutsideDirectoryBase, \
                   secure_filename
 from . import compat
 
@@ -74,7 +74,7 @@ def template_globals():
 @app.route('/browse/<path:path>')
 def browse(path):
     try:
-        directory = File.from_urlpath(path)
+        directory = Node.from_urlpath(path)
         if directory.is_directory:
             return stream_template("browse.html", file=directory)
     except OutsideDirectoryBase:
@@ -85,7 +85,7 @@ def browse(path):
 @app.route('/open/<path:path>', endpoint="open")
 def open_file(path):
     try:
-        file = File.from_urlpath(path)
+        file = Node.from_urlpath(path)
         if file.is_file:
             return send_from_directory(file.parent.path, file.name)
     except OutsideDirectoryBase:
@@ -96,7 +96,7 @@ def open_file(path):
 @app.route("/download/file/<path:path>")
 def download_file(path):
     try:
-        file = File.from_urlpath(path)
+        file = Node.from_urlpath(path)
         if file.is_file:
             return file.download()
     except OutsideDirectoryBase:
@@ -107,7 +107,7 @@ def download_file(path):
 @app.route("/download/directory/<path:path>.tgz")
 def download_directory(path):
     try:
-        directory = File.from_urlpath(path)
+        directory = Node.from_urlpath(path)
         if directory.is_directory:
             return directory.download()
     except OutsideDirectoryBase:
@@ -118,7 +118,7 @@ def download_directory(path):
 @app.route("/remove/<path:path>", methods=("GET", "POST"))
 def remove(path):
     try:
-        file = File.from_urlpath(path)
+        file = Node.from_urlpath(path)
     except OutsideDirectoryBase:
         return NotFound()
     if request.method == 'GET':
@@ -142,7 +142,7 @@ def remove(path):
 @app.route("/upload/<path:path>", methods=("POST",))
 def upload(path):
     try:
-        directory = File.from_urlpath(path)
+        directory = Node.from_urlpath(path)
     except OutsideDirectoryBase:
         return NotFound()
 
@@ -162,7 +162,7 @@ def upload(path):
 def index():
     path = app.config["directory_start"] or app.config["directory_base"]
     try:
-        urlpath = File(path).urlpath
+        urlpath = Node(path).urlpath
     except OutsideDirectoryBase:
         return NotFound()
     return browse(urlpath)

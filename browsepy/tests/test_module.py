@@ -480,7 +480,7 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.is_directory, False)
 
     def test_choose_filename(self):
-        f = self.module.File(self.workbench, app=self.app)
+        f = self.module.Directory(self.workbench, app=self.app)
         first_file = os.path.join(self.workbench, 'testfile.txt')
 
         filename = f.choose_filename('testfile.txt', attempts=0)

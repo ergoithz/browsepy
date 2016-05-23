@@ -48,7 +48,7 @@ class PluginManagerBase(object):
             try:
                 __import__(name)
                 return sys.modules[name]
-            except (ImportError, IndexError):
+            except (ImportError, KeyError):
                 pass
 
         raise PluginNotFoundError(
