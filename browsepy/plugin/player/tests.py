@@ -117,6 +117,7 @@ class TestPlayable(TestIntegrationBase):
         try:
             folder = os.path.join(tmpdir, 'test')
             os.mkdir(folder)
+            os.makedirs(os.path.join(tmpdir, *'abcdefghijklmnopqrstuvwxyz'))
             file = os.path.join(folder, 'playable.mp3')
             open(file, 'w').close()
             tmpfile = browsepy_file.File(tmpdir)
