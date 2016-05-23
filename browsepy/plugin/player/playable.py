@@ -163,4 +163,4 @@ class PlayableDirectory(PlayListFile):
                 if filename.rsplit('.', 1)[-1] in mimetypes:
                     return True
             if root.rstrip('/').count('/') >= max_level:
-                del dirs[:]
+                del directories[:]
