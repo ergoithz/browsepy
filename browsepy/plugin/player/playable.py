@@ -154,12 +154,19 @@ class M3UFile(PlayListFile):
 
 
 class PlayableDirectory(Directory):
-    @classmethod
-    def detect(self, file):
-        max_level = file.path.rstrip('/').count('/') + 5
+    detection_deep = 5
+
+    def iter_files(self):
         for root, directories, files in walk(file.path, followlinks=True):
             for filename in files:
                 if filename.rsplit('.', 1)[-1] in mimetypes:
-                    return True
+                    yield os.path.join(root, filename)
+
+    @classmethod
+    def detect(self, file):
+        max_level = file.path.rstrip('/').count('/') + self.detection_deep
+        for root, directories, files in walk(file.path, followlinks=True):
+            if any(fn.rsplit('.', 1)[-1] in mimetypes for fn in files):
+                return True
             if root.rstrip('/').count('/') >= max_level:
                 del directories[:]
