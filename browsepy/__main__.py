@@ -52,7 +52,12 @@ class ArgParse(argparse.ArgumentParser):
         if not arg:
             return None
         if PY_LEGACY and hasattr(sys.stdin, 'encoding'):
-            arg = arg.decode(sys.stdin.encoding)
+            encoding = sys.stdin.encoding
+            if encoding is None:
+                # if we are running without a terminal
+                # assume default encoding
+                encoding = sys.getdefaultencoding()
+            arg = arg.decode(encoding)
         if os.path.isdir(arg):
             return os.path.abspath(arg)
         self.error('%s is not a valid directory' % arg)
