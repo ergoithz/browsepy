@@ -2,16 +2,22 @@ language: python
 
 sudo: false
 
-python:
-  - "2.7"
-  - "pypy"
-  - "3.3"
-  - "3.4"
-  - "3.5"
+matrix:
+  include:
+  - python: "2.7"
+    env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
+  - python: "pypy"
+    env: PIP_PARAMS=""
+  - python: "3.3"
+    env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
+  - python: "3.4"
+    env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
+  - python: "3.5"
+    env: PIP_PARAMS=""
 
 install:
-  - pip install coveralls --download-cache $HOME/.cache/pip
-  - pip install . --download-cache $HOME/.cache/pip
+  - pip install coveralls $PIP_PARAMS
+  - pip install . $PIP_PARAMS
 
 script:
   - make coverage
