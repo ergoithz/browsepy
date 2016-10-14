@@ -82,7 +82,7 @@ Command-line arguments
 * **--initial=PATH** : starting directory, defaults to **--directory**
 * **--removable=PATH** : directory where remove will be available, disabled by default
 * **--upload=PATH** : directory where upload will be available, disabled by default
-* **--plugins=PLUGIN_LIST** : comma-separated plugin modules
+* **--plugin=PLUGIN_LIST** : comma-separated plugin modules
 * **--debug** : enable debug mode
 
 Using as library
