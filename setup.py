@@ -68,7 +68,7 @@ setup(
             'templates/*',
             'static/*/*',
         ]},
-    install_requires=['flask'],
+    install_requires=['flask', 'tinydb', 'python-magic'],
     test_suite='browsepy.tests',
     zip_safe=False,
     platforms='any'

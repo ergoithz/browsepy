@@ -41,6 +41,9 @@ class ArgParse(argparse.ArgumentParser):
         self.add_argument('--plugin', metavar='PLUGIN_LIST', type=self._plugins,
                           default=[],
                           help='comma-separated list of plugins')
+        self.add_argument('--url', metavar='ROOT_URL',
+                          default="http://localhost:" + self.default_port,
+                          help='Root url as seen by the users.')
         self.add_argument('--debug', action='store_true', help='debug mode')
 
     def _plugins(self, arg):
@@ -69,7 +72,8 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         directory_start = args.initial or args.directory,
         directory_remove = args.removable,
         directory_upload = args.upload,
-        plugin_modules = args.plugin
+        plugin_modules = args.plugin,
+        root_url = args.url
         )
     plugin_manager.reload()
     run_fnc(
