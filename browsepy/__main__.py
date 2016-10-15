@@ -16,7 +16,7 @@ class ArgParse(argparse.ArgumentParser):
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
 
-    description = 'extendable web filre browser'
+    description = 'extendable web file browser'
 
     def __init__(self):
         super(ArgParse, self).__init__(description = self.description)
