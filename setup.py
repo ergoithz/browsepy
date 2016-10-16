@@ -37,8 +37,7 @@ with open('README.rst') as f:
 setup(
     name=__app__,
     version=__version__,
-    url='https://github.com/ergoithz/browsepy',
-    download_url = 'https://github.com/ergoithz/browsepy/tarball/0.3.2',
+    url='https://github.com/g-tv/browsepy',
     license=__license__,
     author='Felipe A. Hernandez',
     author_email='ergoithz@gmail.com',
@@ -57,6 +56,7 @@ setup(
         'browsepy.tests',
         'browsepy.plugin',
         'browsepy.plugin.player',
+        'browsepy.plugin.share',
         ],
     package_data={ # ignored by sdist (see MANIFEST.in), used by bdist_wheel
         'browsepy': [
@@ -67,8 +67,13 @@ setup(
         'browsepy.plugin.player': [
             'templates/*',
             'static/*/*',
-        ]},
-    install_requires=['flask'],
+        ],
+        'browsepy.plugin.share': [
+            'templates/*',
+            'static/*/*',
+        ]
+    },
+    install_requires=['flask', 'tinydb', 'python-magic'],
     test_suite='browsepy.tests',
     zip_safe=False,
     platforms='any'

@@ -5,7 +5,7 @@ import os.path
 
 from flask import Blueprint, render_template
 
-from .playable import PlayableFile, MetaPlayListFile, mimetypes
+from .playable import PlayListFile, PlayableFile, MetaPlayListFile, mimetypes
 
 __basedir__= os.path.dirname(os.path.abspath(__file__))
 
@@ -22,7 +22,7 @@ def audio(path):
 
 @player.route('/list/<path:path>')
 def playlist(path):
-    f = PlayListFile.from_urlpath(url)
+    f = PlayListFile.from_urlpath(path)
     return render_template('list.player.html', file=f)
 
 def detect_playable_mimetype(path, os_sep=os.sep):
