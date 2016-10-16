@@ -3,3 +3,5 @@ graft browsepy/templates
 graft browsepy/static
 graft browsepy/plugin/player/templates
 graft browsepy/plugin/player/static
+graft browsepy/plugin/share/templates
+graft browsepy/plugin/share/static
