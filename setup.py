@@ -67,7 +67,12 @@ setup(
         'browsepy.plugin.player': [
             'templates/*',
             'static/*/*',
-        ]},
+        ],
+        'browsepy.plugin.share': [
+            'templates/*',
+            'static/*/*',
+        ]
+    },
     install_requires=['flask', 'tinydb', 'python-magic'],
     test_suite='browsepy.tests',
     zip_safe=False,
