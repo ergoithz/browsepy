@@ -10,7 +10,7 @@ from flask import Flask, Response, request, render_template, redirect, \
                   make_response
 from werkzeug.exceptions import NotFound
 
-from .__meta__ import __app__, __version__, __license__, __author__
+from .__meta__ import __app__, __version__, __license__, __author__  # noqa
 from .manager import PluginManager
 from .file import Node, OutsideRemovableBase, OutsideDirectoryBase, \
                   secure_filename
@@ -176,7 +176,7 @@ def page_not_found(response):
 
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found_error(e):
     return render_template('404.html'), 404
 
 

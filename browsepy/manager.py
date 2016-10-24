@@ -84,9 +84,9 @@ class ActionPluginManager(PluginManagerBase):
         return list(self.iter_actions(file))
 
     def iter_actions(self, file):
-        for callback, endpoint, widget in self._callback_actions:
+        for callback, endpoint, cwidget in self._callback_actions:
             if callback(file):
-                yield self.action_class(endpoint, widget.for_file(file))
+                yield self.action_class(endpoint, cwidget.for_file(file))
 
     def get_widgets(self, place):
         return self._widgets.get(place, [])
@@ -130,8 +130,8 @@ class MimetypeActionPluginManager(ActionPluginManager):
         for tree_category in (category, '*'):
             for tree_variant in (variant, '*'):
                 acts = self._root.get(tree_category, {}).get(tree_variant, ())
-                for endpoint, widget in acts:
-                    yield self.action_class(endpoint, widget.for_file(file))
+                for endpoint, cwidget in acts:
+                    yield self.action_class(endpoint, cwidget.for_file(file))
 
     def register_mimetype_function(self, fnc):
         self._mimetype_functions.insert(0, fnc)
@@ -143,8 +143,8 @@ class MimetypeActionPluginManager(ActionPluginManager):
             return
         mimetypes = mimetypes if isnonstriterable(mimetypes) else (mimetypes,)
         action = (endpoint, widget)
-        for mimetype in mimetypes:
-            category, variant = mimetype.split('/')
+        for mime in mimetypes:
+            category, variant = mime.split('/')
             self._root.setdefault(
                 category, {}
                 ).setdefault(variant, []).append(action)
