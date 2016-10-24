@@ -136,9 +136,9 @@ ENV_PATH[:] = (
 
 if PY_LEGACY:
     FileNotFoundError = type('FileNotFoundError', (OSError,), {})
-    range = xrange
+    range = xrange  # noqa
     filter = itertools.ifilter
-    str_base = basestring
+    str_base = basestring  # noqa
 else:
     FileNotFoundError = FileNotFoundError
     range = range

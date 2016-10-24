@@ -334,11 +334,11 @@ class TarFileStream(object):
         self._data = bytes()
         self._add = self.event_class()
         self._result = self.event_class()
-        self._tarfile = self.tarfile_class(
+        self._tarfile = self.tarfile_class(  # stream write
             fileobj=self,
             mode="w|gz",
             bufsize=buffsize
-            )  # stream write
+            )
         self._th = self.thread_class(target=self.fill)
         self._th.start()
 

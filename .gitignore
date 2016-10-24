@@ -5,6 +5,7 @@
 env/*
 env2/*
 env3/*
-*.pyc
+__pycache__/*
 *.egg/*
 *.egg-info/*
+*.pyc

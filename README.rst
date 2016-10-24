@@ -1,15 +1,15 @@
 browsepy
 ========
 
-.. image:: http://img.shields.io/travis/ergoithz/browsepy.svg?style=flat-square
+.. image:: http://img.shields.io/travis/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://travis-ci.org/ergoithz/browsepy
   :alt: Build status
 
-.. image:: http://img.shields.io/coveralls/ergoithz/browsepy.svg?style=flat-square
+.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://coveralls.io/r/ergoithz/browsepy
   :alt: Test coverage
 
-.. image:: https://img.shields.io/scrutinizer/g/ergoithz/browsepy.svg?style=flat-square
+.. image:: https://img.shields.io/scrutinizer/g/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://scrutinizer-ci.com/g/ergoithz/browsepy/
   :alt: Code quality
 
@@ -83,7 +83,7 @@ Command-line arguments
 * **--initial=PATH** : starting directory, defaults to **--directory**
 * **--removable=PATH** : directory where remove will be available, disabled by default
 * **--upload=PATH** : directory where upload will be available, disabled by default
-* **--plugins=PLUGIN_LIST** : comma-separated plugin modules
+* **--plugin=PLUGIN_LIST** : comma-separated plugin modules
 * **--debug** : enable debug mode
 
 Using as library
