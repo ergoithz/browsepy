@@ -38,7 +38,7 @@ setup(
     name=__app__,
     version=__version__,
     url='https://github.com/ergoithz/browsepy',
-    download_url = 'https://github.com/ergoithz/browsepy/tarball/0.3.2',
+    download_url='https://github.com/ergoithz/browsepy/tarball/0.3.2',
     license=__license__,
     author='Felipe A. Hernandez',
     author_email='ergoithz@gmail.com',
@@ -51,18 +51,18 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
     ],
-    keywords = ['web', 'file', 'browser'],
+    keywords=['web', 'file', 'browser'],
     packages=[
         'browsepy',
         'browsepy.tests',
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],
-    package_data={ # ignored by sdist (see MANIFEST.in), used by bdist_wheel
+    package_data={  # ignored by sdist (see MANIFEST.in), used by bdist_wheel
         'browsepy': [
             'templates/*',
             'static/fonts/*',
-            'static/*.*', # do not capture directories
+            'static/*.*',  # do not capture directories
         ],
         'browsepy.plugin.player': [
             'templates/*',

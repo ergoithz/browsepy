@@ -3,4 +3,6 @@
 .idea/*
 .coverage
 env/*
+__pycache__/*
+*.egg-info/*
 *.pyc

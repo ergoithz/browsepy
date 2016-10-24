@@ -9,28 +9,30 @@ from flask import Flask, Response, request, render_template, redirect, \
                   make_response
 from werkzeug.exceptions import NotFound
 
-from .__meta__ import __app__, __version__, __license__, __author__
+from .__meta__ import __app__, __version__, __license__, __author__  # noqa
 from .manager import PluginManager
-from .file import File, OutsideRemovableBase, OutsideDirectoryBase, secure_filename, fs_encoding
+from .file import File, OutsideRemovableBase, OutsideDirectoryBase, \
+                  secure_filename, fs_encoding
 from .compat import PY_LEGACY
 
 __basedir__ = os.path.abspath(os.path.dirname(__file__))
 
-app = Flask(__name__,
-    static_url_path = '/static',
-    static_folder = os.path.join(__basedir__, "static"),
-    template_folder = os.path.join(__basedir__, "templates")
+app = Flask(
+    __name__,
+    static_url_path='/static',
+    static_folder=os.path.join(__basedir__, "static"),
+    template_folder=os.path.join(__basedir__, "templates")
     )
 app.config.update(
-    directory_base = os.path.abspath(os.getcwd()),
-    directory_start = os.path.abspath(os.getcwd()),
-    directory_remove = None,
-    directory_upload = None,
-    directory_tar_buffsize = 262144,
-    directory_downloadable = True,
-    use_binary_multiples = True,
-    plugin_modules = [],
-    plugin_namespaces = (
+    directory_base=os.path.abspath(os.getcwd()),
+    directory_start=os.path.abspath(os.getcwd()),
+    directory_remove=None,
+    directory_upload=None,
+    directory_tar_buffsize=262144,
+    directory_downloadable=True,
+    use_binary_multiples=True,
+    plugin_modules=[],
+    plugin_namespaces=(
         'browsepy.plugin',
         '',
         ),
@@ -40,6 +42,7 @@ if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
 
 plugin_manager = PluginManager(app)
+
 
 def stream_template(template_name, **context):
     '''
@@ -55,6 +58,7 @@ def stream_template(template_name, **context):
     stream = template.generate(context)
     return Response(stream_with_context(stream))
 
+
 @app.context_processor
 def template_globals():
     return {
@@ -62,17 +66,18 @@ def template_globals():
         'len': len,
         }
 
-@app.route("/browse", defaults={"path":""})
+
+@app.route("/browse", defaults={"path": ""})
 @app.route('/browse/<path:path>')
 def browse(path):
     try:
         directory = File.from_urlpath(path)
         if directory.is_directory:
-            files = directory.listdir()
             return stream_template("browse.html", file=directory)
     except OutsideDirectoryBase:
         pass
     return NotFound()
+
 
 @app.route('/open/<path:path>', endpoint="open")
 def open_file(path):
@@ -84,6 +89,7 @@ def open_file(path):
         pass
     return NotFound()
 
+
 @app.route("/download/file/<path:path>")
 def download_file(path):
     try:
@@ -94,6 +100,7 @@ def download_file(path):
         pass
     return NotFound()
 
+
 @app.route("/download/directory/<path:path>.tgz")
 def download_directory(path):
     try:
@@ -103,6 +110,7 @@ def download_directory(path):
     except OutsideDirectoryBase:
         pass
     return NotFound()
+
 
 @app.route("/remove/<path:path>", methods=("GET", "POST"))
 def remove(path):
@@ -126,6 +134,7 @@ def remove(path):
 
     return redirect(url_for(".browse", path=parent.urlpath))
 
+
 @app.route("/upload", defaults={'path': ''}, methods=("POST",))
 @app.route("/upload/<path:path>", methods=("POST",))
 def upload(path):
@@ -144,10 +153,11 @@ def upload(path):
             f.save(os.path.join(directory.path, definitive_filename))
     return redirect(url_for(".browse", path=directory.urlpath))
 
+
 @app.route("/")
 def index():
     path = app.config["directory_start"] or app.config["directory_base"]
-    if PY_LEGACY and not isinstance(path, unicode):
+    if PY_LEGACY and not isinstance(path, unicode):  # NOQA
         path = path.decode(fs_encoding)
     try:
         urlpath = File(path).urlpath
@@ -155,18 +165,21 @@ def index():
         return NotFound()
     return browse(urlpath)
 
+
 @app.after_request
 def page_not_found(response):
     if response.status_code == 404:
         return make_response((render_template('404.html'), 404))
     return response
 
+
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found_error(e):
     return render_template('404.html'), 404
 
+
 @app.errorhandler(500)
-def internal_server_error(e): # pragma: no cover
+def internal_server_error(e):  # pragma: no cover
     import traceback
     traceback.print_exc()
     return getattr(e, 'message', 'Internal server error'), 500

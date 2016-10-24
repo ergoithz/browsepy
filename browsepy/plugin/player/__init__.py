@@ -7,23 +7,27 @@ from flask import Blueprint, render_template
 
 from .playable import PlayableFile, MetaPlayListFile, mimetypes
 
-__basedir__= os.path.dirname(os.path.abspath(__file__))
+__basedir__ = os.path.dirname(os.path.abspath(__file__))
 
-player = Blueprint('player', __name__,
+player = Blueprint(
+    'player', __name__,
     url_prefix='/play',
     template_folder=os.path.join(__basedir__, 'templates'),
     static_folder=os.path.join(__basedir__, 'static'),
     )
+
 
 @player.route('/audio/<path:path>')
 def audio(path):
     f = PlayableFile.from_urlpath(path)
     return render_template('audio.player.html', file=f)
 
+
 @player.route('/list/<path:path>')
 def playlist(path):
-    f = PlayListFile.from_urlpath(url)
+    f = MetaPlayListFile.from_urlpath(path)
     return render_template('list.player.html', file=f)
+
 
 def detect_playable_mimetype(path, os_sep=os.sep):
     basename = path.rsplit(os_sep)[-1]
@@ -31,6 +35,7 @@ def detect_playable_mimetype(path, os_sep=os.sep):
         ext = basename.rsplit('.')[-1]
         return mimetypes.get(ext, None)
     return None
+
 
 def register_plugin(manager):
     '''
@@ -60,6 +65,6 @@ def register_plugin(manager):
             'player.playlist',
             widget,
             mimetypes=(
-                'audio/x-mpegurl', # m3u, m3u8
-                'audio/x-scpls', # pls
+                'audio/x-mpegurl',  # m3u, m3u8
+                'audio/x-scpls',  # pls
             ))

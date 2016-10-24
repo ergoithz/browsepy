@@ -9,6 +9,7 @@ import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
 import browsepy.plugin.player.playable as player_playable
 
+
 class ManagerMock(object):
     def __init__(self):
         self.blueprints = []
@@ -54,7 +55,9 @@ class TestPlayer(TestPlayerBase):
         self.module.register_plugin(self.manager)
 
         self.assertIn(self.module.player, self.manager.blueprints)
-        self.assertIn(self.module.detect_playable_mimetype, self.manager.mimetype_functions)
+        self.assertIn(
+            self.module.detect_playable_mimetype,
+            self.manager.mimetype_functions)
 
         widgets = [action[1] for action in self.manager.widgets]
         self.assertIn('player.static', widgets)
@@ -87,8 +90,10 @@ class TestPlayable(TestIntegrationBase):
 
     def setUp(self):
         super(TestIntegrationBase, self).setUp()
-        self.manager = self.manager_module.MimetypeActionPluginManager(self.app)
-        self.manager.register_mimetype_function(self.player_module.detect_playable_mimetype)
+        self.manager = self.manager_module.MimetypeActionPluginManager(
+            self.app)
+        self.manager.register_mimetype_function(
+            self.player_module.detect_playable_mimetype)
 
     def test_playablefile(self):
         exts = {
@@ -97,7 +102,7 @@ class TestPlayable(TestIntegrationBase):
          'ogg': 'ogg'
         }
         for ext, media_format in exts.items():
-            pf = self.module.PlayableFile(path = 'asdf.%s' % ext, app=self.app)
+            pf = self.module.PlayableFile(path='asdf.%s' % ext, app=self.app)
             self.assertEqual(pf.media_format, media_format)
 
     def test_playlistfile(self):

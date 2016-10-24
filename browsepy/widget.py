@@ -2,8 +2,10 @@
 from markupsafe import Markup
 from flask import url_for
 
+
 class WidgetBase(object):
     place = None
+
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -32,13 +34,16 @@ class LinkWidget(WidgetBase):
             return self.__class__(
                 file.name if self.text is None else self.text,
                 self.css,
-                ('dir-icon' if file.is_directory else 'file-icon') if self.icon is None else self.icon,
+                self.icon if self.icon is not None else
+                'dir-icon' if file.is_directory else
+                'file-icon',
             )
         return self
 
 
 class ButtonWidget(WidgetBase):
     place = 'button'
+
     def __init__(self, html='', text='', css=''):
         self.content = Markup(html) if html else text
         self.css = css
