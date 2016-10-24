@@ -3,10 +3,10 @@ import sys
 import codecs
 import os.path
 
-from flask._compat import with_metaclass
 from werkzeug.utils import cached_property
-from browsepy.compat import walk, range, str_base, PY_LEGACY
-from browsepy.file import File, Directory, underscore_replace, check_under_base
+from browsepy.compat import range, PY_LEGACY
+from browsepy.file import File, Directory, \
+                          underscore_replace, check_under_base
 
 
 if PY_LEGACY:
@@ -33,9 +33,9 @@ class PlayableFile(File):
     }
     mimetypes = tuple(media_map)
 
-    def __init__(self, duration=None, title=None, **kwargs):
-        self.duration = duration
-        self.title = title
+    def __init__(self, **kwargs):
+        self.duration = kwargs.pop('duration', None)
+        self.title = kwargs.pop('title', None)
         super(PlayableFile, self).__init__(**kwargs)
 
     @property
@@ -51,39 +51,22 @@ class PlayableFile(File):
         return self.media_map[self.type]
 
 
-class MetaPlayListFile(type):
-    def __init__(cls, name, bases, nmspc):
-        '''
-        Abstract-class mimetype-based implementation registration on nearest
-        abstract parent.
-        '''
-        type.__init__(cls, name, bases, nmspc)
-        if cls.abstract_class is None:
-            cls.specific_classes = {}
-            cls.abstract_class = cls
-        elif isinstance(cls.mimetype, str_base):
-            cls.abstract_class.specific_classes[cls.mimetype] = cls
-
-
-class PlayListFile(with_metaclass(MetaPlayListFile, File)):
+class PlayListFile(Directory):
     abstract_class = None
     playable_class = PlayableFile
     mimetypes = ('audio/x-mpegurl', 'audio/x-scpls')
 
-    def __new__(cls, *args, **kwargs):
-        '''
-        Polimorfic mimetype-based constructor
-        '''
-        self = super(PlayListFile, cls).__new__(cls)
-        if cls is cls.abstract_class:
-            self.__init__(*args, **kwargs)
-            if self.mimetype in cls.abstract_class.specific_classes:
-                return cls.specific_classes[self.mimetype](*args, **kwargs)
-        return self
-
-    def iter_files(self):
-        return
-        yield
+    @classmethod
+    def from_urlpath(cls, path, app=None):
+        original = super(PlayListFile, cls).from_urlpath(path, app)
+        if original.is_file:
+            if original.mimetype == M3UFile.mimetype:
+                return M3UFile(original.path, original.app)
+            if original.mimetype == PLSFile.mimetype:
+                return PLSFile(original.path, original.app)
+        elif original.is_directory:
+            return PlayableDirectory(original.path, original.app)
+        return original
 
     def normalize_playable_path(self, path):
         if not os.path.isabs(path):
@@ -108,7 +91,7 @@ class PLSFile(PlayListFile):
         parser.read(self.path)
         return parser
 
-    def iter_files(self):
+    def _listdir(self):
         maxsize = self._parser.getint('playlist', 'NumberOfEntries', None)
         for i in range(self.maxsize if maxsize is None else maxsize):
             pf = self.playable_class(
@@ -127,16 +110,7 @@ class PLSFile(PlayListFile):
 class M3UFile(PlayListFile):
     mimetype = 'audio/x-mpegurl'
 
-    def _extract_line(self, line, file=None):
-        if line.startswith('#EXTINF:'):
-            duration, title = line.split(',', 1)
-            file.duration = None if duration == '-1' else int(duration)
-            file.title = title
-            return False
-        file.path = self.normalize_playable_path(line)
-        return file.path is not None
-
-    def iter_files(self):
+    def _iter_lines(self):
         prefix = '#EXTM3U\n'
         encoding = 'utf-8' if self.path.endswith('.m3u8') else 'ascii'
         with codecs.open(
@@ -144,29 +118,38 @@ class M3UFile(PlayListFile):
           encoding=encoding,
           errors=underscore_replace
           ) as f:
-            if f.read(len(prefix)) == prefix:
-                pf = PlayableFile()
-                for line in f:
-                    line = line.rstrip('\n', 1)
-                    if line and self._extract_line(line, pf):
-                        yield pf
-                        pf = PlayableFile()
+            if f.read(len(prefix)) != prefix:
+                f.seek(0)
+            for line in f:
+                line = line.rstrip('\n')
+                if line:
+                    yield line
+
+    def _listdir(self):
+        data = {}
+        for line in self._iter_lines():
+            if line.startswith('#EXTINF:'):
+                duration, title = line.split(',', 1)
+                data['duration'] = None if duration == '-1' else int(duration)
+                data['title'] = title
+                continue
+            print(line)
+            data['path'] = self.normalize_playable_path(line)
+            if data['path']:
+                yield self.playable_class(**data)
+                data.clear()
 
 
 class PlayableDirectory(Directory):
-    detection_deep = 5
-
-    def iter_files(self):
-        for root, directories, files in walk(file.path, followlinks=True):
-            for filename in files:
-                if filename.rsplit('.', 1)[-1] in mimetypes:
-                    yield os.path.join(root, filename)
-
     @classmethod
-    def detect(self, file):
-        max_level = file.path.rstrip('/').count('/') + self.detection_deep
-        for root, directories, files in walk(file.path, followlinks=True):
-            if any(fn.rsplit('.', 1)[-1] in mimetypes for fn in files):
-                return True
-            if root.rstrip('/').count('/') >= max_level:
-                del directories[:]
+    def detect(cls, file):
+        if file.is_directory:
+            for file in file._listdir():
+                if file.name.rsplit('.', 1)[-1] in mimetypes:
+                    return True
+        return False
+
+    def _listdir(self):
+        for file in super(PlayableDirectory, self)._listdir():
+            if file.name.rsplit('.', 1)[-1] in mimetypes:
+                yield file

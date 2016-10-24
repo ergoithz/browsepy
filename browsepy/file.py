@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import sys
 import os
 import os.path
 import re
@@ -12,16 +11,13 @@ import string
 import tarfile
 import random
 import datetime
-import functools
 import logging
-import warnings
 
 from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
 
 from . import compat
 from .compat import range
-from .functional import psetattr
 
 
 logger = logging.getLogger(__name__)
@@ -125,11 +121,26 @@ class Node(object):
         app = app or current_app
         base = app.config['directory_base']
         path = urlpath_to_abspath(path, base)
-        kls = cls.directory_class if os.path.isdir(path) else cls.file_class
+        if cls is not Node:
+            kls = cls
+        elif os.path.isdir(path):
+            kls = cls.directory_class
+        else:
+            kls = cls.file_class
         return kls(path=path, app=app)
 
+    @classmethod
+    def register_file_class(cls, kls):
+        cls.file_class = kls
+        return kls
 
-@psetattr(Node, 'file_class')
+    @classmethod
+    def register_directory_class(cls, kls):
+        cls.directory_class = kls
+        return kls
+
+
+@Node.register_file_class
 class File(Node):
     can_download = True
     can_upload = False
@@ -188,7 +199,7 @@ class File(Node):
         return send_from_directory(directory, name, as_attachment=True)
 
 
-@psetattr(Node, 'directory_class')
+@Node.register_directory_class
 class Directory(Node):
     _listdir_cache = None
     mimetype = 'inode/directory'
@@ -221,7 +232,7 @@ class Directory(Node):
     def is_empty(self):
         if self._listdir_cache is not None:
             return bool(self._listdir_cache)
-        for entry in compat.scandir(self.path):
+        for entry in self._listdir():
             return False
         return True
 

@@ -1,6 +1,4 @@
 
-import functools
-
 
 NOT_DEFINED = type('NotDefinedType', (object,), {})
 
