@@ -10,7 +10,7 @@ from browsepy import stream_template
 from browsepy.file import OutsideDirectoryBase
 
 from .playable import PlayableFile, PlayableDirectory, \
-                      PlayListFile, mimetypes
+                      PlayListFile, extensions
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
@@ -62,8 +62,26 @@ def detect_playable_mimetype(path, os_sep=os.sep):
     basename = path.rsplit(os_sep)[-1]
     if '.' in basename:
         ext = basename.rsplit('.')[-1]
-        return mimetypes.get(ext, None)
+        return extensions.get(ext, None)
     return None
+
+
+def register_arguments(manager):
+    '''
+    Register arguments using given plugin manager.
+
+    This method is called before `register_plugin`.
+
+    :param manager: plugin manager
+    :type manager: browsepy.manager.PluginManager
+    '''
+
+    # Arguments are forwarded to argparse:ArgumentParser.add_argument,
+    # https://docs.python.org/3.7/library/argparse.html#the-add-argument-method
+    manager.register_argument(
+        '--player-directory-play', action='store_true',
+        help='enable directories as playlist'
+        )
 
 
 def register_plugin(manager):
@@ -76,11 +94,14 @@ def register_plugin(manager):
     manager.register_blueprint(player)
     manager.register_mimetype_function(detect_playable_mimetype)
 
+    # add style tag
     style = manager.style_class('player.static', filename='css/browse.css')
     manager.register_widget(style)
 
-    button_widget = manager.button_class(css='play')
-    link_widget = manager.link_class()
+    # register actions to browser items
+    button_widget = manager.button_class(css='play')  # create button widget
+    link_widget = manager.link_class()  # create link (default action) widget
+    # add both widgets for our mimetypes
     for widget in (link_widget, button_widget):
         manager.register_action(
             'player.audio',
@@ -92,9 +113,10 @@ def register_plugin(manager):
             widget,
             mimetypes=PlayListFile.mimetypes
             )
-
-    manager.register_action(
-        'player.directory',
-        button_widget,
-        callback=PlayableDirectory.detect
-    )
+    #
+    if manager.get_argument('player_directory_play'):
+        manager.register_action(
+            'player.directory',
+            button_widget,
+            callback=PlayableDirectory.detect
+            )

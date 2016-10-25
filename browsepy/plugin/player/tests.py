@@ -20,6 +20,8 @@ class ManagerMock(object):
         self.mimetype_functions = []
         self.actions = []
         self.widgets = []
+        self.arguments = []
+        self.argument_values = {}
 
     def style_class(self, endpoint, **kwargs):
         return ('style', endpoint, kwargs)
@@ -45,18 +47,26 @@ class ManagerMock(object):
     def register_action(self, blueprint, widget, mimetypes=(), **kwargs):
         self.actions.append((blueprint, widget, mimetypes, kwargs))
 
+    def register_argument(self, *args, **kwargs):
+        self.arguments.append((args, kwargs))
+
+    def get_argument(self, name, default=None):
+        return self.argument_values.get(name, default)
+
 
 class TestPlayerBase(unittest.TestCase):
     module = player
 
     def setUp(self):
         self.app = flask.Flask(self.__class__.__name__)
+        self.app.config['directory_base'] = ''
         self.manager = ManagerMock()
 
 
 class TestPlayer(TestPlayerBase):
     def test_register_plugin(self):
         self.module.register_plugin(self.manager)
+        self.assertListEqual(self.manager.arguments, [])
 
         self.assertIn(self.module.player, self.manager.blueprints)
         self.assertIn(
@@ -73,6 +83,21 @@ class TestPlayer(TestPlayerBase):
         actions = [action[0] for action in self.manager.actions]
         self.assertIn('player.audio', actions)
         self.assertIn('player.playlist', actions)
+        self.assertNotIn('player.directory', actions)
+
+    def test_register_plugin_with_arguments(self):
+        self.manager.argument_values['player_directory_play'] = True
+        self.module.register_plugin(self.manager)
+
+        actions = [action[0] for action in self.manager.actions]
+        self.assertIn('player.directory', actions)
+
+    def test_register_arguments(self):
+        self.module.register_arguments(self.manager)
+        self.assertEqual(len(self.manager.arguments), 1)
+
+        arguments = [arg[0][0] for arg in self.manager.arguments]
+        self.assertIn('--player-directory-play', arguments)
 
 
 class TestIntegrationBase(TestPlayerBase):
@@ -115,24 +140,24 @@ class TestPlayable(TestIntegrationBase):
     def test_playabledirectory(self):
         tmpdir = tempfile.mkdtemp()
         try:
-            folder = os.path.join(tmpdir, 'test')
-            os.mkdir(folder)
-            os.makedirs(os.path.join(tmpdir, *'abcdefghijklmnopqrstuvwxyz'))
-            file = os.path.join(folder, 'playable.mp3')
+            file = os.path.join(tmpdir, 'playable.mp3')
             open(file, 'w').close()
-            tmpfile = browsepy_file.File(tmpdir)
-            self.assertTrue(self.module.PlayableDirectory.detect(tmpfile))
+            node = browsepy_file.Directory(tmpdir)
+            self.assertTrue(self.module.PlayableDirectory.detect(node))
             os.remove(file)
-            self.assertFalse(self.module.PlayableDirectory.detect(tmpfile))
+            self.assertFalse(self.module.PlayableDirectory.detect(node))
         finally:
             shutil.rmtree(tmpdir)
 
     def test_playlistfile(self):
-        pf = self.module.PlayListFile(path='filename.m3u', app=self.app)
+        pf = self.module.PlayListFile.from_urlpath(
+            path='filename.m3u', app=self.app)
         self.assertTrue(isinstance(pf, self.module.M3UFile))
-        pf = self.module.PlayListFile(path='filename.m3u8', app=self.app)
+        pf = self.module.PlayListFile.from_urlpath(
+            path='filename.m3u8', app=self.app)
         self.assertTrue(isinstance(pf, self.module.M3UFile))
-        pf = self.module.PlayListFile(path='filename.pls', app=self.app)
+        pf = self.module.PlayListFile.from_urlpath(
+            path='filename.pls', app=self.app)
         self.assertTrue(isinstance(pf, self.module.PLSFile))
 
     def test_m3ufile(self):

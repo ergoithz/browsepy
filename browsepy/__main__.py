@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import sys
@@ -7,7 +7,7 @@ import os.path
 import argparse
 import flask
 
-from . import app, compat, plugin_manager
+from . import app, compat
 from .compat import PY_LEGACY
 
 
@@ -16,7 +16,7 @@ class ArgParse(argparse.ArgumentParser):
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
 
-    description = 'extendable web filre browser'
+    description = 'extendable web file browser'
 
     def __init__(self):
         super(ArgParse, self).__init__(description=self.description)
@@ -45,12 +45,12 @@ class ArgParse(argparse.ArgumentParser):
             default=None,
             help='base directory for upload (default: none)')
         self.add_argument(
-            '--plugin', metavar='PLUGIN_LIST', type=self._plugins,
+            '--plugin', metavar='PLUGIN_LIST', type=self._plugin,
             default=[],
             help='comma-separated list of plugins')
         self.add_argument('--debug', action='store_true', help='debug mode')
 
-    def _plugins(self, arg):
+    def _plugin(self, arg):
         if not arg:
             return []
         return arg.split(',')
@@ -71,7 +71,8 @@ class ArgParse(argparse.ArgumentParser):
 
 
 def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
-    args = parser().parse_args(argv)
+    plugin_manager = app.extensions['plugin_manager']
+    args = plugin_manager.load_arguments(argv, parser())
     app.config.update(
         directory_base=args.directory,
         directory_start=args.initial or args.directory,

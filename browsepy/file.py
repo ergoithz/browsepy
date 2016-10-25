@@ -37,6 +37,7 @@ fs_safe_characters = string.ascii_uppercase + string.digits
 
 
 class Node(object):
+    generic = True
     directory_class = None  # set later at import time
     file_class = None  # set later at import time
 
@@ -113,6 +114,9 @@ class Node(object):
         Alternative constructor which accepts a path as taken from URL and uses
         the given app or the current app config to get the real path.
 
+        If class has attribute `generic` set to True, `directory_class` or
+        `file_class` will be used as type.
+
         :param path: relative path as from URL
         :param app: optional, flask application
         :return: file object pointing to path
@@ -121,7 +125,7 @@ class Node(object):
         app = app or current_app
         base = app.config['directory_base']
         path = urlpath_to_abspath(path, base)
-        if cls is not Node:
+        if not cls.generic:
             kls = cls
         elif os.path.isdir(path):
             kls = cls.directory_class
@@ -145,6 +149,7 @@ class File(Node):
     can_download = True
     can_upload = False
     is_directory = False
+    generic = False
 
     @property
     def default_action(self):
@@ -207,6 +212,7 @@ class Directory(Node):
     is_file = False
     size = 0
     encoding = 'default'
+    generic = False
 
     @property
     def default_action(self):
@@ -284,7 +290,7 @@ class Directory(Node):
         :rtype: str
         '''
         new_filename = filename
-        for attempt in range(2, attempts+1):
+        for attempt in range(2, attempts + 1):
             if not self.contains(new_filename):
                 return new_filename
             new_filename = alternative_filename(filename, attempt)

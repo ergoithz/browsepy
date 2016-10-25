@@ -22,6 +22,10 @@ class DebuggerTextTestRunner(unittest.TextTestRunner):
     debugger = os.environ.get('UNITTEST_DEBUG', 'none')
     test_result_class = DebuggerTextTestResult
 
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('verbosity', 2)
+        super(DebuggerTextTestRunner, self).__init__(*args, **kwargs)
+
     def debug_none(self, exc_info):
         pass
 

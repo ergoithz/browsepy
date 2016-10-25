@@ -29,15 +29,40 @@ class FileMock(object):
         self.__dict__.update(kwargs)
 
 
+class PluginMock(object):
+    registered_arguments_manager = None
+    registered_arguments = False
+    registered_plugin_manager = None
+    registered_plugin = False
+
+    def register_arguments(self, manager):
+        self.registered_arguments_manager = manager
+        self.registered_arguments = True
+        manager.register_argument('--pluginmock', action='store_true')
+
+    def register_plugin(self, manager):
+        self.registered_plugin_manager = manager
+        self.registered_plugin = True
+
+
+class AppMock(object):
+    config = browsepy.app.config.copy()
+
+
 class Page(object):
-    @classmethod
-    def itertext(cls, element):
-        # TODO(ergoithz) on python2 drop: replace by element.itertext()
-        yield element.text or ''
-        for child in element:
-            for text in cls.itertext(child):
-                yield text
-            yield child.tail or ''
+    if hasattr(ET.Element, 'itertext'):
+        @classmethod
+        def itertext(cls, element):
+            return element.itertext()
+    else:
+        # Old 2.7 minors
+        @classmethod
+        def itertext(cls, element):
+            yield element.text or ''
+            for child in element:
+                for text in cls.itertext(child):
+                    yield text
+                yield child.tail or ''
 
     @classmethod
     def innerText(cls, element):
@@ -350,7 +375,7 @@ class TestApp(unittest.TestCase):
 
     def test_upload(self):
         def genbytesio(nbytes, encoding):
-            c = unichr if PY_LEGACY else chr
+            c = unichr if PY_LEGACY else chr  # noqa
             return io.BytesIO(''.join(map(c, range(nbytes))).encode(encoding))
 
         files = {
@@ -373,7 +398,7 @@ class TestApp(unittest.TestCase):
         self.clear(self.upload)
 
     def test_upload_duplicate(self):
-        c = unichr if PY_LEGACY else chr
+        c = unichr if PY_LEGACY else chr  # noqa
 
         files = (
             ('testfile.txt', 'something'),
@@ -529,7 +554,7 @@ class TestFileFunctions(unittest.TestCase):
             '_')
 
         if PY_LEGACY:
-            expected = unicode('\xf1', encoding='latin-1')
+            expected = unicode('\xf1', encoding='latin-1')  # noqa
             self.assertEqual(
                 self.module.secure_filename('\xf1', fs_encoding='utf-8'),
                 expected)
@@ -651,10 +676,10 @@ class TestPlugins(unittest.TestCase):
 
     def setUp(self):
         self.app = self.app_module.app
-        self.manager = self.manager_module.PluginManager(self.app)
         self.original_namespaces = self.app.config['plugin_namespaces']
         self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
         self.app.config['plugin_namespaces'] = (self.plugin_namespace,)
+        self.manager = self.manager_module.PluginManager(self.app)
 
     def tearDown(self):
         self.app.config['plugin_namespaces'] = self.original_namespaces

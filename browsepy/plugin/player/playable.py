@@ -5,7 +5,7 @@ import os.path
 
 from werkzeug.utils import cached_property
 from browsepy.compat import range, PY_LEGACY
-from browsepy.file import File, Directory, \
+from browsepy.file import Node, File, Directory, \
                           underscore_replace, check_under_base
 
 
@@ -15,7 +15,7 @@ else:
     import configparser
 
 
-mimetypes = {
+extensions = {
     'mp3': 'audio/mpeg',
     'ogg': 'audio/ogg',
     'wav': 'audio/wav',
@@ -52,20 +52,18 @@ class PlayableFile(File):
 
 
 class PlayListFile(Directory):
-    abstract_class = None
     playable_class = PlayableFile
     mimetypes = ('audio/x-mpegurl', 'audio/x-scpls')
 
     @classmethod
     def from_urlpath(cls, path, app=None):
-        original = super(PlayListFile, cls).from_urlpath(path, app)
-        if original.is_file:
-            if original.mimetype == M3UFile.mimetype:
-                return M3UFile(original.path, original.app)
-            if original.mimetype == PLSFile.mimetype:
-                return PLSFile(original.path, original.app)
-        elif original.is_directory:
+        original = Node.from_urlpath(path, app)
+        if original.mimetype == PlayableDirectory.mimetype:
             return PlayableDirectory(original.path, original.app)
+        elif original.mimetype == M3UFile.mimetype:
+            return M3UFile(original.path, original.app)
+        if original.mimetype == PLSFile.mimetype:
+            return PLSFile(original.path, original.app)
         return original
 
     def normalize_playable_path(self, path):
@@ -142,14 +140,14 @@ class M3UFile(PlayListFile):
 
 class PlayableDirectory(Directory):
     @classmethod
-    def detect(cls, file):
-        if file.is_directory:
-            for file in file._listdir():
-                if file.name.rsplit('.', 1)[-1] in mimetypes:
+    def detect(cls, node):
+        if node.is_directory:
+            for file in node._listdir():
+                if file.name.rsplit('.', 1)[-1] in extensions:
                     return True
         return False
 
     def _listdir(self):
         for file in super(PlayableDirectory, self)._listdir():
-            if file.name.rsplit('.', 1)[-1] in mimetypes:
+            if file.name.rsplit('.', 1)[-1] in extensions:
                 yield file
