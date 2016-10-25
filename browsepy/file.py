@@ -71,7 +71,8 @@ class Node(object):
     def parent(self):
         if self.path == self.app.config['directory_base']:
             return None
-        return self.directory_class(os.path.dirname(self.path), self.app)
+        parent = os.path.dirname(self.path) if self.path else None
+        return self.directory_class(parent, self.app) if parent else None
 
     @cached_property
     def ancestors(self):
@@ -315,6 +316,19 @@ class Directory(Node):
                 continue
             yield self.file_class(**kwargs)
 
+    def sortkey(self, node):
+        '''
+        Order key function used by `listdir`.
+
+        Could be overloaded to None by inherited classes.
+
+        :param node: node to order
+        :type node: Node
+        :returns: tuple of not-directory and lowercase name
+        :rtype: tuple of bool and str
+        '''
+        return not node.is_directory, node.name.lower()
+
     def listdir(self):
         '''
         Get sorted list (by `is_directory` and `name` properties) of File
@@ -324,10 +338,10 @@ class Directory(Node):
         :rtype: list of File
         '''
         if self._listdir_cache is None:
-            self._listdir_cache = sorted(
-                self._listdir(),
-                key=lambda f: (not f.is_directory, f.name.lower())
-                )
+            if self.sortkey:
+                self._listdir_cache = sorted(self._listdir(), key=self.sortkey)
+            else:
+                self._listdir_cache = list(self._listdir())
         return self._listdir_cache
 
 

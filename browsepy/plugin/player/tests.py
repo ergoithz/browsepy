@@ -59,7 +59,7 @@ class TestPlayerBase(unittest.TestCase):
 
     def setUp(self):
         self.app = flask.Flask(self.__class__.__name__)
-        self.app.config['directory_base'] = ''
+        self.app.config['directory_base'] = '/base'
         self.manager = ManagerMock()
 
 
@@ -127,6 +127,29 @@ class TestPlayable(TestIntegrationBase):
             self.player_module.detect_playable_mimetype
             )
 
+    def test_normalize_playable_path(self):
+        playable = self.module.PlayListFile(path='/base/a.m3u', app=self.app)
+        self.assertEqual(
+            playable.normalize_playable_path('http://asdf/asdf.mp3'),
+            'http://asdf/asdf.mp3'
+            )
+        self.assertEqual(
+            playable.normalize_playable_path('ftp://asdf/asdf.mp3'),
+            'ftp://asdf/asdf.mp3'
+            )
+        self.assertEqual(
+            playable.normalize_playable_path('asdf.mp3'),
+            '/base/asdf.mp3'
+            )
+        self.assertEqual(
+            playable.normalize_playable_path('/base/other/../asdf.mp3'),
+            '/base/asdf.mp3'
+            )
+        self.assertEqual(
+            playable.normalize_playable_path('/other/asdf.mp3'),
+            None
+            )
+
     def test_playablefile(self):
         exts = {
          'mp3': 'mp3',
@@ -161,4 +184,58 @@ class TestPlayable(TestIntegrationBase):
         self.assertTrue(isinstance(pf, self.module.PLSFile))
 
     def test_m3ufile(self):
-        pass
+        data = '/base/valid.mp3\n/outside.ogg\n/base/invalid.bin\nrelative.ogg'
+        tmpdir = tempfile.mkdtemp()
+        try:
+            file = os.path.join(tmpdir, 'playable.m3u')
+            with open(file, 'w') as f:
+                f.write(data)
+            playlist = self.module.M3UFile(path=file, app=self.app)
+            self.assertListEqual(
+                [a.path for a in playlist.listdir()],
+                ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
+                )
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_plsfile(self):
+        data = (
+            '[playlist]\n'
+            'File1=/base/valid.mp3\n'
+            'File2=/outside.ogg\n'
+            'File3=/base/invalid.bin\n'
+            'File4=relative.ogg'
+            )
+        tmpdir = tempfile.mkdtemp()
+        try:
+            file = os.path.join(tmpdir, 'playable.pls')
+            with open(file, 'w') as f:
+                f.write(data)
+            playlist = self.module.PLSFile(path=file, app=self.app)
+            self.assertListEqual(
+                [a.path for a in playlist.listdir()],
+                ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
+                )
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_plsfile_with_holes(self):
+        data = (
+            '[playlist]\n'
+            'File1=/base/valid.mp3\n'
+            'File3=/base/invalid.bin\n'
+            'File4=relative.ogg\n'
+            'NumberOfEntries=4'
+            )
+        tmpdir = tempfile.mkdtemp()
+        try:
+            file = os.path.join(tmpdir, 'playable.pls')
+            with open(file, 'w') as f:
+                f.write(data)
+            playlist = self.module.PLSFile(path=file, app=self.app)
+            self.assertListEqual(
+                [a.path for a in playlist.listdir()],
+                ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
+                )
+        finally:
+            shutil.rmtree(tmpdir)

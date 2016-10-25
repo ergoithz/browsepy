@@ -10,7 +10,7 @@ from browsepy import stream_template
 from browsepy.file import OutsideDirectoryBase
 
 from .playable import PlayableFile, PlayableDirectory, \
-                      PlayListFile, extensions
+                      PlayListFile, detect_playable_mimetype
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
@@ -56,14 +56,6 @@ def directory(path):
     except OutsideDirectoryBase:
         pass
     return NotFound()
-
-
-def detect_playable_mimetype(path, os_sep=os.sep):
-    basename = path.rsplit(os_sep)[-1]
-    if '.' in basename:
-        ext = basename.rsplit('.')[-1]
-        return extensions.get(ext, None)
-    return None
 
 
 def register_arguments(manager):
@@ -113,7 +105,8 @@ def register_plugin(manager):
             widget,
             mimetypes=PlayListFile.mimetypes
             )
-    #
+
+    # check argument (see `register_arguments`) before registering
     if manager.get_argument('player_directory_play'):
         manager.register_action(
             'player.directory',

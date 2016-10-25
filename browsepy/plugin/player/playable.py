@@ -3,7 +3,6 @@ import sys
 import codecs
 import os.path
 
-from werkzeug.utils import cached_property
 from browsepy.compat import range, PY_LEGACY
 from browsepy.file import Node, File, Directory, \
                           underscore_replace, check_under_base
@@ -14,6 +13,11 @@ if PY_LEGACY:
 else:
     import configparser
 
+ConfigParserBase = (
+    configparser.SafeConfigParser
+    if hasattr(configparser, 'SafeConfigParser') else
+    configparser.ConfigParser
+    )
 
 extensions = {
     'mp3': 'audio/mpeg',
@@ -24,12 +28,41 @@ extensions = {
     'pls': 'audio/x-scpls',
 }
 
+ini_parser_base = (
+    configparser.SafeConfigParser
+    if hasattr(configparser, 'SafeConfigParser') else
+    configparser.ConfigParser
+    )
+
+
+class PLSFileParser(ConfigParserBase):
+    '''
+    ConfigParser class accepting fallback on get for convenience.
+    '''
+    NOT_SET = type('NotSetType', (object,), {})
+
+    def getint(self, section, key, fallback=NOT_SET, **kwargs):
+        try:
+            return super(PLSFileParser, self).getint(section, key, **kwargs)
+        except (configparser.NoOptionError, ValueError):
+            if fallback is self.NOT_SET:
+                raise
+            return fallback
+
+    def get(self, section, key, fallback=NOT_SET, **kwargs):
+        try:
+            return super(PLSFileParser, self).get(section, key, **kwargs)
+        except (configparser.NoOptionError, ValueError):
+            if fallback is self.NOT_SET:
+                raise
+            return fallback
+
 
 class PlayableFile(File):
     media_map = {
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg',
-        'audio/wav': 'wav',
+        'audio/wav': 'wav'
     }
     mimetypes = tuple(media_map)
 
@@ -54,6 +87,7 @@ class PlayableFile(File):
 class PlayListFile(Directory):
     playable_class = PlayableFile
     mimetypes = ('audio/x-mpegurl', 'audio/x-scpls')
+    sortkey = None  # disables listdir sorting
 
     @classmethod
     def from_urlpath(cls, path, app=None):
@@ -67,42 +101,55 @@ class PlayListFile(Directory):
         return original
 
     def normalize_playable_path(self, path):
-        if not os.path.isabs(path):
-            path = os.path.normpath(os.path.join(self.parent.path, path))
-        if check_under_base(path, self.app.config['directory_base']):
+        if '://' in path:
             return path
+        if not os.path.isabs(path):
+            return os.path.normpath(os.path.join(self.parent.path, path))
+        if check_under_base(path, self.app.config['directory_base']):
+            return os.path.normpath(path)
         return None
+
+    def _entries(self):
+        return
+        yield
+
+    def _listdir(self):
+        for file in self._entries():
+            if detect_playable_mimetype(file.path):
+                yield file
 
 
 class PLSFile(PlayListFile):
-    ini_parser_cls = (
-        configparser.SafeConfigParser
-        if hasattr(configparser, 'SafeConfigParser') else
-        configparser.ConfigParser
-        )
+    ini_parser_class = PLSFileParser
     maxsize = getattr(sys, 'maxsize', None) or getattr(sys, 'maxint', None)
     mimetype = 'audio/x-scpls'
 
-    @cached_property
-    def _parser(self):
-        parser = self.ini_parser()
+    def _entries(self):
+        parser = self.ini_parser_class()
         parser.read(self.path)
-        return parser
-
-    def _listdir(self):
-        maxsize = self._parser.getint('playlist', 'NumberOfEntries', None)
-        for i in range(self.maxsize if maxsize is None else maxsize):
-            pf = self.playable_class(
-                path=self.normalize_playable_path(
-                    self._parser.get('playlist', 'File%d' % i, None)
-                    ),
-                duration=self._parser.getint('playlist', 'Length%d' % i, None),
-                title=self._parser.get('playlist', 'Title%d' % i, None),
-                )
-            if pf.path:
-                yield pf
-            elif maxsize is None:
+        maxsize = parser.getint('playlist', 'NumberOfEntries', None)
+        for i in range(1, (self.maxsize if maxsize is None else maxsize) + 1):
+            path = parser.get('playlist', 'File%d' % i, None)
+            if not path:
+                if maxsize:
+                    continue
                 break
+            path = self.normalize_playable_path(path)
+            if not path:
+                continue
+            yield self.playable_class(
+                path=path,
+                app=self.app,
+                duration=parser.getint(
+                    'playlist', 'Length%d' % i,
+                    None
+                    ),
+                title=parser.get(
+                    'playlist',
+                    'Title%d' % i,
+                    None
+                    ),
+                )
 
 
 class M3UFile(PlayListFile):
@@ -123,19 +170,19 @@ class M3UFile(PlayListFile):
                 if line:
                     yield line
 
-    def _listdir(self):
+    def _entries(self):
         data = {}
         for line in self._iter_lines():
             if line.startswith('#EXTINF:'):
                 duration, title = line.split(',', 1)
                 data['duration'] = None if duration == '-1' else int(duration)
                 data['title'] = title
+            if not line:
                 continue
-            print(line)
-            data['path'] = self.normalize_playable_path(line)
-            if data['path']:
-                yield self.playable_class(**data)
-                data.clear()
+            path = self.normalize_playable_path(line)
+            if path:
+                yield self.playable_class(path=path, app=self.app, **data)
+            data.clear()
 
 
 class PlayableDirectory(Directory):
@@ -149,5 +196,13 @@ class PlayableDirectory(Directory):
 
     def _listdir(self):
         for file in super(PlayableDirectory, self)._listdir():
-            if file.name.rsplit('.', 1)[-1] in extensions:
+            if detect_playable_mimetype(file.path):
                 yield file
+
+
+def detect_playable_mimetype(path, os_sep=os.sep):
+    basename = path.rsplit(os_sep)[-1]
+    if '.' in basename:
+        ext = basename.rsplit('.')[-1]
+        return extensions.get(ext, None)
+    return None
