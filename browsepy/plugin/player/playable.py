@@ -28,30 +28,35 @@ extensions = {
     'pls': 'audio/x-scpls',
 }
 
-ini_parser_base = (
-    configparser.SafeConfigParser
-    if hasattr(configparser, 'SafeConfigParser') else
-    configparser.ConfigParser
-    )
 
-
-class PLSFileParser(ConfigParserBase):
+class PLSFileParser(object):
     '''
-    ConfigParser class accepting fallback on get for convenience.
+    ConfigParser wrapper accepting fallback on get for convenience.
+
+    This wraps instead of inheriting due ConfigParse being classobj on python2.
     '''
     NOT_SET = type('NotSetType', (object,), {})
+    parser_class = (
+        configparser.SafeConfigParser
+        if hasattr(configparser, 'SafeConfigParser') else
+        configparser.ConfigParser
+        )
 
-    def getint(self, section, key, fallback=NOT_SET, **kwargs):
+    def __init__(self, path):
+        self._parser = self.parser_class()
+        self._parser.read(path)
+
+    def getint(self, section, key, fallback=NOT_SET):
         try:
-            return super(PLSFileParser, self).getint(section, key, **kwargs)
+            return self._parser.getint(section, key)
         except (configparser.NoOptionError, ValueError):
             if fallback is self.NOT_SET:
                 raise
             return fallback
 
-    def get(self, section, key, fallback=NOT_SET, **kwargs):
+    def get(self, section, key, fallback=NOT_SET):
         try:
-            return super(PLSFileParser, self).get(section, key, **kwargs)
+            return self._parser.get(section, key)
         except (configparser.NoOptionError, ValueError):
             if fallback is self.NOT_SET:
                 raise
@@ -125,10 +130,9 @@ class PLSFile(PlayListFile):
     mimetype = 'audio/x-scpls'
 
     def _entries(self):
-        parser = self.ini_parser_class()
-        parser.read(self.path)
+        parser = self.ini_parser_class(self.path)
         maxsize = parser.getint('playlist', 'NumberOfEntries', None)
-        for i in range(1, (self.maxsize if maxsize is None else maxsize) + 1):
+        for i in range(1, self.maxsize if maxsize is None else maxsize + 1):
             path = parser.get('playlist', 'File%d' % i, None)
             if not path:
                 if maxsize:
