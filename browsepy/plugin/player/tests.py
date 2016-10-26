@@ -239,3 +239,16 @@ class TestPlayable(TestIntegrationBase):
                 )
         finally:
             shutil.rmtree(tmpdir)
+            
+class TestBlueprint(TestPlayerBase):
+	def setUp(self):
+		super(TestBlueprint, self).setUp()
+		self.app.register_blueprint(self.module.player)
+		
+	def get(self, endpoint, **kwargs):
+        with self.app.test_client() as client:
+            url = url_for(endpoint, **kwargs)
+            return client.get(url)
+		
+    def test_playable(self):
+        self.get('player.audio', path='test.mp3')
