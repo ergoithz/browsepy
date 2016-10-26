@@ -4,7 +4,16 @@
 .jp-audio .jp-controls{
     width: auto;
 }
-.jp-audio .jp-type-single .jp-progress {
+.jp-current-time, .jp-duration{
+    width: 4.5em;
+}
+.jp-audio .jp-type-playlist .jp-toggles {
+    left: auto;
+    right: -90px;
+    top: 0;
+}
+.jp-audio .jp-type-single .jp-progress,
+.jp-audio .jp-type-playlist .jp-progress {
     width: auto;
     right: 130px;
 }
@@ -13,7 +22,8 @@
     right: 15px;
     width: 100px;
 }
-.jp-audio .jp-type-single .jp-time-holder{
+.jp-audio .jp-type-single .jp-time-holder,
+.jp-audio .jp-type-playlist .jp-time-holder{
     width: auto;
     right: 130px;
 }

@@ -192,7 +192,7 @@ class TestPlayable(TestIntegrationBase):
                 f.write(data)
             playlist = self.module.M3UFile(path=file, app=self.app)
             self.assertListEqual(
-                [a.path for a in playlist.listdir()],
+                [a.path for a in playlist.entries()],
                 ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
                 )
         finally:
@@ -213,7 +213,7 @@ class TestPlayable(TestIntegrationBase):
                 f.write(data)
             playlist = self.module.PLSFile(path=file, app=self.app)
             self.assertListEqual(
-                [a.path for a in playlist.listdir()],
+                [a.path for a in playlist.entries()],
                 ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
                 )
         finally:
@@ -234,7 +234,7 @@ class TestPlayable(TestIntegrationBase):
                 f.write(data)
             playlist = self.module.PLSFile(path=file, app=self.app)
             self.assertListEqual(
-                [a.path for a in playlist.listdir()],
+                [a.path for a in playlist.entries()],
                 ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
                 )
         finally:

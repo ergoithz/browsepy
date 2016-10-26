@@ -49,15 +49,15 @@
                   ]
                   %}
                 {% for text, property, type, colspan in headers %}
-                  <th{% if colspan > 1 %} colspan="{{ colspan }}"{% endif %}>
-                    {% set property_desc = '-{}'.format(property) %}
-                    {% set prop = property_desc if sort_property == property else property %}
-                    {% set active = 'active' if sort_property in (property, property_desc) else '' %}
-                    {% set desc = 'desc' if sort_property == property_desc else '' %}
-                    <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
-                       class="{{type}} sorting {{active}} {{desc}}"
-                       >Modified</a>
-                  </th>
+                    <th{% if colspan > 1 %} colspan="{{ colspan }}"{% endif %}>
+                        {% set property_desc = '-{}'.format(property) %}
+                        {% set prop = property_desc if sort_property == property else property %}
+                        {% set active = 'active' if sort_property in (property, property_desc) else '' %}
+                        {% set desc = 'desc' if sort_property == property_desc else '' %}
+                        <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
+                           class="{{type}} sorting {{active}} {{desc}}"
+                           >Modified</a>
+                    </th>
                 {% endfor %}
             </tr>
         </thead>
