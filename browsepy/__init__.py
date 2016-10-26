@@ -4,6 +4,8 @@
 import logging
 import os
 import os.path
+import json
+import base64
 
 from flask import Flask, Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
@@ -47,6 +49,62 @@ if "BROWSEPY_SETTINGS" in os.environ:
 plugin_manager = PluginManager(app)
 
 
+def cookie_browse_sorting():
+    '''
+    Get sorting-cookie data of current request.
+
+    :returns: sorting-cookie data as dict
+    :rtype: dict
+    '''
+    try:
+        data = request.cookies.get('browse-sorting', 'e30=').encode('ascii')
+        return json.loads(base64.b64decode(data).decode('utf-8'))
+    except (ValueError, TypeError, KeyError) as e:
+        print(e)
+        return {}
+
+
+def browse_sortkey_reverse(prop):
+    '''
+    Get sorting function for browse
+
+    :returns: tuple with sorting gunction and reverse bool
+    :rtype: tuple of a dict and a bool
+    '''
+    if prop.startswith('-'):
+        prop = prop[1:]
+        reverse = True
+    elif prop.startswith('+'):
+        prop = prop[1:]
+        reverse = False
+    else:
+        reverse = False
+
+    if prop == 'text':
+        return (
+            lambda x: (
+                x.is_directory == reverse,
+                x.default_action[1].text.lower()
+                ),
+            reverse
+            )
+    if prop == 'size':
+        return (
+            lambda x: (
+                x.is_directory == reverse,
+                x.stats.st_size
+                ),
+            reverse
+            )
+    return (
+        lambda x: (
+            x.is_directory == reverse,
+            getattr(x, prop, None)
+            ),
+        reverse
+        )
+
+
 def stream_template(template_name, **context):
     '''
     Some templates can be huge, this function returns an streaming response,
@@ -70,13 +128,42 @@ def template_globals():
         }
 
 
+@app.route('/sort/<string:property>', defaults={"path": ""})
+@app.route('/sort/<string:property>/<path:path>')
+def sort(property, path):
+    try:
+        directory = Node.from_urlpath(path)
+    except OutsideDirectoryBase:
+        return NotFound()
+
+    if not directory.is_directory:
+        return NotFound()
+
+    data = cookie_browse_sorting()
+    data[path] = property
+    raw_data = json.dumps(data).encode('utf-8')
+
+    response = redirect(url_for(".browse", path=directory.urlpath))
+    response.set_cookie('browse-sorting', base64.b64encode(raw_data))
+    return response
+
+
 @app.route("/browse", defaults={"path": ""})
 @app.route('/browse/<path:path>')
 def browse(path):
+    sort_property = cookie_browse_sorting().get(path, 'text')
+    sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
+
     try:
         directory = Node.from_urlpath(path)
         if directory.is_directory:
-            return stream_template("browse.html", file=directory)
+            return stream_template(
+                'browse.html',
+                file=directory,
+                sort_property=sort_property,
+                sort_fnc=sort_fnc,
+                sort_reverse=sort_reverse
+                )
     except OutsideDirectoryBase:
         pass
     return NotFound()

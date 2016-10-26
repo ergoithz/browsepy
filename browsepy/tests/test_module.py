@@ -11,6 +11,7 @@ import tarfile
 import xml.etree.ElementTree as ET
 import io
 import stat
+import mimetypes
 
 import flask
 import browsepy
@@ -138,12 +139,17 @@ class Page404Exception(PageException):
     pass
 
 
+class Page302Exception(PageException):
+    pass
+
+
 class TestApp(unittest.TestCase):
     module = browsepy
     list_page_class = ListPage
     confirm_page_class = ConfirmPage
     page_exceptions = {
         404: Page404Exception,
+        302: Page302Exception,
         None: PageException
     }
 
@@ -193,15 +199,18 @@ class TestApp(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def get(self, endpoint, **kwargs):
-        if endpoint in ('index', 'browse'):
+        if endpoint in ('index', 'browse', 'sort'):
             page_class = self.list_page_class
         elif endpoint == 'remove':
             page_class = self.confirm_page_class
         else:
             page_class = None
-
-        with self.app.test_client() as client:
-            response = client.get(self.url_for(endpoint, **kwargs))
+        follow_redirects = kwargs.pop('follow_redirects', False)
+        with kwargs.pop('client', None) or self.app.test_client() as client:
+            response = client.get(
+                self.url_for(endpoint, **kwargs),
+                follow_redirects=follow_redirects
+                )
             if response.status_code != 200:
                 raise self.page_exceptions.get(
                     response.status_code,
@@ -217,7 +226,7 @@ class TestApp(unittest.TestCase):
 
     def post(self, endpoint, **kwargs):
         data = kwargs.pop('data') if 'data' in kwargs else {}
-        with self.app.test_client() as client:
+        with kwargs.pop('client', None) or self.app.test_client() as client:
             response = client.post(
                 self.url_for(endpoint, **kwargs),
                 data=data,
@@ -428,6 +437,76 @@ class TestApp(unittest.TestCase):
 
         self.assertEqual(file_contents, expected_file_contents)
         self.clear(self.upload)
+
+    def test_sort(self):
+        files = {
+            'a.txt': 'aaa',
+            'b.png': 'aa',
+            'c.zip': 'a'
+        }
+        by_name = [
+            self.url_for('open', path=name)
+            for name in sorted(files)
+            ]
+        by_name_desc = list(reversed(by_name))
+
+        by_type = [
+            self.url_for('open', path=name)
+            for name in sorted(files, key=lambda x: mimetypes.guess_type(x)[0])
+            ]
+        by_type_desc = list(reversed(by_type))
+
+        by_size = [
+            self.url_for('open', path=name)
+            for name in sorted(files, key=lambda x: len(files[x]))
+            ]
+        by_size_desc = list(reversed(by_size))
+
+        for name, content in files.items():
+            path = os.path.join(self.base, name)
+            with open(path, 'wb') as f:
+                f.write(content.encode('ascii'))
+
+        client = self.app.test_client()
+        page = self.get('browse', client=client)
+        self.assertListEqual(page.files, by_name)
+
+        self.assertRaises(
+            Page302Exception,
+            self.get, 'sort', property='text', client=client
+        )
+
+        page = self.get('browse', client=client)
+        self.assertListEqual(page.files, by_name)
+
+        page = self.get('sort', property='-text', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_name_desc)
+
+        page = self.get('sort', property='type', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_type)
+
+        page = self.get('sort', property='-type', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_type_desc)
+
+        page = self.get('sort', property='size', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_size)
+
+        page = self.get('sort', property='-size', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_size_desc)
+
+        # We're unable to test modified sorting due filesystem time resolution
+        page = self.get('sort', property='modified', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(sorted(page.files), sorted(by_name))
+
+        page = self.get('sort', property='-modified', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(sorted(page.files), sorted(by_name))
 
 
 class TestFile(unittest.TestCase):
