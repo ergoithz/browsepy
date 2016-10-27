@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 
 {% block style %}
-    {{ super() }}
-    {% for widget in manager.get_widgets('style') %}
-        <link rel="stylesheet" type="text/css" href="{{ widget.href }}"/>
-    {% endfor %}
+  {{ super() }}
+  {% for widget in manager.get_widgets('style') %}
+    <link rel="stylesheet" type="text/css" href="{{ widget.href }}"/>
+  {% endfor %}
 {% endblock %}
 
 {% block scripts %}
-    {{ super() }}
-    {% for widget in manager.get_widgets('javascript') %}
-        <script src="{{ widget.src }}"></script>
-    {% endfor %}
+  {{ super() }}
+  {% for widget in manager.get_widgets('javascript') %}
+    <script src="{{ widget.src }}"></script>
+  {% endfor %}
 {% endblock %}
 
 {% block header %}
 <h1>
-    {% for parent in file.ancestors[::-1] %}
-        <a href="{{ url_for('browse', path=parent.urlpath) }}">{{ parent.name }}</a>
-        <span> / </span>
-    {% endfor %}
-    {{ file.name }}
+  {% for parent in file.ancestors[::-1] %}
+    <a href="{{ url_for('browse', path=parent.urlpath) }}">{{ parent.name }}</a>
+    <span> / </span>
+  {% endfor %}
+  {{ file.name }}
 </h1>
 {% endblock %}
 
