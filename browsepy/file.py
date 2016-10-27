@@ -316,20 +316,7 @@ class Directory(Node):
                 continue
             yield self.file_class(**kwargs)
 
-    def sortkey(self, node):
-        '''
-        Order key function used by `listdir`.
-
-        Could be overloaded to None by inherited classes.
-
-        :param node: node to order
-        :type node: Node
-        :returns: tuple of not-directory and lowercase name
-        :rtype: tuple of bool and str
-        '''
-        return not node.is_directory, node.name.lower()
-
-    def listdir(self):
+    def listdir(self, sortkey=None, reverse=False):
         '''
         Get sorted list (by `is_directory` and `name` properties) of File
         objects.
@@ -338,10 +325,13 @@ class Directory(Node):
         :rtype: list of File
         '''
         if self._listdir_cache is None:
-            if self.sortkey:
-                self._listdir_cache = sorted(self._listdir(), key=self.sortkey)
+            if sortkey:
+                data = sorted(self._listdir(), key=sortkey, reverse=reverse)
+            elif reverse:
+                data = list(reversed(self._listdir()))
             else:
-                self._listdir_cache = list(self._listdir())
+                data = list(self._listdir())
+            self._listdir_cache = data
         return self._listdir_cache
 
 

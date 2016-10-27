@@ -40,7 +40,11 @@ def playlist(path):
     try:
         file = PlayListFile.from_urlpath(path)
         if file.is_file:
-            return stream_template('list.player.html', file=file)
+            return stream_template(
+                'audio.player.html',
+                file=file,
+                playlist=True
+                )
     except OutsideDirectoryBase:
         pass
     return NotFound()
@@ -52,7 +56,11 @@ def directory(path):
     try:
         file = PlayableDirectory.from_urlpath(path)
         if file.is_directory:
-            return stream_template('list.player.html', file=file)
+            return stream_template(
+                'audio.player.html',
+                file=file,
+                playlist=True
+                )
     except OutsideDirectoryBase:
         pass
     return NotFound()

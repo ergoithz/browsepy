@@ -19,15 +19,6 @@ ConfigParserBase = (
     configparser.ConfigParser
     )
 
-extensions = {
-    'mp3': 'audio/mpeg',
-    'ogg': 'audio/ogg',
-    'wav': 'audio/wav',
-    'm3u': 'audio/x-mpegurl',
-    'm3u8': 'audio/x-mpegurl',
-    'pls': 'audio/x-scpls',
-}
-
 
 class PLSFileParser(object):
     '''
@@ -69,7 +60,12 @@ class PlayableFile(File):
         'audio/ogg': 'ogg',
         'audio/wav': 'wav'
     }
-    mimetypes = tuple(media_map)
+    extensions = {
+        'mp3': 'audio/mpeg',
+        'ogg': 'audio/ogg',
+        'wav': 'audio/wav',
+    }
+    mimetypes = tuple(frozenset(extensions.values()))
 
     def __init__(self, **kwargs):
         self.duration = kwargs.pop('duration', None)
@@ -89,10 +85,14 @@ class PlayableFile(File):
         return self.media_map[self.type]
 
 
-class PlayListFile(Directory):
+class PlayListFile(File):
     playable_class = PlayableFile
-    mimetypes = ('audio/x-mpegurl', 'audio/x-scpls')
-    sortkey = None  # disables listdir sorting
+    extensions = {
+        'm3u': 'audio/x-mpegurl',
+        'm3u8': 'audio/x-mpegurl',
+        'pls': 'audio/x-scpls',
+    }
+    mimetypes = tuple(frozenset(extensions.values()))
 
     @classmethod
     def from_urlpath(cls, path, app=None):
@@ -118,9 +118,9 @@ class PlayListFile(Directory):
         return
         yield
 
-    def _listdir(self):
+    def entries(self):
         for file in self._entries():
-            if detect_playable_mimetype(file.path):
+            if detect_audio_mimetype(file.path):
                 yield file
 
 
@@ -190,23 +190,40 @@ class M3UFile(PlayListFile):
 
 
 class PlayableDirectory(Directory):
+    file_class = PlayableFile
+
     @classmethod
     def detect(cls, node):
         if node.is_directory:
             for file in node._listdir():
-                if file.name.rsplit('.', 1)[-1] in extensions:
+                if detect_audio_mimetype(file.path):
                     return True
         return False
 
-    def _listdir(self):
+    def entries(self):
         for file in super(PlayableDirectory, self)._listdir():
-            if detect_playable_mimetype(file.path):
+            if detect_audio_mimetype(file.path):
                 yield file
 
 
 def detect_playable_mimetype(path, os_sep=os.sep):
+    return (
+        detect_audio_mimetype(path, os_sep) or
+        detect_playlist_mimetype(path, os_sep)
+        )
+
+
+def detect_audio_mimetype(path, os_sep=os.sep):
     basename = path.rsplit(os_sep)[-1]
     if '.' in basename:
         ext = basename.rsplit('.')[-1]
-        return extensions.get(ext, None)
+        return PlayableFile.extensions.get(ext, None)
+    return None
+
+
+def detect_playlist_mimetype(path, os_sep=os.sep):
+    basename = path.rsplit(os_sep)[-1]
+    if '.' in basename:
+        ext = basename.rsplit('.')[-1]
+        return PlayListFile.extensions.get(ext, None)
     return None

@@ -8,7 +8,7 @@
 	font-weight: normal;
 	font-style: normal;
 }
-.button, .file-icon, .dir-icon{
+.button, .file-icon, .dir-icon, .sorting:after, .sorting:before{
 	font-family: 'icomoon';
 	speak: none;
 	font-style: normal;
@@ -185,6 +185,39 @@ ul.navbar > li, ul.footer > li{
 .dir-icon:after{
     content: "\e90a";
     }
+a.sorting{
+		display:block;
+		padding:0 1.4em 0 0;
+	  }
+a.sorting:after,
+a.sorting:before{
+		float:right;
+		margin:0.2em -1.3em -0.2em;
+		}
+a.sorting:hover:after,
+a.sorting.active:after{
+		content:"\ea4c";
+	  }
+a.sorting.desc:hover:after,
+a.sorting.desc.active:after{
+		content:"\ea4d";
+		}
+a.sorting.text:hover:after,
+a.sorting.text.active:after{
+		content:"\ea48";
+	  }
+a.sorting.text.desc:hover:after,
+a.sorting.text.desc.active:after{
+		content:"\ea49";
+		}
+a.sorting.numeric:hover:after,
+a.sorting.numeric.active:after{
+		content:"\ea4a";
+	  }
+a.sorting.numeric.desc:hover:after,
+a.sorting.numeric.desc.active:after{
+		content:"\ea4b";
+		}
 a.button{
     color:white;
     background:#333;
