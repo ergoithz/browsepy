@@ -239,16 +239,61 @@ class TestPlayable(TestIntegrationBase):
                 )
         finally:
             shutil.rmtree(tmpdir)
-            
+
+
 class TestBlueprint(TestPlayerBase):
-	def setUp(self):
-		super(TestBlueprint, self).setUp()
-		self.app.register_blueprint(self.module.player)
-		
-	def get(self, endpoint, **kwargs):
+    def setUp(self):
+        super(TestBlueprint, self).setUp()
+        self.app = browsepy.app  # required for our url_for calls
+        self.app.config['directory_base'] = tempfile.mkdtemp()
+        self.app.register_blueprint(self.module.player)
+
+    def tearDown(self):
+        shutil.rmtree(self.app.config['directory_base'])
+
+    def url_for(self, endpoint, **kwargs):
+        with self.app.app_context():
+            return flask.url_for(endpoint, _external=False, **kwargs)
+
+    def get(self, endpoint, **kwargs):
         with self.app.test_client() as client:
-            url = url_for(endpoint, **kwargs)
+            url = self.url_for(endpoint, **kwargs)
             return client.get(url)
-		
+
+    def file(self, path, data=''):
+        apath = os.path.join(self.app.config['directory_base'], path)
+        with open(apath, 'w') as f:
+            f.write(data)
+        return apath
+
+    def directory(self, path):
+        apath = os.path.join(self.app.config['directory_base'], path)
+        os.mkdir(apath)
+        return apath
+
     def test_playable(self):
-        self.get('player.audio', path='test.mp3')
+        name = 'test.mp3'
+        result = self.get('player.audio', path=name)
+        self.assertEqual(result.status_code, 404)
+        self.file(name)
+        result = self.get('player.audio', path=name)
+        self.assertEqual(result.status_code, 200)
+
+    def test_playlist(self):
+        name = 'test.m3u'
+        result = self.get('player.playlist', path=name)
+        self.assertEqual(result.status_code, 404)
+        self.file(name)
+        result = self.get('player.playlist', path=name)
+        self.assertEqual(result.status_code, 200)
+
+    def test_directory(self):
+        name = 'directory'
+        result = self.get('player.directory', path=name)
+        self.assertEqual(result.status_code, 404)
+        self.directory(name)
+        result = self.get('player.directory', path=name)
+        self.assertEqual(result.status_code, 200)
+        self.file('directory/test.mp3')
+        result = self.get('player.directory', path=name)
+        self.assertEqual(result.status_code, 200)

@@ -209,7 +209,6 @@ class File(Node):
 class Directory(Node):
     _listdir_cache = None
     mimetype = 'inode/directory'
-    is_directory = True
     is_file = False
     size = 0
     encoding = 'default'
@@ -222,6 +221,10 @@ class Directory(Node):
             widget = self.plugin_manager.link_class.from_file(self)
             action = self.plugin_manager.action_class('browse', widget)
         return action
+
+    @cached_property
+    def is_directory(self):
+        return os.path.isdir(self.path)
 
     @cached_property
     def can_download(self):
