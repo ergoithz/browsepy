@@ -77,7 +77,7 @@ class RegistrablePluginManager(PluginManagerBase):
 
 class BlueprintPluginManager(RegistrablePluginManager):
     '''
-    Note: blueprints are not removed on `clear`nor reloaded on `reload` 
+    Note: blueprints are not removed on `clear` nor reloaded on `reload`
     as flask does not allow it.
     '''
     def __init__(self, app=None):

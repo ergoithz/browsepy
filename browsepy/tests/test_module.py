@@ -122,7 +122,7 @@ class ConfirmPage(Page):
         prefix = html.find('.//strong').attrib.get('data-prefix', '')
 
         return cls(
-            prefix+name,
+            prefix + name,
             name,
             html.find('.//form[@method=\'get\']').attrib['action'],
             source
@@ -556,7 +556,7 @@ class TestFile(unittest.TestCase):
     def test_size(self):
         test_file = os.path.join(self.workbench, 'test.csv')
         with open(test_file, 'w') as f:
-            f.write(',\n'*512)
+            f.write(',\n' * 512)
         f = self.module.File(test_file, app=self.app)
 
         default = self.app.config['use_binary_multiples']
@@ -614,7 +614,7 @@ class TestFileFunctions(unittest.TestCase):
     def test_fmt_size(self):
         fnc = self.module.fmt_size
         for n, unit in enumerate(self.module.binary_units):
-            self.assertEqual(fnc(2**(10*n)), (1, unit))
+            self.assertEqual(fnc(2**(10 * n)), (1, unit))
         for n, unit in enumerate(self.module.standard_units):
             self.assertEqual(fnc(1000**n, False), (1, unit))
 

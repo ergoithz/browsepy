@@ -16,10 +16,12 @@ matrix:
     env: PIP_PARAMS=""
 
 install:
+  - pip install pep8
   - pip install coveralls $PIP_PARAMS
   - pip install . $PIP_PARAMS
 
 script:
+  - make pep8
   - make coverage
 
 after_success:
