@@ -19,7 +19,7 @@
     {% set desc = 'desc' if sort_property == property_desc else '' %}
     <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
        class="{{type}} sorting {{active}} {{desc}}"
-       >Modified</a>
+       >{{ text }}</a>
 </th>
 {%- endmacro %}
 
