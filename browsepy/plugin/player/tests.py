@@ -29,6 +29,9 @@ class ManagerMock(object):
     def button_class(self, *args, **kwargs):
         return ('button', args, kwargs)
 
+    def head_button_class(self, *args, **kwargs):
+        return ('head-button', args, kwargs)
+
     def javascript_class(self, endpoint, **kwargs):
         return ('javascript', endpoint, kwargs)
 
@@ -113,6 +116,16 @@ class TestIntegration(TestIntegrationBase):
         self.manager = self.manager_module.PluginManager(self.app)
         self.manager.load_plugin('player')
         self.assertIn(self.player_module.player, self.app.blueprints.values())
+
+    def test_register_arguments(self):
+        self.app.config.update(self.browsepy_module.app.config)
+        self.app.config['plugin_namespaces'] = ('browsepy.plugin',)
+        self.manager = self.manager_module.ArgumentPluginManager(self.app)
+        self.manager.load_arguments(['--plugin', 'player'])
+        self.assertFalse(self.manager.get_argument('player_directory_play'))
+        self.manager.load_arguments(['--plugin', 'player',
+                                     '--player-directory-play'])
+        self.assertTrue(self.manager.get_argument('player_directory_play'))
 
 
 class TestPlayable(TestIntegrationBase):

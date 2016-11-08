@@ -94,6 +94,7 @@ class ActionPluginManager(RegistrablePluginManager):
     action_class = collections.namedtuple(
         'CallbackAction', ('endpoint', 'widget'))
     button_class = widget.ButtonWidget
+    head_button_class = widget.HeadButtonWidget
     style_class = widget.StyleWidget
     javascript_class = widget.JavascriptWidget
     link_class = widget.LinkWidget
@@ -189,17 +190,26 @@ class ArgumentPluginManager(PluginManagerBase):
     _argparse_kwargs = {'add_help': False}
     _argparse_arguments = argparse.Namespace()
 
-    def load_arguments(self, argv, base):
+    def load_arguments(self, argv, base=None):
+
+        plugin_parser = argparse.ArgumentParser(add_help=False)
+        plugin_parser.add_argument(
+            '--plugin',
+            type=lambda x: x.split(',') if x else [],
+            default=[]
+            )
         parser = argparse.ArgumentParser(
-            parents=(base,),
+            parents=(base or plugin_parser,),
             add_help=False
             )
-        for plugin in base.parse_known_args(argv)[0].plugin:
+        for plugin in plugin_parser.parse_known_args(argv)[0].plugin:
             module = self.import_plugin(plugin)
             if hasattr(module, 'register_arguments'):
-                module.register_arguments(self)
-        for argargs, argkwargs in self._argparse_argkwargs:
-            parser.add_argument(*argargs, **argkwargs)
+                manager = ArgumentPluginManager()
+                module.register_arguments(manager)
+                group = parser.add_argument_group('%s arguments' % plugin)
+                for argargs, argkwargs in manager._argparse_argkwargs:
+                    group.add_argument(*argargs, **argkwargs)
         self._argparse_arguments = parser.parse_args(argv)
         return self._argparse_arguments
 

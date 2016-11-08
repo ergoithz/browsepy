@@ -237,12 +237,13 @@ def upload(path):
     if not directory.is_directory or not directory.can_upload:
         return NotFound()
 
-    for f in request.files.values():
-        filename = secure_filename(f.filename)
-        if filename:
-            filename = directory.choose_filename(filename)
-            filepath = os.path.join(directory.path, filename)
-            f.save(filepath)
+    for v in request.files.listvalues():
+        for f in v:
+            filename = secure_filename(f.filename)
+            if filename:
+                filename = directory.choose_filename(filename)
+                filepath = os.path.join(directory.path, filename)
+                f.save(filepath)
     return redirect(url_for(".browse", path=directory.urlpath))
 
 

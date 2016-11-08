@@ -26,18 +26,18 @@ class DebuggerTextTestRunner(unittest.TextTestRunner):
         kwargs.setdefault('verbosity', 2)
         super(DebuggerTextTestRunner, self).__init__(*args, **kwargs)
 
-    def debug_none(self, exc_info):
+    def debug_none(self, exc_info):  # pragma: no cover
         pass
 
-    def debug_pdb(self, exc_info):
+    def debug_pdb(self, exc_info):  # pragma: no cover
         import pdb
         pdb.post_mortem(exc_info[2])
 
-    def debug_ipdb(self, exc_info):
+    def debug_ipdb(self, exc_info):  # pragma: no cover
         import ipdb
         ipdb.post_mortem(exc_info[2])
 
-    def debug_pudb(self, exc_info):
+    def debug_pudb(self, exc_info):  # pragma: no cover
         import pudb
         pudb.post_mortem(exc_info[2], exc_info[1], exc_info[0])
 

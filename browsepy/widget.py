@@ -51,6 +51,15 @@ class ButtonWidget(WidgetBase):
         super(ButtonWidget, self).__init__()
 
 
+class HeadButtonWidget(WidgetBase):
+    place = 'head-button'
+
+    def __init__(self, html='', text='', css=''):
+        self.content = Markup(html) if html else text
+        self.css = css
+        super(HeadButtonWidget, self).__init__()
+
+
 class StyleWidget(WidgetBase):
     place = 'style'
 

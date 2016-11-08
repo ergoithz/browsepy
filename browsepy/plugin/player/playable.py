@@ -191,6 +191,11 @@ class M3UFile(PlayListFile):
 
 class PlayableDirectory(Directory):
     file_class = PlayableFile
+    name = ''
+
+    @property
+    def parent(self):
+        return super(PlayableDirectory, self)  # parent is self as directory
 
     @classmethod
     def detect(cls, node):

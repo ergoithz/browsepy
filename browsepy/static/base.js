@@ -1,7 +1,7 @@
 (function(){
   if (document.querySelectorAll && document.addEventListener) {
     var
-      forms = document.querySelectorAll('form'),
+      forms = document.querySelectorAll('form.autosubmit'),
       i, j, form, button, inputs, files, buttons;
     for (i = 0; form = forms[i++];) {
       buttons = form.querySelectorAll('input[type=submit], input[type=reset]');
@@ -13,9 +13,7 @@
             form.submit();
           };
         }(form)));
-        for (j = 0; button = buttons[j++];) {
-          button.style.display = 'none';
-        }
+        form.className += (form.className ? ' ' : '') + 'enabled';
       }
     }
   }

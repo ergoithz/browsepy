@@ -100,6 +100,22 @@ form.remove input[type=submit] {
   min-width: 10em;
 }
 
+form.autosubmit.enabled{
+  border: 0;
+  background: transparent;
+}
+
+form.autosubmit.enabled input{
+  position: fixed;
+  top: -500px;
+}
+
+form.autosubmit.enabled h2{
+  font-size: 1em;
+  font-weight: normal;
+  padding: 0;
+}
+
 table.browser {
   display: block;
   table-layout: fixed;
@@ -226,12 +242,9 @@ a.sorting.numeric.desc:hover:after, a.sorting.numeric.desc.active:after {
   content: "\ea4b";
 }
 
-a.button {
+a.button, a.head-button, form.autosubmit.enabled label {
   color: white;
   background: #333;
-  width: 1.5em;
-  margin-left: 3px;
-  height: 1.5em;
   display: inline-block;
   vertical-align: middle;
   line-height: 1.5em;
@@ -242,9 +255,23 @@ a.button {
   text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
 }
 
-a.button:hover {
+a.button:active, a.head-button:active, form.autosubmit.enabled label:active{
+  border: 1px solid black;
+}
+
+a.button:hover, a.head-button:hover, form.autosubmit.enabled label:hover {
   color: white;
   background: black;
+}
+
+a.button {
+  width: 1.5em;
+  margin-left: 3px;
+  height: 1.5em;
+}
+
+a.head-button, form.autosubmit.enabled label{
+  padding: 0.25em 0.5em;
 }
 
 a.button.download:after {

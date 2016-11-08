@@ -24,11 +24,11 @@ class ArgParse(argparse.ArgumentParser):
         self.add_argument(
             'host', nargs='?',
             default=self.default_host,
-            help='address to listen (default: %s)' % self.default_host)
+            help='address to listen (default: %(default)s)')
         self.add_argument(
             'port', nargs='?', type=int,
             default=self.default_port,
-            help='port to listen (default: %s)' % self.default_port)
+            help='port to listen (default: %(default)s)')
         self.add_argument(
             '--directory', metavar='PATH', type=self._directory,
             default=self.default_directory,

@@ -1,5 +1,27 @@
 {% extends "base.html" %}
 
+{% macro actions(f, type) -%}
+  {% for endpoint, widget in f.actions -%}
+    {% if widget.place == type -%}
+      <a href="{{ url_for(endpoint, path=f.urlpath) }}"
+         class="{{type}}{% if widget.css %} {{widget.css}}{% endif %}"
+         >{{ widget.content }}</a>
+    {%- endif %}
+  {%- endfor %}
+{%- endmacro %}
+
+{% macro th(text, property, type='text', colspan=1) -%}
+<th{% if colspan > 1 %} colspan="{{ colspan }}"{% endif %}>
+    {% set property_desc = '-{}'.format(property) %}
+    {% set prop = property_desc if sort_property == property else property %}
+    {% set active = 'active' if sort_property in (property, property_desc) else '' %}
+    {% set desc = 'desc' if sort_property == property_desc else '' %}
+    <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
+       class="{{type}} sorting {{active}} {{desc}}"
+       >Modified</a>
+</th>
+{%- endmacro %}
+
 {% block style %}
   {{ super() }}
   {% for widget in manager.get_widgets('style') %}
@@ -17,48 +39,44 @@
 {% block header %}
 <h1>
   {% for parent in file.ancestors[::-1] %}
+    {% if not loop.first %}
+      <span> / </span>
+    {% endif %}
     <a href="{{ url_for('browse', path=parent.urlpath) }}">{{ parent.name }}</a>
-    <span> / </span>
   {% endfor %}
-  {{ file.name }}
+  {% if file.name %}
+    {% if file.parent %}
+      <span> / </span>
+    {% endif %}
+    {{ file.name }}
+  {% endif %}
 </h1>
 {% endblock %}
 
 {% block content %}
 {% if file.can_upload %}
-    <form class="upload" method="post" action="{{ url_for('upload', path=file.urlpath) }}" enctype="multipart/form-data">
+    <form class="upload autosubmit"
+          method="post"
+          action="{{ url_for('upload', path=file.urlpath) }}"
+          enctype="multipart/form-data">
         <label>
             <h2>Upload</h2>
-            <input type="file" name="file"/>
+            <input type="file" name="file[]" multiple=""/>
         </label>
         <input type="submit"/>
     </form>
 {% endif %}
+{{ actions(file, 'head-button') }}
 {% if file.is_empty %}
     <p>No files in directory</p>
 {% else %}
     <table class="browser">
         <thead>
             <tr>
-                {% set urlpath = file.urlpath or None %}
-                {% set headers = [
-                  ['Name', 'text', 'text', 3],
-                  ['Mimetype', 'type', 'text', 1],
-                  ['Modified', 'modified', 'numeric', 1],
-                  ['Size', 'size', 'numeric', 1],
-                  ]
-                  %}
-                {% for text, property, type, colspan in headers %}
-                    <th{% if colspan > 1 %} colspan="{{ colspan }}"{% endif %}>
-                        {% set property_desc = '-{}'.format(property) %}
-                        {% set prop = property_desc if sort_property == property else property %}
-                        {% set active = 'active' if sort_property in (property, property_desc) else '' %}
-                        {% set desc = 'desc' if sort_property == property_desc else '' %}
-                        <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
-                           class="{{type}} sorting {{active}} {{desc}}"
-                           >Modified</a>
-                    </th>
-                {% endfor %}
+              {{ th('Name', 'text', 'text', 3) }}
+              {{ th('Mimetype', 'type') }}
+              {{ th('Modified', 'modified', 'numeric') }}
+              {{ th('Size', 'size', 'numeric') }}
             </tr>
         </thead>
         <tbody>
@@ -78,13 +96,7 @@
                         {% if f.can_download %}
                         <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.urlpath) }}" class="download button"></a>
                         {% endif %}
-                        {% for endpoint, widget in f.actions %}
-                            {% if widget.place == 'button' %}
-                                <a href="{{ url_for(endpoint, path=f.urlpath) }}"
-                                   class="button{% if widget.css %} {{widget.css}}{% endif %}"
-                                   >{{ widget.content }}</a>
-                            {% endif %}
-                        {% endfor %}
+                        {{ actions(f, 'button') }}
                     </td>
                     <td>{{ f.type }}</td>
                     <td>{{ f.modified }}</td>

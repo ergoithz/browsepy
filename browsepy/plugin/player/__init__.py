@@ -101,6 +101,10 @@ def register_plugin(manager):
     # register actions to browser items
     button_widget = manager.button_class(css='play')  # create button widget
     link_widget = manager.link_class()  # create link (default action) widget
+    head_button_widget = manager.head_button_class(  # create head button
+        css='play',
+        text='Play directory'
+        )
     # add both widgets for our mimetypes
     for widget in (link_widget, button_widget):
         manager.register_action(
@@ -118,6 +122,6 @@ def register_plugin(manager):
     if manager.get_argument('player_directory_play'):
         manager.register_action(
             'player.directory',
-            button_widget,
+            head_button_widget,
             callback=PlayableDirectory.detect
             )
