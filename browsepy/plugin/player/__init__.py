@@ -123,5 +123,5 @@ def register_plugin(manager):
         manager.register_action(
             'player.directory',
             head_button_widget,
-            callback=PlayableDirectory.detect
+            filter=PlayableDirectory.detect
             )

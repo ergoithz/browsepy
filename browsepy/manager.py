@@ -92,7 +92,7 @@ class BlueprintPluginManager(RegistrablePluginManager):
 
 class ActionPluginManager(RegistrablePluginManager):
     action_class = collections.namedtuple(
-        'CallbackAction', ('endpoint', 'widget'))
+        'FilterAction', ('endpoint', 'widget'))
     button_class = widget.ButtonWidget
     head_button_class = widget.HeadButtonWidget
     style_class = widget.StyleWidget
@@ -101,16 +101,16 @@ class ActionPluginManager(RegistrablePluginManager):
 
     def clear(self):
         self._action_widgets = {}
-        self._action_callback = []
+        self._action_filters = []
         super(ActionPluginManager, self).clear()
 
     def get_actions(self, file):
         return list(self.iter_actions(file))
 
     def iter_actions(self, file):
-        for callback, endpoint, cwidget in self._action_callback:
+        for filter, endpoint, cwidget in self._action_filters:
             try:
-                check = callback(file)
+                check = filter(file)
             except BaseException as e:
                 # Exception is handled  as this method execution is deffered,
                 # making hard to debug for plugin developers.
@@ -128,9 +128,9 @@ class ActionPluginManager(RegistrablePluginManager):
     def register_widget(self, widget):
         self._action_widgets.setdefault(widget.place, []).append(widget)
 
-    def register_action(self, endpoint, widget, callback=None, **kwargs):
-        if callable(callback):
-            self._action_callback.append((callback, endpoint, widget))
+    def register_action(self, endpoint, widget, filter=None, **kwargs):
+        if callable(filter):
+            self._action_filter.append((filter, endpoint, widget))
 
 
 class MimetypeActionPluginManager(ActionPluginManager):
