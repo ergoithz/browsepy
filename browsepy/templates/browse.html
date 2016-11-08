@@ -12,6 +12,7 @@
 
 {% macro th(text, property, type='text', colspan=1) -%}
 <th{% if colspan > 1 %} colspan="{{ colspan }}"{% endif %}>
+    {% set urlpath = file.urlpath or None %}
     {% set property_desc = '-{}'.format(property) %}
     {% set prop = property_desc if sort_property == property else property %}
     {% set active = 'active' if sort_property in (property, property_desc) else '' %}
