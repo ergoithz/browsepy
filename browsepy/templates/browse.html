@@ -30,8 +30,14 @@
   {% endfor %}
 {% endblock %}
 
+{% block hscripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='browse.head.js') }}"></script>
+{% endblock %}
+
 {% block scripts %}
   {{ super() }}
+  <script src="{{ url_for('static', filename='browse.body.js') }}"></script>
   {% for widget in manager.get_widgets('javascript') %}
     <script src="{{ widget.src }}"></script>
   {% endfor %}
@@ -52,9 +58,6 @@
     {{ file.name }}
   {% endif %}
 </h1>
-{% endblock %}
-
-{% block content %}
 {% if file.can_upload %}
     <form class="upload autosubmit"
           method="post"
@@ -68,6 +71,9 @@
     </form>
 {% endif %}
 {{ actions(file, 'head-button') }}
+{% endblock %}
+
+{% block content %}
 {% if file.is_empty %}
     <p>No files in directory</p>
 {% else %}

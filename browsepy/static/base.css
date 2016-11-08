@@ -100,17 +100,17 @@ form.remove input[type=submit] {
   min-width: 10em;
 }
 
-form.autosubmit.enabled{
+html.autosubmit-support form.autosubmit{
   border: 0;
   background: transparent;
 }
 
-form.autosubmit.enabled input{
+html.autosubmit-support form.autosubmit input{
   position: fixed;
   top: -500px;
 }
 
-form.autosubmit.enabled h2{
+html.autosubmit-support form.autosubmit h2{
   font-size: 1em;
   font-weight: normal;
   padding: 0;
@@ -242,7 +242,7 @@ a.sorting.numeric.desc:hover:after, a.sorting.numeric.desc.active:after {
   content: "\ea4b";
 }
 
-a.button, a.head-button, form.autosubmit.enabled label {
+a.button, a.head-button, html.autosubmit-support form.autosubmit label {
   color: white;
   background: #333;
   display: inline-block;
@@ -255,11 +255,11 @@ a.button, a.head-button, form.autosubmit.enabled label {
   text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
 }
 
-a.button:active, a.head-button:active, form.autosubmit.enabled label:active{
+a.button:active, a.head-button:active, html.autosubmit-support form.autosubmit label:active{
   border: 1px solid black;
 }
 
-a.button:hover, a.head-button:hover, form.autosubmit.enabled label:hover {
+a.button:hover, a.head-button:hover, html.autosubmit-support form.autosubmit label:hover {
   color: white;
   background: black;
 }
@@ -270,7 +270,7 @@ a.button {
   height: 1.5em;
 }
 
-a.head-button, form.autosubmit.enabled label{
+a.head-button, html.autosubmit-support form.autosubmit label{
   padding: 0.25em 0.5em;
 }
 
