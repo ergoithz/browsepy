@@ -29,8 +29,8 @@ class ManagerMock(object):
     def button_class(self, *args, **kwargs):
         return ('button', args, kwargs)
 
-    def head_button_class(self, *args, **kwargs):
-        return ('head-button', args, kwargs)
+    def header_class(self, *args, **kwargs):
+        return ('header', args, kwargs)
 
     def javascript_class(self, endpoint, **kwargs):
         return ('javascript', endpoint, kwargs)
@@ -110,22 +110,38 @@ class TestIntegrationBase(TestPlayerBase):
 
 
 class TestIntegration(TestIntegrationBase):
+    non_directory_args = ['--plugin', 'player']
+    directory_args = ['--plugin', 'player', '--player-directory-play']
+
     def test_register_plugin(self):
         self.app.config.update(self.browsepy_module.app.config)
         self.app.config['plugin_namespaces'] = ('browsepy.plugin',)
-        self.manager = self.manager_module.PluginManager(self.app)
-        self.manager.load_plugin('player')
+        manager = self.manager_module.PluginManager(self.app)
+        manager.load_plugin('player')
         self.assertIn(self.player_module.player, self.app.blueprints.values())
 
     def test_register_arguments(self):
         self.app.config.update(self.browsepy_module.app.config)
         self.app.config['plugin_namespaces'] = ('browsepy.plugin',)
-        self.manager = self.manager_module.ArgumentPluginManager(self.app)
-        self.manager.load_arguments(['--plugin', 'player'])
-        self.assertFalse(self.manager.get_argument('player_directory_play'))
-        self.manager.load_arguments(['--plugin', 'player',
-                                     '--player-directory-play'])
-        self.assertTrue(self.manager.get_argument('player_directory_play'))
+
+        manager = self.manager_module.ArgumentPluginManager(self.app)
+        manager.load_arguments(self.non_directory_args)
+        self.assertFalse(manager.get_argument('player_directory_play'))
+        manager.load_arguments(self.directory_args)
+        self.assertTrue(manager.get_argument('player_directory_play'))
+
+    def test_reload(self):
+        self.app.config.update(
+            plugin_modules=['player'],
+            plugin_namespaces=['browsepy.plugin']
+        )
+        manager = self.manager_module.PluginManager(self.app)
+        manager.load_arguments(self.non_directory_args)
+        manager.reload()
+
+        manager = self.manager_module.PluginManager(self.app)
+        manager.load_arguments(self.directory_args)
+        manager.reload()
 
 
 class TestPlayable(TestIntegrationBase):

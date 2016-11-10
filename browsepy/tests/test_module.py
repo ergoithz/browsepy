@@ -88,7 +88,7 @@ class ListPage(Page):
             (
                 row[0].attrib.get('class') == 'dir-icon',
                 row[1].find('.//a').attrib['href'],
-                any(button.attrib.get('class') == 'remove button'
+                any(button.attrib.get('class') == 'button remove'
                     for button in row[2].findall('.//a'))
             )
             for row in html.findall('.//table/tbody/tr')
@@ -769,7 +769,7 @@ class TestPlugins(unittest.TestCase):
 
         endpoints = sorted(
             action.endpoint
-            for action in self.manager.get_actions(FileMock(mimetype='a/a'))
+            for action in self.manager.get_widgets(FileMock(mimetype='a/a'))
             )
 
         self.assertEqual(

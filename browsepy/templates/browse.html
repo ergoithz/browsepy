@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 
-{% macro actions(f, type) -%}
-  {% for endpoint, widget in f.actions -%}
-    {% if widget.place == type -%}
-      <a href="{{ url_for(endpoint, path=f.urlpath) }}"
-         class="{{type}}{% if widget.css %} {{widget.css}}{% endif %}"
-         >{{ widget.content }}</a>
+{% macro widgets(f, place) -%}
+  {% for widget in f.widgets -%}
+    {% if widget.place == place -%}
+      {% if widget.type in ('button', 'text-button') %}
+        <a
+          href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
+          class="{{type}}{% if widget.css %} {{ widget.css }}{% endif %}"
+          >{{ widget.text }}</a>
+      {% endif %}
     {%- endif %}
   {%- endfor %}
 {%- endmacro %}
@@ -25,7 +28,7 @@
 
 {% block style %}
   {{ super() }}
-  {% for widget in manager.get_widgets('style') %}
+  {% for widget in manager.get_widgets(file, 'style') %}
     <link rel="stylesheet" type="text/css" href="{{ widget.href }}"/>
   {% endfor %}
 {% endblock %}
@@ -38,7 +41,7 @@
 {% block scripts %}
   {{ super() }}
   <script src="{{ url_for('static', filename='browse.body.js') }}"></script>
-  {% for widget in manager.get_widgets('javascript') %}
+  {% for widget in manager.get_widgets(file, 'javascript') %}
     <script src="{{ widget.src }}"></script>
   {% endfor %}
 {% endblock %}
@@ -58,22 +61,26 @@
     {{ file.name }}
   {% endif %}
 </h1>
-{% if file.can_upload %}
-    <form class="upload autosubmit"
-          method="post"
-          action="{{ url_for('upload', path=file.urlpath) }}"
-          enctype="multipart/form-data">
-        <label>
-            <h2>Upload</h2>
-            <input type="file" name="file[]" multiple=""/>
-        </label>
-        <input type="submit"/>
-    </form>
-{% endif %}
-{{ actions(file, 'head-button') }}
 {% endblock %}
 
 {% block content %}
+{% block content_header %}
+{% if file.can_upload %}
+  <form class="upload autosubmit"
+        method="post"
+        action="{{ url_for('upload', path=file.urlpath) }}"
+        enctype="multipart/form-data">
+    <label>
+      <h2>Upload</h2>
+      <input type="file" name="file[]" multiple=""/>
+    </label>
+    <input type="submit"/>
+  </form>
+{% endif %}
+{{ widgets(file, 'header') }}
+{% endblock %}
+
+{% block content_table %}
 {% if file.is_empty %}
     <p>No files in directory</p>
 {% else %}
@@ -89,22 +96,14 @@
         <tbody>
             {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
                 <tr>
-                    {% set endpoint, widget = f.default_action %}
+                    {% set widget = f.link %}
                     <td class="{{ widget.icon }}"></td>
                     <td>
-                        <a href="{{ url_for(endpoint, path=f.urlpath) }}"
+                        <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
                            {% if widget.css %}class="{{ widget.css }}"{% endif %}
                            >{{ widget.text }}</a>
                     </td>
-                    <td>
-                        {% if f.can_remove %}
-                        <a href="{{ url_for('remove', path=f.urlpath) }}" class="remove button"></a>
-                        {% endif %}
-                        {% if f.can_download %}
-                        <a href="{{ url_for('download_directory' if f.is_directory else 'download_file', path=f.urlpath) }}" class="download button"></a>
-                        {% endif %}
-                        {{ actions(f, 'button') }}
-                    </td>
+                    <td>{{ widgets(f, 'entry-actions') }}</td>
                     <td>{{ f.type }}</td>
                     <td>{{ f.modified }}</td>
                     <td>{{ "" if f.is_directory else f.size }}</td>
@@ -113,4 +112,5 @@
         </tbody>
     </table>
 {% endif %}
+{% endblock %}
 {% endblock %}

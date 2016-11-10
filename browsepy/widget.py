@@ -1,76 +1,56 @@
 
-from markupsafe import Markup
-from flask import url_for
-
-
-class WidgetBase(object):
-    place = None
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
+class HTMLElement(object):
+    def __init__(self, place, type, **kwargs):
+        self.type = type
+        self.place = place
         self.kwargs = kwargs
 
-    def for_file(self, file):
-        return self
+    @property
+    def as_base(self):
+        return dict(
+            type=None,
+            place=self.place
+        )
 
-    @classmethod
-    def from_file(cls, file):
-        if not hasattr(cls, '__empty__'):
-            cls.__empty__ = cls()
-        return cls.__empty__.for_file(file)
-
-
-class LinkWidget(WidgetBase):
-    place = 'link'
-
-    def __init__(self, text=None, css=None, icon=None):
-        self.text = text
-        self.css = css
-        self.icon = icon
-        super(LinkWidget, self).__init__()
-
-    def for_file(self, file):
-        if None in (self.text, self.icon):
-            icon = self.icon
-            if icon is None:
-                icon = 'dir-icon' if file.is_directory else 'file-icon'
-            return self.__class__(
-                file.name if self.text is None else self.text,
-                self.css,
-                icon,
+    @property
+    def as_link(self):
+        dct = self.as_base
+        dct.update(
+            type='link',
+            css=self.kwargs.get('css'),
+            text=self.kwargs.get('text'),
+            endpoint=self.kwargs.get('endpoint')
             )
-        return self
-
-
-class ButtonWidget(WidgetBase):
-    place = 'button'
-
-    def __init__(self, html='', text='', css=''):
-        self.content = Markup(html) if html else text
-        self.css = css
-        super(ButtonWidget, self).__init__()
-
-
-class HeadButtonWidget(WidgetBase):
-    place = 'head-button'
-
-    def __init__(self, html='', text='', css=''):
-        self.content = Markup(html) if html else text
-        self.css = css
-        super(HeadButtonWidget, self).__init__()
-
-
-class StyleWidget(WidgetBase):
-    place = 'style'
+        return dct
 
     @property
-    def href(self):
-        return url_for(*self.args, **self.kwargs)
-
-
-class JavascriptWidget(WidgetBase):
-    place = 'javascript'
+    def as_button(self):
+        dct = self.as_link
+        css = dct.get('css')
+        dct.update(
+            type='button',
+            css='button{}{}'.format(' ' if css else '', css)
+            )
+        return dct
 
     @property
-    def src(self):
-        return url_for(*self.args, **self.kwargs)
+    def as_stylesheet(self):
+        dct = self.as_base
+        dct.update(
+            type='stylesheet',
+            href=self.kwargs.get('href')
+        )
+        return dct
+
+    @property
+    def as_javascript(self):
+        dct = self.as_base
+        dct.update(
+            type='javascript',
+            src=self.kwargs.get('src')
+        )
+        return dct
+
+    @property
+    def as_type(self):
+        return getattr(self, 'as_{}'.format(self.type), self.as_base)

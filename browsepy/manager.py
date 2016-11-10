@@ -2,13 +2,11 @@
 # -*- coding: UTF-8 -*-
 
 import sys
-import collections
 import argparse
 import warnings
 
 from . import mimetype
 from . import widget
-from .compat import isnonstriterable
 
 
 class PluginNotFoundError(ImportError):
@@ -90,27 +88,20 @@ class BlueprintPluginManager(RegistrablePluginManager):
             self._blueprint_known.add(blueprint)
 
 
-class ActionPluginManager(RegistrablePluginManager):
-    action_class = collections.namedtuple(
-        'FilterAction', ('endpoint', 'widget'))
-    button_class = widget.ButtonWidget
-    head_button_class = widget.HeadButtonWidget
-    style_class = widget.StyleWidget
-    javascript_class = widget.JavascriptWidget
-    link_class = widget.LinkWidget
+class WidgetPluginManager(RegistrablePluginManager):
+    widget_class = widget.HTMLElement
 
     def clear(self):
-        self._action_widgets = {}
-        self._action_filters = []
-        super(ActionPluginManager, self).clear()
+        self._filter_widgets = []
+        super(WidgetPluginManager, self).clear()
 
-    def get_actions(self, file):
-        return list(self.iter_actions(file))
+    def get_widgets(self, file=None, place=None):
+        return list(self.iter_widgets(file, place))
 
-    def iter_actions(self, file):
-        for filter, endpoint, cwidget in self._action_filters:
+    def iter_widgets(self, file=None, place=None):
+        for filter, endpoint, cwidget in self._filter_widgets:
             try:
-                check = filter(file)
+                check = filter(file) if filter else True
             except BaseException as e:
                 # Exception is handled  as this method execution is deffered,
                 # making hard to debug for plugin developers.
@@ -118,25 +109,18 @@ class ActionPluginManager(RegistrablePluginManager):
                     'Plugin action filtering failed with error: %s' % e,
                     RuntimeWarning
                     )
-            else:
-                if check:
-                    yield self.action_class(endpoint, cwidget.for_file(file))
+                continue
+            if check and (place is None or place == cwidget.place):
+                yield self.widget_class(endpoint, cwidget)
 
-    def get_widgets(self, place):
-        return self._action_widgets.get(place, [])
-
-    def register_widget(self, widget):
-        self._action_widgets.setdefault(widget.place, []).append(widget)
+    def register_widget(self, widget, **kwargs):
+        self.register_action(None, widget, **kwargs)
 
     def register_action(self, endpoint, widget, filter=None, **kwargs):
-        if callable(filter):
-            self._action_filter.append((filter, endpoint, widget))
+        self._filter_widgets.append((filter, endpoint, widget))
 
 
-class MimetypeActionPluginManager(ActionPluginManager):
-    action_class = collections.namedtuple(
-        'MimetypeAction', ('endpoint', 'widget'))
-
+class MimetypePluginManager(RegistrablePluginManager):
     _default_mimetype_functions = (
         mimetype.by_python,
         mimetype.by_file,
@@ -144,9 +128,8 @@ class MimetypeActionPluginManager(ActionPluginManager):
     )
 
     def clear(self):
-        self._mimetype_root = {}  # mimetype tree root node
         self._mimetype_functions = list(self._default_mimetype_functions)
-        super(MimetypeActionPluginManager, self).clear()
+        super(MimetypePluginManager, self).clear()
 
     def get_mimetype(self, path):
         for fnc in self._mimetype_functions:
@@ -155,35 +138,8 @@ class MimetypeActionPluginManager(ActionPluginManager):
                 return mime
         return mimetype.by_default(path)
 
-    def iter_actions(self, file):
-        for action in super(MimetypeActionPluginManager, self)\
-                        .iter_actions(file):
-            yield action
-
-        category, variant = file.mimetype.split('/')
-        for tree_category in (category, '*'):
-            for tree_variant in (variant, '*'):
-                acts = self._mimetype_root\
-                    .get(tree_category, {})\
-                    .get(tree_variant, ())
-                for endpoint, cwidget in acts:
-                    yield self.action_class(endpoint, cwidget.for_file(file))
-
     def register_mimetype_function(self, fnc):
         self._mimetype_functions.insert(0, fnc)
-
-    def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
-        if not mimetypes:
-            super(MimetypeActionPluginManager, self)\
-                    .register_action(endpoint, widget, **kwargs)
-            return
-        mimetypes = mimetypes if isnonstriterable(mimetypes) else (mimetypes,)
-        action = (endpoint, widget)
-        for mime in mimetypes:
-            category, variant = mime.split('/')
-            self._mimetype_root.setdefault(
-                category, {}
-                ).setdefault(variant, []).append(action)
 
 
 class ArgumentPluginManager(PluginManagerBase):
@@ -224,6 +180,6 @@ class ArgumentPluginManager(PluginManagerBase):
         return getattr(self._argparse_arguments, name, default)
 
 
-class PluginManager(BlueprintPluginManager, MimetypeActionPluginManager,
-                    ArgumentPluginManager):
+class PluginManager(BlueprintPluginManager, WidgetPluginManager,
+                    MimetypePluginManager, ArgumentPluginManager):
     pass

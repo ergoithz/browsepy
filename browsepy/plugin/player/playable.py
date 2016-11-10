@@ -54,18 +54,38 @@ class PLSFileParser(object):
             return fallback
 
 
-class PlayableFile(File):
-    media_map = {
-        'audio/mpeg': 'mp3',
-        'audio/ogg': 'ogg',
-        'audio/wav': 'wav'
-    }
+class PlayableBase(File):
     extensions = {
         'mp3': 'audio/mpeg',
         'ogg': 'audio/ogg',
         'wav': 'audio/wav',
+        'm3u': 'audio/x-mpegurl',
+        'm3u8': 'audio/x-mpegurl',
+        'pls': 'audio/x-scpls',
     }
-    mimetypes = tuple(frozenset(extensions.values()))
+
+    @classmethod
+    def extensions_from_mimetypes(cls, mimetypes):
+        mimetypes = frozenset(mimetypes)
+        return {
+            ext: mimetype
+            for ext, mimetype in cls.extensions.items()
+            if mimetype in mimetypes
+        }
+
+    @classmethod
+    def detect(cls, node, os_sep=os.sep):
+        basename = node.path.rsplit(os_sep)[-1]
+        if '.' in basename:
+            ext = basename.rsplit('.')[-1]
+            return cls.extensions.get(ext, None)
+        return None
+
+
+class PlayableFile(PlayableBase):
+    mimetypes = ['audio/mpeg', 'audio/ogg', 'audio/wav']
+    extensions = PlayableBase.extensions_from_mimetypes(mimetypes)
+    media_map = {mime: ext for ext, mime in extensions.items()}
 
     def __init__(self, **kwargs):
         self.duration = kwargs.pop('duration', None)
@@ -85,14 +105,10 @@ class PlayableFile(File):
         return self.media_map[self.type]
 
 
-class PlayListFile(File):
+class PlayListFile(PlayableBase):
     playable_class = PlayableFile
-    extensions = {
-        'm3u': 'audio/x-mpegurl',
-        'm3u8': 'audio/x-mpegurl',
-        'pls': 'audio/x-scpls',
-    }
-    mimetypes = tuple(frozenset(extensions.values()))
+    mimetypes = ['audio/x-mpegurl', 'audio/x-mpegurl', 'audio/x-scpls']
+    extensions = PlayableBase.extensions_from_mimetypes(mimetypes)
 
     @classmethod
     def from_urlpath(cls, path, app=None):
@@ -120,7 +136,7 @@ class PlayListFile(File):
 
     def entries(self):
         for file in self._entries():
-            if detect_audio_mimetype(file.path):
+            if PlayableFile.detect(file):
                 yield file
 
 
@@ -128,6 +144,7 @@ class PLSFile(PlayListFile):
     ini_parser_class = PLSFileParser
     maxsize = getattr(sys, 'maxsize', None) or getattr(sys, 'maxint', None)
     mimetype = 'audio/x-scpls'
+    extensions = PlayableBase.extensions_from_mimetypes([mimetype])
 
     def _entries(self):
         parser = self.ini_parser_class(self.path)
@@ -158,6 +175,7 @@ class PLSFile(PlayListFile):
 
 class M3UFile(PlayListFile):
     mimetype = 'audio/x-mpegurl'
+    extensions = PlayableBase.extensions_from_mimetypes([mimetype])
 
     def _iter_lines(self):
         prefix = '#EXTM3U\n'
@@ -201,34 +219,11 @@ class PlayableDirectory(Directory):
     def detect(cls, node):
         if node.is_directory:
             for file in node._listdir():
-                if detect_audio_mimetype(file.path):
-                    return True
-        return False
+                if PlayableFile.detect(file.path):
+                    return cls.mimetype
+        return None
 
     def entries(self):
         for file in super(PlayableDirectory, self)._listdir():
-            if detect_audio_mimetype(file.path):
+            if PlayableFile.detect(file.path):
                 yield file
-
-
-def detect_playable_mimetype(path, os_sep=os.sep):
-    return (
-        detect_audio_mimetype(path, os_sep) or
-        detect_playlist_mimetype(path, os_sep)
-        )
-
-
-def detect_audio_mimetype(path, os_sep=os.sep):
-    basename = path.rsplit(os_sep)[-1]
-    if '.' in basename:
-        ext = basename.rsplit('.')[-1]
-        return PlayableFile.extensions.get(ext, None)
-    return None
-
-
-def detect_playlist_mimetype(path, os_sep=os.sep):
-    basename = path.rsplit(os_sep)[-1]
-    if '.' in basename:
-        ext = basename.rsplit('.')[-1]
-        return PlayListFile.extensions.get(ext, None)
-    return None

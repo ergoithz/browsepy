@@ -48,15 +48,24 @@ class Node(object):
     def plugin_manager(self):
         return self.app.extensions['plugin_manager']
 
-    @property
-    def default_action(self):
-        for action in self.actions:
-            if action.widget.place == 'link':
-                return action
+    @cached_property
+    def widgets(self):
+        widgets = self.plugin_manager.get_widgets(file=self)
+        if self.can_remove:
+            action = self.plugin_manager.widget_class(
+                'entry-actions',
+                'button',
+                css='remove',
+                endpoint='remove'
+                )
+            widgets.append(action)
+        return widgets
 
     @cached_property
-    def actions(self):
-        return self.plugin_manager.get_actions(self)
+    def link(self):
+        for widget in self.widgets:
+            if widget.place == 'entry-link':
+                return widget
 
     @cached_property
     def can_remove(self):
@@ -152,13 +161,31 @@ class File(Node):
     is_directory = False
     generic = False
 
+    @cached_property
+    def widgets(self):
+        widgets = super(File, self).widgets
+        if self.can_download:
+            action = self.plugin_manager.widget_class(
+                'entry-actions',
+                'button',
+                css='download',
+                endpoint='download_file'
+                )
+            widgets.append(action)
+        return widgets
+
     @property
-    def default_action(self):
-        action = super(File, self).default_action
-        if action is None:
-            widget = self.plugin_manager.link_class.from_file(self)
-            action = self.plugin_manager.action_class('open', widget)
-        return action
+    def link(self):
+        widget = super(File, self).link
+        if widget is None:
+            return self.plugin_manager.widget_class(
+                'entry-link',
+                'link',
+                text=self.name,
+                icon='file-icon',
+                endpoint='open'
+                )
+        return widget
 
     @cached_property
     def mimetype(self):
@@ -214,13 +241,31 @@ class Directory(Node):
     encoding = 'default'
     generic = False
 
+    @cached_property
+    def widgets(self):
+        widgets = super(File, self).widgets
+        if self.can_download:
+            action = self.plugin_manager.widget_class(
+                'entry-actions',
+                'button',
+                css='download',
+                endpoint='download_directory'
+                )
+            action.append(action)
+        return widgets
+
     @property
-    def default_action(self):
-        action = super(Directory, self).default_action
-        if action is None:
-            widget = self.plugin_manager.link_class.from_file(self)
-            action = self.plugin_manager.action_class('browse', widget)
-        return action
+    def link(self):
+        widget = super(Directory, self).link
+        if widget is None:
+            return self.plugin_manager.widget_class(
+                'entry-link',
+                'link',
+                text=self.name,
+                icon='dir-icon',
+                endpoint='browse'
+                )
+        return widget
 
     @cached_property
     def is_directory(self):
