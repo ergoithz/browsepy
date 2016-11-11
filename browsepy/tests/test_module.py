@@ -17,7 +17,6 @@ import flask
 import browsepy
 import browsepy.file
 import browsepy.manager
-import browsepy.widget
 import browsepy.__main__
 import browsepy.compat
 
@@ -65,24 +64,34 @@ class Page(object):
                     yield text
                 yield child.tail or ''
 
+    def __init__(self, data, response=None):
+        self.data = data
+        self.response = response
+
     @classmethod
     def innerText(cls, element):
         return ''.join(cls.itertext(element))
+
+    @classmethod
+    def from_source(cls, source, response=None):
+        return cls(source, response)
 
 
 class ListPage(Page):
     path_strip_re = re.compile('\s+/\s+')
 
-    def __init__(self, path, directories, files, removable, upload, source):
+    def __init__(self, path, directories, files, removable, upload, source,
+                 response=None):
         self.path = path
         self.directories = directories
         self.files = files
         self.removable = removable
         self.upload = upload
         self.source = source
+        self.response = response
 
     @classmethod
-    def from_source(cls, source):
+    def from_source(cls, source, response=None):
         html = ET.fromstring(source)
         rows = [
             (
@@ -104,19 +113,21 @@ class ListPage(Page):
                 for isdir, url, removable in rows
                 ) if rows else False,
             html.find('.//form//input[@type=\'file\']') is not None,
-            source
+            source,
+            response
         )
 
 
 class ConfirmPage(Page):
-    def __init__(self, path, name, back, source):
+    def __init__(self, path, name, back, source, response=None):
         self.path = path
         self.name = name
         self.back = back
         self.source = source
+        self.response = response
 
     @classmethod
-    def from_source(cls, source):
+    def from_source(cls, source, response=None):
         html = ET.fromstring(source)
         name = cls.innerText(html.find('.//strong')).strip()
         prefix = html.find('.//strong').attrib.get('data-prefix', '')
@@ -125,7 +136,8 @@ class ConfirmPage(Page):
             prefix + name,
             name,
             html.find('.//form[@method=\'get\']').attrib['action'],
-            source
+            source,
+            response
         )
 
 
@@ -145,6 +157,7 @@ class Page302Exception(PageException):
 
 class TestApp(unittest.TestCase):
     module = browsepy
+    generic_page_class = Page
     list_page_class = ListPage
     confirm_page_class = ConfirmPage
     page_exceptions = {
@@ -199,32 +212,32 @@ class TestApp(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def get(self, endpoint, **kwargs):
-        if endpoint in ('index', 'browse', 'sort'):
+        status_code = kwargs.pop('status_code', 200)
+        follow_redirects = kwargs.pop('follow_redirects', False)
+        if endpoint in ('index', 'browse'):
             page_class = self.list_page_class
         elif endpoint == 'remove':
             page_class = self.confirm_page_class
+        elif endpoint == 'sort' and follow_redirects:
+            page_class = self.list_page_class
         else:
-            page_class = None
-        follow_redirects = kwargs.pop('follow_redirects', False)
+            page_class = self.generic_page_class
         with kwargs.pop('client', None) or self.app.test_client() as client:
             response = client.get(
                 self.url_for(endpoint, **kwargs),
                 follow_redirects=follow_redirects
                 )
-            if response.status_code != 200:
+            if response.status_code != status_code:
                 raise self.page_exceptions.get(
                     response.status_code,
                     self.page_exceptions[None]
                     )(response.status_code)
-            result = (
-                response.data
-                if page_class is None else
-                page_class.from_source(response.data)
-                )
+            result = page_class.from_source(response.data, response)
             response.close()
             return result
 
     def post(self, endpoint, **kwargs):
+        status_code = kwargs.pop('status_code', 200)
         data = kwargs.pop('data') if 'data' in kwargs else {}
         with kwargs.pop('client', None) or self.app.test_client() as client:
             response = client.post(
@@ -232,12 +245,12 @@ class TestApp(unittest.TestCase):
                 data=data,
                 follow_redirects=True
                 )
-            if response.status_code != 200:
+            if response.status_code != status_code:
                 raise self.page_exceptions.get(
                     response.status_code,
                     self.page_exceptions[None]
                     )(response.status_code)
-            return self.list_page_class.from_source(response.data)
+            return self.list_page_class.from_source(response.data, response)
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():
@@ -292,8 +305,8 @@ class TestApp(unittest.TestCase):
         with open(os.path.join(self.start, 'testfile3.txt'), 'wb') as f:
             f.write(content)
 
-        data = self.get('open', path='start/testfile3.txt')
-        self.assertEqual(data, content)
+        page = self.get('open', path='start/testfile3.txt')
+        self.assertEqual(page.data, content)
 
         self.assertRaises(
             Page404Exception,
@@ -347,10 +360,10 @@ class TestApp(unittest.TestCase):
 
         with open(binfile, 'wb') as f:
             f.write(bindata)
-        data = self.get('download_file', path='testfile.bin')
+        page = self.get('download_file', path='testfile.bin')
         os.remove(binfile)
 
-        self.assertEqual(data, bindata)
+        self.assertEqual(page.data, bindata)
 
         self.assertRaises(
             Page404Exception,
@@ -363,10 +376,10 @@ class TestApp(unittest.TestCase):
 
         with open(binfile, 'wb') as f:
             f.write(bindata)
-        data = self.get('download_directory', path='start')
+        page = self.get('download_directory', path='start')
         os.remove(binfile)
 
-        iodata = io.BytesIO(data)
+        iodata = io.BytesIO(page.data)
         with tarfile.open('start.tgz', mode="r:gz", fileobj=iodata) as tgz:
             tgz_files = [
                 member.name
@@ -502,11 +515,24 @@ class TestApp(unittest.TestCase):
         # We're unable to test modified sorting due filesystem time resolution
         page = self.get('sort', property='modified', client=client,
                         follow_redirects=True)
-        self.assertListEqual(sorted(page.files), sorted(by_name))
 
         page = self.get('sort', property='-modified', client=client,
                         follow_redirects=True)
-        self.assertListEqual(sorted(page.files), sorted(by_name))
+
+    def test_sort_cookie_size(self):
+        files = [chr(i) * 255 for i in range(97, 123)]
+        for name in files:
+            path = os.path.join(self.base, name)
+            os.mkdir(path)
+
+        client = self.app.test_client()
+        for name in files:
+            page = self.get('sort', property='modified', path=name,
+                            client=client, status_code=302)
+
+            for cookie in page.response.headers.getlist('set-cookie'):
+                if cookie.startswith('browse-sorting='):
+                    self.assertLessEqual(len(cookie), 4000)
 
 
 class TestFile(unittest.TestCase):
@@ -790,14 +816,37 @@ class TestPlugins(unittest.TestCase):
 
 
 def register_plugin(manager):
-    widget_class = browsepy.widget.WidgetBase
-
     manager._plugin_loaded = True
-    manager.register_action('test_x_x', widget_class('test_x_x'), ('*/*',))
-    manager.register_action('test_a_x', widget_class('test_a_x'), ('a/*',))
-    manager.register_action('test_x_a', widget_class('test_x_a'), ('*/a',))
-    manager.register_action('test_a_a', widget_class('test_a_a'), ('a/a',))
-    manager.register_action('test_b_x', widget_class('test_b_x'), ('b/*',))
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_x_x',
+        filter=lambda f: True
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_a_x',
+        filter=lambda f: f.mimetype.startswith('a/')
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_x_a',
+        filter=lambda f: f.mimetype.endswith('/a')
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_a_a',
+        filter=lambda f: f.mimetype == 'a/a'
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_b_x',
+        filter=lambda f: f.mimetype.startswith('b/')
+        )
 
     test_plugin_blueprint = flask.Blueprint(
         'test_plugin',

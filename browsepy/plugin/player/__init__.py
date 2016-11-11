@@ -9,8 +9,8 @@ from werkzeug.exceptions import NotFound
 from browsepy import stream_template
 from browsepy.file import OutsideDirectoryBase
 
-from .playable import PlayableBase, PlayableFile, PlayableDirectory, \
-                      PlayListFile
+from .playable import PlayableFile, PlayableDirectory, \
+                      PlayListFile, detect_playable_mimetype
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
@@ -92,7 +92,7 @@ def register_plugin(manager):
     :type manager: browsepy.manager.PluginManager
     '''
     manager.register_blueprint(player)
-    manager.register_mimetype_function(PlayableBase.detect)
+    manager.register_mimetype_function(detect_playable_mimetype)
 
     # add style tag
     manager.register_widget(
@@ -135,7 +135,7 @@ def register_plugin(manager):
         # register header button
         manager.register_widget(
             place='header',
-            type='text-button',
+            type='button',
             endpoint='player.directory',
             text='Play directory',
             filter=PlayableDirectory.detect

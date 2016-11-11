@@ -50,19 +50,32 @@ if "BROWSEPY_SETTINGS" in os.environ:
 plugin_manager = PluginManager(app)
 
 
-def cookie_browse_sorting():
+def iter_cookie_browse_sorting():
     '''
     Get sorting-cookie data of current request.
 
-    :returns: sorting-cookie data as dict
-    :rtype: dict
+    :yields: tuple of path and sorting property
+    :ytype: 2-tuple of strings
     '''
     try:
         data = request.cookies.get('browse-sorting', 'e30=').encode('ascii')
-        return json.loads(base64.b64decode(data).decode('utf-8'))
+        for path, prop in json.loads(base64.b64decode(data).decode('utf-8')):
+            yield path, prop
     except (ValueError, TypeError, KeyError) as e:
-        print(e)
-        return {}
+        logger.exception(e)
+
+
+def get_cookie_browse_sorting(path, default):
+    '''
+    Get sorting-cookie data for path of current request.
+
+    :returns: sorting property
+    :rtype: string
+    '''
+    for cpath, cprop in iter_cookie_browse_sorting():
+        if path == cpath:
+            return cprop
+    return default
 
 
 def browse_sortkey_reverse(prop):
@@ -85,7 +98,7 @@ def browse_sortkey_reverse(prop):
         return (
             lambda x: (
                 x.is_directory == reverse,
-                x.link[1].text.lower()
+                x.link.text.lower()
                 ),
             reverse
             )
@@ -140,19 +153,28 @@ def sort(property, path):
     if not directory.is_directory:
         return NotFound()
 
-    data = cookie_browse_sorting()
-    data[path] = property
-    raw_data = json.dumps(data).encode('utf-8')
+    data = [
+        (cpath, cprop)
+        for cpath, cprop in iter_cookie_browse_sorting()
+        if cpath != path
+        ]
+    data.append((path, property))
+    raw_data = base64.b64encode(json.dumps(data).encode('utf-8'))
+
+    # prevent cookie becoming too large
+    while len(raw_data) > 3975:  # 4000 - len('browse-sorting=""; Path=/')
+        data.pop(0)
+        raw_data = base64.b64encode(json.dumps(data).encode('utf-8'))
 
     response = redirect(url_for(".browse", path=directory.urlpath))
-    response.set_cookie('browse-sorting', base64.b64encode(raw_data))
+    response.set_cookie('browse-sorting', raw_data)
     return response
 
 
 @app.route("/browse", defaults={"path": ""})
 @app.route('/browse/<path:path>')
 def browse(path):
-    sort_property = cookie_browse_sorting().get(path, 'text')
+    sort_property = get_cookie_browse_sorting(path, 'text')
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
 
     try:

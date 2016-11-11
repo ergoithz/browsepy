@@ -1,16 +1,41 @@
 {% extends "base.html" %}
 
 {% macro widgets(f, place) -%}
-  {% for widget in f.widgets -%}
-    {% if widget.place == place -%}
-      {% if widget.type in ('button', 'text-button') %}
+  {%- for widget in f.widgets -%}
+    {%- if widget.place == place -%}
+      {%- if widget.type == 'button' -%}
         <a
           href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
-          class="{{type}}{% if widget.css %} {{ widget.css }}{% endif %}"
-          >{{ widget.text }}</a>
-      {% endif %}
-    {%- endif %}
-  {%- endfor %}
+          class="
+            {{- widget.type -}}
+            {%- if widget.text %} text{% endif -%}
+            {%- if widget.css %} {{ widget.css }}{% endif -%}"
+          >{{ widget.text or '' }}</a>
+      {%- elif widget.type == 'script' -%}
+        <script
+          src="{{ widget.src or url_for(widget.endpoint, filename=widget.filename) }}"
+          ></script>
+      {%- elif widget.type == 'stylesheet' -%}
+        <link
+          rel="stylesheet"
+          type="text/css"
+          href="{{ widget.href or url_for(widget.endpoint, filename=widget.filename) }}"/>
+      {%- elif widget.type == 'upload' -%}
+        <form class="upload autosubmit{% if widget.css %} {{ widget.css }}{% endif %}"
+              method="post"
+              action="{{ widget.action or url_for(widget.endpoint, path=file.urlpath) }}"
+              enctype="multipart/form-data">
+          <label>
+            <h2>{{ widget.text or 'Upload' }}</h2>
+            <input type="file" name="file[]" multiple=""/>
+          </label>
+          <input type="submit"/>
+        </form>
+      {%- elif widget.type == 'html' -%}
+        {{ widget.html|safe }}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
 {%- endmacro %}
 
 {% macro th(text, property, type='text', colspan=1) -%}
@@ -28,22 +53,17 @@
 
 {% block style %}
   {{ super() }}
-  {% for widget in manager.get_widgets(file, 'style') %}
-    <link rel="stylesheet" type="text/css" href="{{ widget.href }}"/>
-  {% endfor %}
+  {{ widgets(file, 'style') }}
 {% endblock %}
 
-{% block hscripts %}
+{% block head %}
   {{ super() }}
-  <script src="{{ url_for('static', filename='browse.head.js') }}"></script>
+  {{ widgets(file, 'head') }}
 {% endblock %}
 
 {% block scripts %}
   {{ super() }}
-  <script src="{{ url_for('static', filename='browse.body.js') }}"></script>
-  {% for widget in manager.get_widgets(file, 'javascript') %}
-    <script src="{{ widget.src }}"></script>
-  {% endfor %}
+  {{ widgets(file, 'scripts') }}
 {% endblock %}
 
 {% block header %}
@@ -65,18 +85,6 @@
 
 {% block content %}
 {% block content_header %}
-{% if file.can_upload %}
-  <form class="upload autosubmit"
-        method="post"
-        action="{{ url_for('upload', path=file.urlpath) }}"
-        enctype="multipart/form-data">
-    <label>
-      <h2>Upload</h2>
-      <input type="file" name="file[]" multiple=""/>
-    </label>
-    <input type="submit"/>
-  </form>
-{% endif %}
 {{ widgets(file, 'header') }}
 {% endblock %}
 

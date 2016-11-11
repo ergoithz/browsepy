@@ -219,11 +219,19 @@ class PlayableDirectory(Directory):
     def detect(cls, node):
         if node.is_directory:
             for file in node._listdir():
-                if PlayableFile.detect(file.path):
+                if PlayableFile.detect(file):
                     return cls.mimetype
         return None
 
     def entries(self):
         for file in super(PlayableDirectory, self)._listdir():
-            if PlayableFile.detect(file.path):
+            if PlayableFile.detect(file):
                 yield file
+
+
+def detect_playable_mimetype(path, os_sep=os.sep):
+    basename = path.rsplit(os_sep)[-1]
+    if '.' in basename:
+        ext = basename.rsplit('.')[-1]
+        return PlayableBase.extensions.get(ext, None)
+    return None

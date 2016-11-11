@@ -18,25 +18,9 @@ class ManagerMock(object):
     def __init__(self):
         self.blueprints = []
         self.mimetype_functions = []
-        self.actions = []
         self.widgets = []
         self.arguments = []
         self.argument_values = {}
-
-    def style_class(self, endpoint, **kwargs):
-        return ('style', endpoint, kwargs)
-
-    def button_class(self, *args, **kwargs):
-        return ('button', args, kwargs)
-
-    def header_class(self, *args, **kwargs):
-        return ('header', args, kwargs)
-
-    def javascript_class(self, endpoint, **kwargs):
-        return ('javascript', endpoint, kwargs)
-
-    def link_class(self, *args, **kwargs):
-        return ('link', args, kwargs)
 
     def register_blueprint(self, blueprint):
         self.blueprints.append(blueprint)
@@ -44,11 +28,8 @@ class ManagerMock(object):
     def register_mimetype_function(self, fnc):
         self.mimetype_functions.append(fnc)
 
-    def register_widget(self, widget):
-        self.widgets.append(widget)
-
-    def register_action(self, blueprint, widget, mimetypes=(), **kwargs):
-        self.actions.append((blueprint, widget, mimetypes, kwargs))
+    def register_widget(self, **kwargs):
+        self.widgets.append(kwargs)
 
     def register_argument(self, *args, **kwargs):
         self.arguments.append((args, kwargs))
@@ -73,17 +54,19 @@ class TestPlayer(TestPlayerBase):
 
         self.assertIn(self.module.player, self.manager.blueprints)
         self.assertIn(
-            self.module.detect_playable_mimetype,
+            self.module.playable.detect_playable_mimetype,
             self.manager.mimetype_functions
             )
 
-        widgets = [action[1] for action in self.manager.widgets]
-        self.assertIn('player.static', widgets)
+        widgets = [
+            action['filename']
+            for action in self.manager.widgets
+            if action['type'] == 'stylesheet'
+            ]
+        self.assertIn('css/browse.css', widgets)
 
-        widgets = [action[2] for action in self.manager.widgets]
-        self.assertIn({'filename': 'css/browse.css'}, widgets)
-
-        actions = [action[0] for action in self.manager.actions]
+        actions = [action['endpoint'] for action in self.manager.widgets]
+        self.assertIn('player.static', actions)
         self.assertIn('player.audio', actions)
         self.assertIn('player.playlist', actions)
         self.assertNotIn('player.directory', actions)
@@ -92,7 +75,7 @@ class TestPlayer(TestPlayerBase):
         self.manager.argument_values['player_directory_play'] = True
         self.module.register_plugin(self.manager)
 
-        actions = [action[0] for action in self.manager.actions]
+        actions = [action['endpoint'] for action in self.manager.widgets]
         self.assertIn('player.directory', actions)
 
     def test_register_arguments(self):
@@ -149,11 +132,11 @@ class TestPlayable(TestIntegrationBase):
 
     def setUp(self):
         super(TestIntegrationBase, self).setUp()
-        self.manager = self.manager_module.MimetypeActionPluginManager(
+        self.manager = self.manager_module.MimetypePluginManager(
             self.app
             )
         self.manager.register_mimetype_function(
-            self.player_module.detect_playable_mimetype
+            self.player_module.playable.detect_playable_mimetype
             )
 
     def test_normalize_playable_path(self):

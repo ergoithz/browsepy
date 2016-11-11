@@ -51,8 +51,22 @@ class Node(object):
     @cached_property
     def widgets(self):
         widgets = self.plugin_manager.get_widgets(file=self)
+        widgets.extend((
+            self.plugin_manager.create_widget(
+                'head',
+                'script',
+                endpoint='static',
+                filename='browse.body.js'
+                ),
+            self.plugin_manager.create_widget(
+                'scripts',
+                'script',
+                endpoint='static',
+                filename='browse.body.js'
+                )
+        ))
         if self.can_remove:
-            action = self.plugin_manager.widget_class(
+            action = self.plugin_manager.create_widget(
                 'entry-actions',
                 'button',
                 css='remove',
@@ -165,7 +179,7 @@ class File(Node):
     def widgets(self):
         widgets = super(File, self).widgets
         if self.can_download:
-            action = self.plugin_manager.widget_class(
+            action = self.plugin_manager.create_widget(
                 'entry-actions',
                 'button',
                 css='download',
@@ -178,7 +192,7 @@ class File(Node):
     def link(self):
         widget = super(File, self).link
         if widget is None:
-            return self.plugin_manager.widget_class(
+            return self.plugin_manager.create_widget(
                 'entry-link',
                 'link',
                 text=self.name,
@@ -243,22 +257,30 @@ class Directory(Node):
 
     @cached_property
     def widgets(self):
-        widgets = super(File, self).widgets
+        widgets = super(Directory, self).widgets
+        if self.can_upload:
+            action = self.plugin_manager.create_widget(
+                'header',
+                'upload',
+                text='Upload',
+                endpoint='upload'
+                )
+            widgets.append(action)
         if self.can_download:
-            action = self.plugin_manager.widget_class(
+            action = self.plugin_manager.create_widget(
                 'entry-actions',
                 'button',
                 css='download',
                 endpoint='download_directory'
                 )
-            action.append(action)
+            widgets.append(action)
         return widgets
 
     @property
     def link(self):
         widget = super(Directory, self).link
         if widget is None:
-            return self.plugin_manager.widget_class(
+            return self.plugin_manager.create_widget(
                 'entry-link',
                 'link',
                 text=self.name,

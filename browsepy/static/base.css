@@ -242,7 +242,7 @@ a.sorting.numeric.desc:hover:after, a.sorting.numeric.desc.active:after {
   content: "\ea4b";
 }
 
-a.button, a.header, html.autosubmit-support form.autosubmit label {
+a.button, html.autosubmit-support form.autosubmit label {
   color: white;
   background: #333;
   display: inline-block;
@@ -255,11 +255,11 @@ a.button, a.header, html.autosubmit-support form.autosubmit label {
   text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
 }
 
-a.button:active, a.header:active, html.autosubmit-support form.autosubmit label:active{
+a.button:active, html.autosubmit-support form.autosubmit label:active{
   border: 1px solid black;
 }
 
-a.button:hover, a.header:hover, html.autosubmit-support form.autosubmit label:hover {
+a.button:hover, html.autosubmit-support form.autosubmit label:hover {
   color: white;
   background: black;
 }
@@ -270,7 +270,12 @@ a.button {
   height: 1.5em;
 }
 
-a.header, html.autosubmit-support form.autosubmit label{
+a.button.text{
+  width: auto;
+  height: auto;
+}
+
+a.button.text, html.autosubmit-support form.autosubmit label{
   padding: 0.25em 0.5em;
 }
 

@@ -4,12 +4,20 @@
 import sys
 import argparse
 import warnings
+import collections
 
 from . import mimetype
-from . import widget
 
 
 class PluginNotFoundError(ImportError):
+    pass
+
+
+class WidgetException(Exception):
+    pass
+
+
+class WidgetParameterException(WidgetException):
     pass
 
 
@@ -89,19 +97,42 @@ class BlueprintPluginManager(RegistrablePluginManager):
 
 
 class WidgetPluginManager(RegistrablePluginManager):
-    widget_class = widget.HTMLElement
+    widget_types = {
+        'base': collections.namedtuple(
+            'Widget',
+            ('place', 'type')),
+        'link': collections.namedtuple(
+            'Link',
+            ('place', 'type', 'css', 'icon', 'text', 'endpoint', 'href')),
+        'button': collections.namedtuple(
+            'Button',
+            ('place', 'type', 'css', 'text', 'endpoint', 'href')),
+        'upload': collections.namedtuple(
+            'Upload',
+            ('place', 'type', 'css', 'text', 'endpoint', 'action')),
+        'stylesheet': collections.namedtuple(
+            'Stylesheet',
+            ('place', 'type', 'endpoint', 'filename', 'href')),
+        'script': collections.namedtuple(
+            'Script',
+            ('place', 'type', 'endpoint', 'filename', 'src')),
+        'html': collections.namedtuple(
+            'Html',
+            ('place', 'type', 'html')),
+    }
 
     def clear(self):
-        self._filter_widgets = []
+        self._widgets = []
         super(WidgetPluginManager, self).clear()
 
     def get_widgets(self, file=None, place=None):
         return list(self.iter_widgets(file, place))
 
     def iter_widgets(self, file=None, place=None):
-        for filter, endpoint, cwidget in self._filter_widgets:
+        for filter, cwidget in self._widgets:
             try:
-                check = filter(file) if filter else True
+                if filter and not filter(file):
+                    continue
             except BaseException as e:
                 # Exception is handled  as this method execution is deffered,
                 # making hard to debug for plugin developers.
@@ -110,14 +141,40 @@ class WidgetPluginManager(RegistrablePluginManager):
                     RuntimeWarning
                     )
                 continue
-            if check and (place is None or place == cwidget.place):
-                yield self.widget_class(endpoint, cwidget)
+            if place and place != cwidget.place:
+                continue
+            yield cwidget
 
-    def register_widget(self, widget, **kwargs):
-        self.register_action(None, widget, **kwargs)
+    def create_widget(self, place=None, type=None, **kwargs):
+        widget_class = self.widget_types.get(type, self.widget_types['base'])
+        kwargs.update(
+            place=place,
+            type=type
+            )
+        kwargs.update(
+            (f, None)
+            for f in widget_class._fields
+            if f not in kwargs
+            )
+        try:
+            element = widget_class(**kwargs)
+        except TypeError as e:
+            message = e.args[0] if e.args else ''
+            if (
+              'unexpected keyword argument' in message or
+              'required positional argument' in message
+              ):
+                raise WidgetParameterException(
+                    'type %s; %s; available: %r'
+                    % (type, message, widget_class._fields)
+                    )
+            raise e
+        return element
 
-    def register_action(self, endpoint, widget, filter=None, **kwargs):
-        self._filter_widgets.append((filter, endpoint, widget))
+    def register_widget(self, place=None, type=None, widget=None, filter=None,
+                        **kwargs):
+        element = widget or self.create_widget(place, type, **kwargs)
+        self._widgets.append((filter, element))
 
 
 class MimetypePluginManager(RegistrablePluginManager):
