@@ -37,6 +37,20 @@ fs_safe_characters = string.ascii_uppercase + string.digits
 
 
 class Node(object):
+    '''
+    Abstract filesystem node class.
+
+    This represents an unspecified entity with a filesystem's path suitable for
+    being inherited by plugins.
+
+    When inheriting, the following attributes should be overwritten in order
+    to specify :staticmethod:from_urlpath behavior:
+        :attr:generic if true, an instance of directory_class or file_class
+                      will be created instead of an instance of this class
+                      itself.
+        :attr:directory_class class will be used for directory nodes,
+        :attr:file_class class will be used for file nodes.
+    '''
     generic = True
     directory_class = None  # set later at import time
     file_class = None  # set later at import time
@@ -46,10 +60,23 @@ class Node(object):
 
     @property
     def plugin_manager(self):
+        '''
+        Get current app's plugin manager.
+
+        :returns: plugin manager instance
+        '''
         return self.app.extensions['plugin_manager']
 
     @cached_property
     def widgets(self):
+        '''
+        List widgets with filter return True for this node (or without filter).
+
+        Remove button is prepended if :property:can_remove returns true.
+
+        :returns: list of widgets
+        :rtype: list of namedtuple instances
+        '''
         widgets = []
         if self.can_remove:
             widgets.append(
@@ -65,21 +92,48 @@ class Node(object):
 
     @cached_property
     def link(self):
+        '''
+        Get last widget with place "entry-link".
+
+        :returns: widget on entry-link (ideally a link one)
+        :rtype: namedtuple instance
+        '''
+        link = None
         for widget in self.widgets:
             if widget.place == 'entry-link':
-                return widget
+                link = widget
+        return link
 
     @cached_property
     def can_remove(self):
+        '''
+        Get if current node can be removed based on app config's
+        directory_remove.
+
+        :returns: True if current node can be removed, False otherwise.
+        :rtype: bool
+        '''
         dirbase = self.app.config["directory_remove"]
         return dirbase and self.path.startswith(dirbase + os.sep)
 
     @cached_property
     def stats(self):
+        '''
+        Get current stats object as returned by os.stat function.
+
+        :returns: stats object
+        :rtype: posix.stat_result or nt.stat_result
+        '''
         return os.stat(self.path)
 
     @cached_property
     def parent(self):
+        '''
+        Get parent node if available based on app config's directory_base.
+
+        :returns: parent object if available
+        :rtype: Node instance or None
+        '''
         if self.path == self.app.config['directory_base']:
             return None
         parent = os.path.dirname(self.path) if self.path else None
@@ -87,6 +141,12 @@ class Node(object):
 
     @cached_property
     def ancestors(self):
+        '''
+        Get list of ancestors until app config's directory_base is reached.
+
+        :returns: list of ancestors starting from nearest.
+        :rtype: list of Node objects
+        '''
         ancestors = []
         parent = self.parent
         while parent:
@@ -96,23 +156,66 @@ class Node(object):
 
     @property
     def modified(self):
+        '''
+        Get human-readable last modification date-time.
+
+        :returns: iso9008-like date-time string (without timezone)
+        :rtype: str
+        '''
         dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
         return dt.strftime('%Y.%m.%d %H:%M:%S')
 
     @property
     def urlpath(self):
+        '''
+        Get the url substring corresponding to this node for those endpoints
+        accepting a 'path' parameter, suitable for :method:from_urlpath.
+
+        :returns: relative-url-like for node's path
+        :rtype: str
+        '''
         return abspath_to_urlpath(self.path, self.app.config['directory_base'])
 
     @property
     def name(self):
+        '''
+        Get the basename portion of node's path.
+
+        :returns: filename
+        :rtype: str
+        '''
         return os.path.basename(self.path)
 
     @property
     def type(self):
+        '''
+        Get the mime portion of node's mimetype (without the encoding part).
+
+        :returns: mimetype
+        :rtype: str
+        '''
         return self.mimetype.split(";", 1)[0]
 
     @property
     def category(self):
+        '''
+        Get mimetype category (first portion of mimetype before the slash).
+
+        :returns: mimetype category
+        :rtype: str
+
+        As of 2016-11-03's revision of RFC2046 it could be one of the
+        following:
+            * application
+            * audio
+            * example
+            * image
+            * message
+            * model
+            * multipart
+            * text
+            * video
+        '''
         return self.type.split('/', 1)[0]
 
     def __init__(self, path=None, app=None, **defaults):
@@ -121,6 +224,11 @@ class Node(object):
         self.__dict__.update(defaults)
 
     def remove(self):
+        '''
+        Does nothing except raising if can_remove property returns False.
+
+        :raises: OutsideRemovableBase if :property:can_remove returns false
+        '''
         if not self.can_remove:
             raise OutsideRemovableBase("File outside removable base")
 
@@ -151,11 +259,27 @@ class Node(object):
 
     @classmethod
     def register_file_class(cls, kls):
+        '''
+        Convenience method for setting current class file_class property.
+
+        :param kls: class to set
+        :type kls: type
+        :returns: given class (enabling using this as decorator)
+        :rtype: type
+        '''
         cls.file_class = kls
         return kls
 
     @classmethod
     def register_directory_class(cls, kls):
+        '''
+        Convenience method for setting current class directory_class property.
+
+        :param kls: class to set
+        :type kls: type
+        :returns: given class (enabling using this as decorator)
+        :rtype: type
+        '''
         cls.directory_class = kls
         return kls
 
@@ -169,7 +293,24 @@ class File(Node):
 
     @cached_property
     def widgets(self):
-        widgets = []
+        '''
+        List widgets with filter return True for this file (or without filter).
+
+        Entry link is prepended.
+        Download button is prepended if :property:can_download returns true.
+        Remove button is prepended if :property:can_remove returns true.
+
+        :returns: list of widgets
+        :rtype: list of namedtuple instances
+        '''
+        widgets = [
+            self.plugin_manager.create_widget(
+                'entry-link',
+                'link',
+                file=self,
+                endpoint='open'
+                )
+            ]
         if self.can_download:
             widgets.append(
                 self.plugin_manager.create_widget(
@@ -182,28 +323,35 @@ class File(Node):
                 )
         return widgets + super(File, self).widgets
 
-    @property
-    def link(self):
-        widget = super(File, self).link
-        if widget is None:
-            return self.plugin_manager.create_widget(
-                'entry-link',
-                'link',
-                file=self,
-                endpoint='open'
-                )
-        return widget
-
     @cached_property
     def mimetype(self):
+        '''
+        Get full mimetype, with encoding if available.
+
+        :returns: mimetype
+        :rtype: str
+        '''
         return self.plugin_manager.get_mimetype(self.path)
 
     @cached_property
     def is_file(self):
+        '''
+        Get if node is file.
+
+        :returns: True if file, False otherwise
+        :rtype: bool
+        '''
         return os.path.isfile(self.path)
 
     @property
     def size(self):
+        '''
+        Get human-readable node size in bytes.
+        If directory, this will corresponds with own inode size.
+
+        :returns: fuzzy size with unit
+        :rtype: str
+        '''
         size, unit = fmt_size(
             self.stats.st_size,
             self.app.config["use_binary_multiples"]
@@ -214,6 +362,12 @@ class File(Node):
 
     @property
     def encoding(self):
+        '''
+        Get encoding part of mimetype, or "default" if not available.
+
+        :returns: file conding as returned by mimetype function or "default"
+        :rtype: str
+        '''
         if ";" in self.mimetype:
             match = self.re_charset.search(self.mimetype)
             gdict = match.groupdict() if match else {}
@@ -250,7 +404,25 @@ class Directory(Node):
 
     @cached_property
     def widgets(self):
-        widgets = []
+        '''
+        List widgets with filter return True for this dir (or without filter).
+
+        Entry link is prepended.
+        Upload scripts and widget are added if :property:can_upload is true.
+        Download button is prepended if :property:can_download returns true.
+        Remove button is prepended if :property:can_remove returns true.
+
+        :returns: list of widgets
+        :rtype: list of namedtuple instances
+        '''
+        widgets = [
+            self.plugin_manager.create_widget(
+                'entry-link',
+                'link',
+                file=self,
+                endpoint='browse'
+                )
+            ]
         if self.can_upload:
             widgets.extend((
                 self.plugin_manager.create_widget(
@@ -286,18 +458,6 @@ class Directory(Node):
                     )
                 )
         return widgets + super(Directory, self).widgets
-
-    @property
-    def link(self):
-        widget = super(Directory, self).link
-        if widget is None:
-            return self.plugin_manager.create_widget(
-                'entry-link',
-                'link',
-                file=self,
-                endpoint='browse'
-                )
-        return widget
 
     @cached_property
     def is_directory(self):
@@ -421,12 +581,26 @@ class TarFileStream(object):
 
     Buffsize can be provided, it must be 512 multiple (the tar block size) for
     compression.
+
+    Note on corroutines: this class uses threading by default, but
+    corroutine-based applications can change this behavior overriding the
+    :attr:event_class and :attr:thread_class values.
     '''
     event_class = threading.Event
     thread_class = threading.Thread
     tarfile_class = tarfile.open
 
     def __init__(self, path, buffsize=10240):
+        '''
+        Internal tarfile object will be created, and compression will start
+        on a thread until buffer became full with writes becoming locked until
+        a read occurs.
+
+        :param path: local path of directory whose content will be compressed.
+        :type path: str
+        :param buffsize: size of internal buffer on bytes, defaults to 10KiB
+        :type buffsize: int
+        '''
         self.path = path
         self.name = os.path.basename(path) + ".tgz"
 
@@ -444,6 +618,15 @@ class TarFileStream(object):
         self._th.start()
 
     def fill(self):
+        '''
+        Writes data on internal tarfile instance, which writes to current
+        object, using :method:write.
+
+        As this method is blocking, it is used inside a thread.
+
+        This method is called automatically, on a thread, on initialization,
+        so there is little need to call it manually.
+        '''
         self._tarfile.add(self.path, "")
         self._tarfile.close()  # force stream flush
         self._finished += 1
@@ -451,6 +634,18 @@ class TarFileStream(object):
             self._result.set()
 
     def write(self, data):
+        '''
+        Write method used by internal tarfile instance to output data.
+        This method blocks tarfile execution once internal buffer is full.
+
+        As this method is blocking, it is used inside the same thread of
+        :method:fill.
+
+        :param data: bytes to write to internal buffer
+        :type data: bytes
+        :returns: number of bytes written
+        :rtype: int
+        '''
         self._add.wait()
         self._data += data
         if len(self._data) > self._want:
@@ -459,6 +654,22 @@ class TarFileStream(object):
         return len(data)
 
     def read(self, want=0):
+        '''
+        Read method, gets data from internal buffer while releasing
+        :method:writelocks when needed.
+
+        The lock usage means it must ran on a different thread than
+        :method:fill, ie. the main thread, otherwise will deadlock.
+
+        The combination of both write and this method running on different
+        threads makes tarfile being streamed on-the-fly, with data chunks being
+        processed and retrieved on demand.
+
+        :param want: number bytes to read, defaults to 0 (all available)
+        :type want: int
+        :returns: tarfile data as bytes
+        :rtype: bytes
+        '''
         if self._finished:
             if self._finished == 1:
                 self._finished += 1
@@ -480,6 +691,15 @@ class TarFileStream(object):
         return data
 
     def __iter__(self):
+        '''
+        Iterate through tarfile result chunks.
+
+        Similarly to :method:read, this methos must ran on a different thread
+        than :method:write calls.
+
+        :yields: data chunks as taken from :method:read.
+        :ytype: bytes
+        '''
         data = self.read()
         while data:
             yield data

@@ -112,8 +112,13 @@
         <tbody>
             {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
                 <tr>
-                    <td class="icon {{ f.link.icon }}"></td>
-                    <td>{{ draw_widget(f, f.link) }}</td>
+                    {% if f.link %}
+                      <td class="icon {{ f.link.icon }}"></td>
+                      <td>{{ draw_widget(f, f.link) }}</td>
+                    {% else %}
+                      <td></td>
+                      <td></td>
+                    {% endif %}
                     <td>{{ draw_widgets(f, 'entry-actions') }}</td>
                     <td>{{ f.type }}</td>
                     <td>{{ f.modified }}</td>

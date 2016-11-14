@@ -176,7 +176,7 @@ class WidgetPluginManager(RegistrablePluginManager):
                 cwidget = self._resolve_widget(file, cwidget)
             yield cwidget
 
-    def create_widget(self, place=None, type=None, file=None, **kwargs):
+    def create_widget(self, place, type, file=None, **kwargs):
         widget_class = self.widget_types.get(type, self.widget_types['base'])
         kwargs.update(place=place, type=type)
         try:
@@ -198,6 +198,10 @@ class WidgetPluginManager(RegistrablePluginManager):
 
     def register_widget(self, place=None, type=None, widget=None, filter=None,
                         **kwargs):
+        if not widget and not (place and type):
+            raise TypeError(
+                'register_widget takes either place and type or widget'
+                )
         widget = widget or self.create_widget(place, type, **kwargs)
         dynamic = any(map(callable, widget))
         self._widgets.append((filter, dynamic, widget))
