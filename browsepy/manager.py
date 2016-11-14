@@ -10,6 +10,15 @@ from . import mimetype
 
 
 def defaultsnamedtuple(name, fields, defaults=None):
+    '''
+    Generate namedtuple with default values.
+
+    :param name: name
+    :param fields: iterable with field names
+    :param defaults: iterable or mapping with field defaults
+    :returns: defaultdict with given fields and given defaults
+    :rtype: collections.defaultdict
+    '''
     nt = collections.namedtuple(name, fields)
     nt.__new__.__defaults__ = (None,) * len(nt._fields)
     if isinstance(defaults, collections.Mapping):
@@ -116,8 +125,8 @@ class WidgetPluginManager(RegistrablePluginManager):
             ('place', 'type', 'css', 'icon', 'text', 'endpoint', 'href'),
             {
                 'text': lambda f: f.name,
-                'icon': lambda f: 'dir-icon' if f.is_directory else 'file-icon'
-                }),
+                'icon': lambda f: f.category
+            }),
         'button': defaultsnamedtuple(
             'Button',
             ('place', 'type', 'css', 'text', 'endpoint', 'href')),
@@ -142,8 +151,14 @@ class WidgetPluginManager(RegistrablePluginManager):
     def get_widgets(self, file=None, place=None):
         return list(self.iter_widgets(file, place))
 
+    def _resolve_widget(self, file, widget):
+        return widget.__class__(*[
+            value(file) if callable(value) else value
+            for value in widget
+            ])
+
     def iter_widgets(self, file=None, place=None):
-        for filter, cwidget in self._widgets:
+        for filter, dynamic, cwidget in self._widgets:
             try:
                 if file and filter and not filter(file):
                     continue
@@ -157,15 +172,9 @@ class WidgetPluginManager(RegistrablePluginManager):
                 continue
             if place and place != cwidget.place:
                 continue
-            yield self._resolve_widget(file, cwidget)
-
-    def _resolve_widget(self, file, widget):
-        if file and any(map(callable, widget)):
-            return widget.__class__(*[
-                value(file) if callable(value) else value
-                for value in widget
-                ])
-        return widget
+            if file and dynamic:
+                cwidget = self._resolve_widget(file, cwidget)
+            yield cwidget
 
     def create_widget(self, place=None, type=None, file=None, **kwargs):
         widget_class = self.widget_types.get(type, self.widget_types['base'])
@@ -183,12 +192,15 @@ class WidgetPluginManager(RegistrablePluginManager):
                     % (type, message, widget_class._fields)
                     )
             raise e
-        return self._resolve_widget(file, element)
+        if file and any(map(callable, element)):
+            return self._resolve_widget(file, element)
+        return element
 
     def register_widget(self, place=None, type=None, widget=None, filter=None,
                         **kwargs):
-        element = widget or self.create_widget(place, type, **kwargs)
-        self._widgets.append((filter, element))
+        widget = widget or self.create_widget(place, type, **kwargs)
+        dynamic = any(map(callable, widget))
+        self._widgets.append((filter, dynamic, widget))
 
 
 class MimetypePluginManager(RegistrablePluginManager):
@@ -218,7 +230,6 @@ class ArgumentPluginManager(PluginManagerBase):
     _argparse_arguments = argparse.Namespace()
 
     def load_arguments(self, argv, base=None):
-
         plugin_parser = argparse.ArgumentParser(add_help=False)
         plugin_parser.add_argument(
             '--plugin',

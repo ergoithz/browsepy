@@ -95,7 +95,7 @@ class ListPage(Page):
         html = ET.fromstring(source)
         rows = [
             (
-                row[0].attrib.get('class') == 'dir-icon',
+                row[0].attrib.get('class') == 'icon inode',
                 row[1].find('.//a').attrib['href'],
                 any(button.attrib.get('class') == 'button remove'
                     for button in row[2].findall('.//a'))

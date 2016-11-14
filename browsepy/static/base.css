@@ -6,14 +6,16 @@
   font-style: normal;
 }
 
-.button, .file-icon, .dir-icon, .sorting:after, .sorting:before {
+.button:after,
+.icon:after,
+.sorting:after,
+.sorting:before {
   font-family: 'icomoon';
   speak: none;
   font-style: normal;
   font-weight: normal;
   font-variant: normal;
   text-transform: none;
-  line-height: 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -31,7 +33,10 @@ body {
   min-height: 100%;
 }
 
-a, label, input[type=submit], input[type=file] {
+a,
+label,
+input[type=submit],
+input[type=file] {
   cursor: pointer;
 }
 
@@ -127,7 +132,8 @@ table.browser tr:nth-child(2n) {
   background-color: #efefef;
 }
 
-table.browser th, table.browser td {
+table.browser th,
+table.browser td {
   margin: 0;
   text-align: center;
   vertical-align: middle;
@@ -163,7 +169,8 @@ h1 {
   text-shadow: 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 0 0 white, -1px 0 0 white, 0 -1px 0 white, 0 1px 0 white, 2px 2px 0 black, -2px -2px 0 black, 2px -2px 0 black, -2px 2px 0 black, 2px 0 0 black, -2px 0 0 black, 0 2px 0 black, 0 -2px 0 black, 2px 1px 0 black, -2px 1px 0 black, 1px 2px 0 black, 1px -2px 0 black, 2px -1px 0 black, -2px -1px 0 black, -1px 2px 0 black, -1px -2px 0 black;
 }
 
-ul.navbar, ul.footer {
+ul.navbar,
+ul.footer {
   position: absolute;
   left: 0;
   right: 0;
@@ -176,7 +183,8 @@ ul.navbar, ul.footer {
   color: white;
 }
 
-ul.navbar a, ul.footer a {
+ul.navbar a,
+ul.footer a {
   color: white;
   font-weight: bold;
 }
@@ -193,19 +201,41 @@ ul.navbar a:hover {
   color: gray;
 }
 
-ul.navbar>li, ul.footer>li {
+ul.navbar > li,
+ul.footer > li {
   list-style: none;
   display: inline;
   margin-right: 10px;
   width: 100%;
 }
 
-.file-icon:after {
-  content: "\e900";
+.inode.icon:after,
+.dir.icon:after{
+  content: "\e90a";
 }
 
-.dir-icon:after {
-  content: "\e90a";
+.text.icon:after{
+  content: "\e901";
+}
+
+.audio.icon:after{
+  content: "\e906";
+}
+
+.video.icon:after{
+  content: "\e908";
+}
+
+.image.icon:after{
+  content: "\e905";
+}
+
+.multipart.icon:after,
+.model.icon:after,
+.message.icon:after,
+.example.icon:after,
+.application.icon:after{
+  content: "\e900";
 }
 
 a.sorting {
@@ -213,36 +243,44 @@ a.sorting {
   padding: 0 1.4em 0 0;
 }
 
-a.sorting:after, a.sorting:before {
+a.sorting:after,
+a.sorting:before {
   float: right;
   margin: 0.2em -1.3em -0.2em;
 }
 
-a.sorting:hover:after, a.sorting.active:after {
+a.sorting:hover:after,
+a.sorting.active:after {
   content: "\ea4c";
 }
 
-a.sorting.desc:hover:after, a.sorting.desc.active:after {
+a.sorting.desc:hover:after,
+a.sorting.desc.active:after {
   content: "\ea4d";
 }
 
-a.sorting.text:hover:after, a.sorting.text.active:after {
+a.sorting.text:hover:after,
+a.sorting.text.active:after {
   content: "\ea48";
 }
 
-a.sorting.text.desc:hover:after, a.sorting.text.desc.active:after {
+a.sorting.text.desc:hover:after,
+a.sorting.text.desc.active:after {
   content: "\ea49";
 }
 
-a.sorting.numeric:hover:after, a.sorting.numeric.active:after {
+a.sorting.numeric:hover:after,
+a.sorting.numeric.active:after {
   content: "\ea4a";
 }
 
-a.sorting.numeric.desc:hover:after, a.sorting.numeric.desc.active:after {
+a.sorting.numeric.desc:hover:after,
+a.sorting.numeric.desc.active:after {
   content: "\ea4b";
 }
 
-a.button, html.autosubmit-support form.autosubmit label {
+a.button,
+html.autosubmit-support form.autosubmit label {
   color: white;
   background: #333;
   display: inline-block;
@@ -255,16 +293,19 @@ a.button, html.autosubmit-support form.autosubmit label {
   text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
 }
 
-a.button:active, html.autosubmit-support form.autosubmit label:active{
+a.button:active,
+html.autosubmit-support form.autosubmit label:active{
   border: 1px solid black;
 }
 
-a.button:hover, html.autosubmit-support form.autosubmit label:hover {
+a.button:hover,
+html.autosubmit-support form.autosubmit label:hover {
   color: white;
   background: black;
 }
 
-a.button, html.autosubmit-support form.autosubmit{
+a.button,
+html.autosubmit-support form.autosubmit{
   margin-left: 3px;
 }
 
@@ -274,12 +315,12 @@ a.button {
 }
 
 a.button.text{
-  font-family: sans;
   width: auto;
   height: auto;
 }
 
-a.button.text, html.autosubmit-support form.autosubmit label{
+a.button.text,
+html.autosubmit-support form.autosubmit label{
   padding: 0.25em 0.5em;
 }
 

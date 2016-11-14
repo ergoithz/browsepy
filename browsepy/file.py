@@ -50,33 +50,18 @@ class Node(object):
 
     @cached_property
     def widgets(self):
-        widgets = self.plugin_manager.get_widgets(file=self)
-        widgets.extend((
-            self.plugin_manager.create_widget(
-                'head',
-                'script',
-                file=self,
-                endpoint='static',
-                filename='browse.body.js'
-                ),
-            self.plugin_manager.create_widget(
-                'scripts',
-                'script',
-                file=self,
-                endpoint='static',
-                filename='browse.body.js'
-                )
-        ))
+        widgets = []
         if self.can_remove:
-            action = self.plugin_manager.create_widget(
-                'entry-actions',
-                'button',
-                file=self,
-                css='remove',
-                endpoint='remove'
+            widgets.append(
+                self.plugin_manager.create_widget(
+                    'entry-actions',
+                    'button',
+                    file=self,
+                    css='remove',
+                    endpoint='remove'
+                    )
                 )
-            widgets.append(action)
-        return widgets
+        return widgets + self.plugin_manager.get_widgets(file=self)
 
     @cached_property
     def link(self):
@@ -125,6 +110,10 @@ class Node(object):
     @property
     def type(self):
         return self.mimetype.split(";", 1)[0]
+
+    @property
+    def category(self):
+        return self.type.split('/', 1)[0]
 
     def __init__(self, path=None, app=None, **defaults):
         self.path = compat.fsdecode(path) if path else None
@@ -180,17 +169,18 @@ class File(Node):
 
     @cached_property
     def widgets(self):
-        widgets = super(File, self).widgets
+        widgets = []
         if self.can_download:
-            action = self.plugin_manager.create_widget(
-                'entry-actions',
-                'button',
-                file=self,
-                css='download',
-                endpoint='download_file'
+            widgets.append(
+                self.plugin_manager.create_widget(
+                    'entry-actions',
+                    'button',
+                    file=self,
+                    css='download',
+                    endpoint='download_file'
+                    )
                 )
-            widgets.append(action)
-        return widgets
+        return widgets + super(File, self).widgets
 
     @property
     def link(self):
@@ -260,7 +250,7 @@ class Directory(Node):
 
     @cached_property
     def widgets(self):
-        widgets = super(Directory, self).widgets
+        widgets = []
         if self.can_upload:
             widgets.extend((
                 self.plugin_manager.create_widget(
@@ -286,15 +276,16 @@ class Directory(Node):
                     )
                 ))
         if self.can_download:
-            action = self.plugin_manager.create_widget(
-                'entry-actions',
-                'button',
-                file=self,
-                css='download',
-                endpoint='download_directory'
+            widgets.append(
+                self.plugin_manager.create_widget(
+                    'entry-actions',
+                    'button',
+                    file=self,
+                    css='download',
+                    endpoint='download_directory'
+                    )
                 )
-            widgets.append(action)
-        return widgets
+        return widgets + super(Directory, self).widgets
 
     @property
     def link(self):
