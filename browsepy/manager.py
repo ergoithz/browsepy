@@ -9,6 +9,16 @@ import collections
 from . import mimetype
 
 
+def defaultsnamedtuple(name, fields, defaults=None):
+    nt = collections.namedtuple(name, fields)
+    nt.__new__.__defaults__ = (None,) * len(nt._fields)
+    if isinstance(defaults, collections.Mapping):
+        nt.__new__.__defaults__ = tuple(nt(**defaults))
+    elif defaults:
+        nt.__new__.__defaults__ = tuple(nt(*defaults))
+    return nt
+
+
 class PluginNotFoundError(ImportError):
     pass
 
@@ -98,25 +108,29 @@ class BlueprintPluginManager(RegistrablePluginManager):
 
 class WidgetPluginManager(RegistrablePluginManager):
     widget_types = {
-        'base': collections.namedtuple(
+        'base': defaultsnamedtuple(
             'Widget',
             ('place', 'type')),
-        'link': collections.namedtuple(
+        'link': defaultsnamedtuple(
             'Link',
-            ('place', 'type', 'css', 'icon', 'text', 'endpoint', 'href')),
-        'button': collections.namedtuple(
+            ('place', 'type', 'css', 'icon', 'text', 'endpoint', 'href'),
+            {
+                'text': lambda f: f.name,
+                'icon': lambda f: 'dir-icon' if f.is_directory else 'file-icon'
+                }),
+        'button': defaultsnamedtuple(
             'Button',
             ('place', 'type', 'css', 'text', 'endpoint', 'href')),
-        'upload': collections.namedtuple(
+        'upload': defaultsnamedtuple(
             'Upload',
             ('place', 'type', 'css', 'text', 'endpoint', 'action')),
-        'stylesheet': collections.namedtuple(
+        'stylesheet': defaultsnamedtuple(
             'Stylesheet',
             ('place', 'type', 'endpoint', 'filename', 'href')),
-        'script': collections.namedtuple(
+        'script': defaultsnamedtuple(
             'Script',
             ('place', 'type', 'endpoint', 'filename', 'src')),
-        'html': collections.namedtuple(
+        'html': defaultsnamedtuple(
             'Html',
             ('place', 'type', 'html')),
     }
@@ -131,7 +145,7 @@ class WidgetPluginManager(RegistrablePluginManager):
     def iter_widgets(self, file=None, place=None):
         for filter, cwidget in self._widgets:
             try:
-                if filter and not filter(file):
+                if file and filter and not filter(file):
                     continue
             except BaseException as e:
                 # Exception is handled  as this method execution is deffered,
@@ -143,19 +157,19 @@ class WidgetPluginManager(RegistrablePluginManager):
                 continue
             if place and place != cwidget.place:
                 continue
-            yield cwidget
+            yield self._resolve_widget(file, cwidget)
 
-    def create_widget(self, place=None, type=None, **kwargs):
+    def _resolve_widget(self, file, widget):
+        if file and any(map(callable, widget)):
+            return widget.__class__(*[
+                value(file) if callable(value) else value
+                for value in widget
+                ])
+        return widget
+
+    def create_widget(self, place=None, type=None, file=None, **kwargs):
         widget_class = self.widget_types.get(type, self.widget_types['base'])
-        kwargs.update(
-            place=place,
-            type=type
-            )
-        kwargs.update(
-            (f, None)
-            for f in widget_class._fields
-            if f not in kwargs
-            )
+        kwargs.update(place=place, type=type)
         try:
             element = widget_class(**kwargs)
         except TypeError as e:
@@ -169,7 +183,7 @@ class WidgetPluginManager(RegistrablePluginManager):
                     % (type, message, widget_class._fields)
                     )
             raise e
-        return element
+        return self._resolve_widget(file, element)
 
     def register_widget(self, place=None, type=None, widget=None, filter=None,
                         **kwargs):

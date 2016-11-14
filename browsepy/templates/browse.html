@@ -1,39 +1,47 @@
 {% extends "base.html" %}
 
-{% macro widgets(f, place) -%}
+{% macro draw_widget(f, widget) -%}
+  {%- if widget.type == 'button' -%}
+    <a
+      href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
+      class="
+        {{- widget.type -}}
+        {%- if widget.text %} text{% endif -%}
+        {%- if widget.css %} {{ widget.css }}{% endif -%}"
+      >{{ widget.text or '' }}</a>
+  {%- elif widget.type == 'link' -%}
+    <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
+       {% if widget.css %}class="{{ widget.css }}"{% endif %}
+       >{{ widget.text or '' }}</a>
+  {%- elif widget.type == 'script' -%}
+    <script
+      src="{{ widget.src or url_for(widget.endpoint, filename=widget.filename) }}"
+      ></script>
+  {%- elif widget.type == 'stylesheet' -%}
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ widget.href or url_for(widget.endpoint, filename=widget.filename) }}"/>
+  {%- elif widget.type == 'upload' -%}
+    <form class="upload autosubmit{% if widget.css %} {{ widget.css }}{% endif %}"
+          method="post"
+          action="{{ widget.action or url_for(widget.endpoint, path=file.urlpath) }}"
+          enctype="multipart/form-data">
+      <label>
+        <h2>{{ widget.text or 'Upload' }}</h2>
+        <input type="file" name="file[]" multiple=""/>
+      </label>
+      <input type="submit"/>
+    </form>
+  {%- elif widget.type == 'html' -%}
+    {{ widget.html|safe }}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro draw_widgets(f, place) -%}
   {%- for widget in f.widgets -%}
     {%- if widget.place == place -%}
-      {%- if widget.type == 'button' -%}
-        <a
-          href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
-          class="
-            {{- widget.type -}}
-            {%- if widget.text %} text{% endif -%}
-            {%- if widget.css %} {{ widget.css }}{% endif -%}"
-          >{{ widget.text or '' }}</a>
-      {%- elif widget.type == 'script' -%}
-        <script
-          src="{{ widget.src or url_for(widget.endpoint, filename=widget.filename) }}"
-          ></script>
-      {%- elif widget.type == 'stylesheet' -%}
-        <link
-          rel="stylesheet"
-          type="text/css"
-          href="{{ widget.href or url_for(widget.endpoint, filename=widget.filename) }}"/>
-      {%- elif widget.type == 'upload' -%}
-        <form class="upload autosubmit{% if widget.css %} {{ widget.css }}{% endif %}"
-              method="post"
-              action="{{ widget.action or url_for(widget.endpoint, path=file.urlpath) }}"
-              enctype="multipart/form-data">
-          <label>
-            <h2>{{ widget.text or 'Upload' }}</h2>
-            <input type="file" name="file[]" multiple=""/>
-          </label>
-          <input type="submit"/>
-        </form>
-      {%- elif widget.type == 'html' -%}
-        {{ widget.html|safe }}
-      {%- endif -%}
+      {{ draw_widget(f, widget) }}
     {%- endif -%}
   {%- endfor -%}
 {%- endmacro %}
@@ -53,17 +61,17 @@
 
 {% block style %}
   {{ super() }}
-  {{ widgets(file, 'style') }}
+  {{ draw_widgets(file, 'style') }}
 {% endblock %}
 
 {% block head %}
   {{ super() }}
-  {{ widgets(file, 'head') }}
+  {{ draw_widgets(file, 'head') }}
 {% endblock %}
 
 {% block scripts %}
   {{ super() }}
-  {{ widgets(file, 'scripts') }}
+  {{ draw_widgets(file, 'scripts') }}
 {% endblock %}
 
 {% block header %}
@@ -85,7 +93,7 @@
 
 {% block content %}
 {% block content_header %}
-{{ widgets(file, 'header') }}
+{{ draw_widgets(file, 'header') }}
 {% endblock %}
 
 {% block content_table %}
@@ -104,14 +112,9 @@
         <tbody>
             {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
                 <tr>
-                    {% set widget = f.link %}
-                    <td class="{{ widget.icon }}"></td>
-                    <td>
-                        <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
-                           {% if widget.css %}class="{{ widget.css }}"{% endif %}
-                           >{{ widget.text }}</a>
-                    </td>
-                    <td>{{ widgets(f, 'entry-actions') }}</td>
+                    <td class="{{ f.link.icon }}"></td>
+                    <td>{{ draw_widget(f, f.link) }}</td>
+                    <td>{{ draw_widgets(f, 'entry-actions') }}</td>
                     <td>{{ f.type }}</td>
                     <td>{{ f.modified }}</td>
                     <td>{{ "" if f.is_directory else f.size }}</td>
@@ -120,5 +123,9 @@
         </tbody>
     </table>
 {% endif %}
+{% endblock %}
+
+{% block content_footer %}
+{{ draw_widgets(file, 'footer') }}
 {% endblock %}
 {% endblock %}

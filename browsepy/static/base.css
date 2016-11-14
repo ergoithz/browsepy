@@ -55,7 +55,7 @@ ul.main-menu {
   display: block;
 }
 
-ul.main-menu>li {
+ul.main-menu > li {
   font-size: 1.25em;
 }
 
@@ -264,13 +264,17 @@ a.button:hover, html.autosubmit-support form.autosubmit label:hover {
   background: black;
 }
 
+a.button, html.autosubmit-support form.autosubmit{
+  margin-left: 3px;
+}
+
 a.button {
   width: 1.5em;
-  margin-left: 3px;
   height: 1.5em;
 }
 
 a.button.text{
+  font-family: sans;
   width: auto;
   height: auto;
 }

@@ -55,12 +55,14 @@ class Node(object):
             self.plugin_manager.create_widget(
                 'head',
                 'script',
+                file=self,
                 endpoint='static',
                 filename='browse.body.js'
                 ),
             self.plugin_manager.create_widget(
                 'scripts',
                 'script',
+                file=self,
                 endpoint='static',
                 filename='browse.body.js'
                 )
@@ -69,6 +71,7 @@ class Node(object):
             action = self.plugin_manager.create_widget(
                 'entry-actions',
                 'button',
+                file=self,
                 css='remove',
                 endpoint='remove'
                 )
@@ -182,6 +185,7 @@ class File(Node):
             action = self.plugin_manager.create_widget(
                 'entry-actions',
                 'button',
+                file=self,
                 css='download',
                 endpoint='download_file'
                 )
@@ -195,8 +199,7 @@ class File(Node):
             return self.plugin_manager.create_widget(
                 'entry-link',
                 'link',
-                text=self.name,
-                icon='file-icon',
+                file=self,
                 endpoint='open'
                 )
         return widget
@@ -259,17 +262,34 @@ class Directory(Node):
     def widgets(self):
         widgets = super(Directory, self).widgets
         if self.can_upload:
-            action = self.plugin_manager.create_widget(
-                'header',
-                'upload',
-                text='Upload',
-                endpoint='upload'
-                )
-            widgets.append(action)
+            widgets.extend((
+                self.plugin_manager.create_widget(
+                    'head',
+                    'script',
+                    file=self,
+                    endpoint='static',
+                    filename='browse.directory.head.js'
+                ),
+                self.plugin_manager.create_widget(
+                    'scripts',
+                    'script',
+                    file=self,
+                    endpoint='static',
+                    filename='browse.directory.body.js'
+                ),
+                self.plugin_manager.create_widget(
+                    'header',
+                    'upload',
+                    file=self,
+                    text='Upload',
+                    endpoint='upload'
+                    )
+                ))
         if self.can_download:
             action = self.plugin_manager.create_widget(
                 'entry-actions',
                 'button',
+                file=self,
                 css='download',
                 endpoint='download_directory'
                 )
@@ -283,8 +303,7 @@ class Directory(Node):
             return self.plugin_manager.create_widget(
                 'entry-link',
                 'link',
-                text=self.name,
-                icon='dir-icon',
+                file=self,
                 endpoint='browse'
                 )
         return widget

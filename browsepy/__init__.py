@@ -98,7 +98,7 @@ def browse_sortkey_reverse(prop):
         return (
             lambda x: (
                 x.is_directory == reverse,
-                x.link.text.lower()
+                x.link.text.lower() if x.link and x.link.text else x.name
                 ),
             reverse
             )
