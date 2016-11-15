@@ -3,7 +3,7 @@ import os
 import unittest
 
 
-class DebuggerTextTestResult(unittest._TextTestResult):
+class DebuggerTextTestResult(unittest._TextTestResult):  # pragma: no cover
     def __init__(self, stream, descriptions, verbosity, debugger):
         self.debugger = debugger
         supa = super(DebuggerTextTestResult, self)
@@ -18,7 +18,7 @@ class DebuggerTextTestResult(unittest._TextTestResult):
         super(DebuggerTextTestResult, self).addFailure(test, exc_info)
 
 
-class DebuggerTextTestRunner(unittest.TextTestRunner):
+class DebuggerTextTestRunner(unittest.TextTestRunner):  # pragma: no cover
     debugger = os.environ.get('UNITTEST_DEBUG', 'none')
     test_result_class = DebuggerTextTestResult
 
@@ -26,18 +26,18 @@ class DebuggerTextTestRunner(unittest.TextTestRunner):
         kwargs.setdefault('verbosity', 2)
         super(DebuggerTextTestRunner, self).__init__(*args, **kwargs)
 
-    def debug_none(self, exc_info):  # pragma: no cover
+    def debug_none(self, exc_info):
         pass
 
-    def debug_pdb(self, exc_info):  # pragma: no cover
+    def debug_pdb(self, exc_info):
         import pdb
         pdb.post_mortem(exc_info[2])
 
-    def debug_ipdb(self, exc_info):  # pragma: no cover
+    def debug_ipdb(self, exc_info):
         import ipdb
         ipdb.post_mortem(exc_info[2])
 
-    def debug_pudb(self, exc_info):  # pragma: no cover
+    def debug_pudb(self, exc_info):
         import pudb
         pudb.post_mortem(exc_info[2], exc_info[1], exc_info[0])
 
