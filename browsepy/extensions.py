@@ -12,15 +12,19 @@ class HTMLCompressFeed(object):
         'variable_begin': 'variable_end',
         'block_begin': 'block_end'
         }
+    ignore_elements = ['textarea', 'pre', 'script', 'style']
 
     def __init__(self):
         self.intag = False
         self.pending = ''
         self.lineno = 0
         self.skip_until = None
+        self.ignore_until = None
 
     def finalize(self, strip=False):
-        if self.intag:
+        if self.ignore_until:
+            data = self.pending
+        elif self.intag:
             data = self._collapse(self.pending)
         else:
             data = self.pending.rstrip() if strip else self.pending
@@ -29,10 +33,37 @@ class HTMLCompressFeed(object):
         self.pending = ''
 
     def _collapse(self, data):
+        last = self.re_whitespace.groups
         return self.re_whitespace.sub(
-            lambda m: ' ' if m.groups()[-1] else m.group(0),
+            lambda m: ' ' if m.group(last) else m.group(0),
             data
             )
+
+    def _process(self, value, lineno):
+        if self.ignore_until:
+            s, p, value = value.partition(self.ignore_until)
+            if p:
+                self.intag = False
+                self.ignore_until = None
+                s = s + p
+            yield self.token_class(lineno, 'data', s), value
+        elif self.intag:
+            s, p, value = value.partition('>')
+            s = self._collapse(s)
+            if p:
+                self.intag = False
+                s = s.rstrip() + p
+            yield self.token_class(lineno, 'data', s), value
+        else:
+            s, p, value = value.partition('<')
+            if p:
+                self.intag = True
+                s = s + p if s.strip() else p
+                yield self.token_class(lineno, 'data', s), value
+                for elm in self.ignore_elements:
+                    if value.startswith(elm):
+                        self.ignore_until = '</{}>'.format(elm)
+                        break
 
     def feed(self, token):
         if self.skip_until:
@@ -42,7 +73,6 @@ class HTMLCompressFeed(object):
             return
 
         if token.type in self.block_tokens:
-            print(token.type)
             for data in self.finalize(token.type == 'block_begin'):
                 yield data
             yield token
@@ -52,22 +82,13 @@ class HTMLCompressFeed(object):
         lineno = self.lineno
         size = len(token.value)
         value = self.pending + token.value
-        while value:
+        loop = True
+        while loop:
+            loop = False
             lineno = self.lineno if len(value) > size else token.lineno
-            s, p, value = value.partition('>' if self.intag else '<')
-            if self.intag:
-                s = self._collapse(s)
-                if p:
-                    self.intag = False
-                    s = s.rstrip() + p
-                yield self.token_class(lineno, 'data', s)
-            elif p:
-                self.intag = True
-                s = s + p if s.strip() else p
-                yield self.token_class(lineno, 'data', s)
-            else:
-                value = s
-                break
+            for data, value in self._process(value, lineno):
+                loop = value
+                yield data
         self.lineno = lineno
         self.pending = value
 
