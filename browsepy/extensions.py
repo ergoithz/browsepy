@@ -22,10 +22,10 @@ class HTMLCompressFeed(object):
         self.ignore_until = None
 
     def finalize(self, strip=False):
-        if self.ignore_until:
-            data = self.pending
-        elif self.intag:
+        if self.intag:
             data = self._collapse(self.pending)
+        elif self.ignore_until:
+            data = self.pending
         else:
             data = self.pending.rstrip() if strip else self.pending
         if data.strip():
@@ -40,19 +40,19 @@ class HTMLCompressFeed(object):
             )
 
     def _process(self, value, lineno):
-        if self.ignore_until:
-            s, p, value = value.partition(self.ignore_until)
-            if p:
-                self.intag = False
-                self.ignore_until = None
-                s = s + p
-            yield self.token_class(lineno, 'data', s), value
-        elif self.intag:
+        if self.intag:
             s, p, value = value.partition('>')
             s = self._collapse(s)
             if p:
                 self.intag = False
                 s = s.rstrip() + p
+            yield self.token_class(lineno, 'data', s), value
+        elif self.ignore_until:
+            s, p, value = value.partition(self.ignore_until)
+            if p:
+                self.intag = False
+                self.ignore_until = None
+                s = s + p
             yield self.token_class(lineno, 'data', s), value
         else:
             s, p, value = value.partition('<')
@@ -70,27 +70,24 @@ class HTMLCompressFeed(object):
             yield token
             if token.type == self.skip_until:
                 self.skip_until = None
-            return
-
-        if token.type in self.block_tokens:
+        elif token.type in self.block_tokens:
             for data in self.finalize(token.type == 'block_begin'):
                 yield data
             yield token
             self.skip_until = self.block_tokens[token.type]
-            return
-
-        lineno = self.lineno
-        size = len(token.value)
-        value = self.pending + token.value
-        loop = True
-        while loop:
-            loop = False
-            lineno = self.lineno if len(value) > size else token.lineno
-            for data, value in self._process(value, lineno):
-                loop = value
-                yield data
-        self.lineno = lineno
-        self.pending = value
+        else:
+            lineno = self.lineno
+            size = len(token.value)
+            value = self.pending + token.value
+            loop = True
+            while loop:
+                loop = False
+                lineno = self.lineno if len(value) > size else token.lineno
+                for data, value in self._process(value, lineno):
+                    loop = value
+                    yield data
+            self.lineno = lineno
+            self.pending = value
 
 
 class HTMLCompress(jinja2.ext.Extension):

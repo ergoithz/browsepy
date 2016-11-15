@@ -35,9 +35,14 @@ class TestHTMLCompress(unittest.TestCase):
             '</body></html>'
             )
 
-    def test_ignored(self):
-        html = self.render('<script>\n <a>   <a> asdf </script>\n<br> <br>')
-        self.assertEqual(html, '<script>\n <a>   <a> asdf </script><br><br>')
+    def test_ignored_content(self):
+        html = self.render(
+            '<script\ndata-a >\n <a>   <a> asdf </script>\n<br> <br>'
+            )
+        self.assertEqual(
+            html,
+            '<script data-a>\n <a>   <a> asdf </script><br><br>'
+            )
 
     def test_broken(self):
         html = self.render('<script>\n <a>   <a> asdf ')
