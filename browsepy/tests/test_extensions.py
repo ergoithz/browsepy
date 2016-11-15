@@ -44,6 +44,15 @@ class TestHTMLCompress(unittest.TestCase):
             '<script data-a>\n <a>   <a> asdf </script><br><br>'
             )
 
+    def test_cdata(self):
+        html = self.render(
+            '<![CDATA[\n<a>   <br>\n]]>\n<a>   <br>\n'
+            )
+        self.assertEqual(
+            html,
+            '<![CDATA[\n<a>   <br>\n]]><a><br>'
+            )
+
     def test_broken(self):
         html = self.render('<script>\n <a>   <a> asdf ')
         self.assertEqual(html, '<script>\n <a>   <a> asdf ')
