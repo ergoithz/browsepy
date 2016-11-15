@@ -80,29 +80,3 @@ class HTMLCompress(jinja2.ext.Extension):
                 yield data
         for data in feed.finalize():
             yield data
-
-
-def test():
-    from jinja2 import Environment
-    env = Environment(extensions=[HTMLCompress])
-    tmpl = env.from_string('''
-        <html>
-          <head>
-            <title>{{ title }}</title>
-          </head>
-          <script type=text/javascript>
-            if (foo < 42) {
-              document.write('Foo < Bar');
-            }
-          </script>
-          <body>
-            <li><a href="{{ href }}" class="a b">{{ title }}</a><br>Test   Foo
-            <li><a href="{{ href }}">{{ title }}</a><img src=test.png>
-          </body>
-        </html>
-    ''')
-    print(tmpl.render(title=42, href='index.html'))
-
-
-if __name__ == '__main__':
-    test()
