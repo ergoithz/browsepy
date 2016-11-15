@@ -43,6 +43,7 @@ app.config.update(
         '',
         ),
     )
+app.jinja_env.add_extension('browsepy.extensions.HTMLCompress')
 
 if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
