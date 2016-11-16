@@ -6,7 +6,7 @@ import jinja2.lexer
 
 
 class HTMLCompressFeed(object):
-    re_whitespace = re.compile('(\"[^\"\\n]*\"|\'[^\'\\n]*\')|([ \\t\\r\\n]+)')
+    re_whitespace = re.compile('[ \\t\\r\\n]+')
     token_class = jinja2.lexer.Token
     block_tokens = {
         'variable_begin': 'variable_end',
@@ -14,106 +14,104 @@ class HTMLCompressFeed(object):
         }
     block_tags = {
         'textarea': '</textarea>',
-        'pre': '</textarea>',
+        'pre': '</pre>',
         'script': '</script>',
-        'style': '</script>',
+        'style': '</style>',
         }
     block_text = {
         '<![CDATA[': ']]>'
         }
     jumps = {
-        '': {'<': '<'},   # text
-        '"': {'"': '<'},  # attr-value
-        "'": ("'", '<'),  # attr-value
-        '<': {            # tag
-            '>': '',
-            '"': '"',
-            "'": "'"
+        'text': {'<': 'tag'},
+        'lit1': {'"': 'tag'},
+        "lit2": ("'", 'tag'),
+        'tag': {
+            '>': 'text',
+            '"': 'lit1',
+            "'": 'lit2'
             },
         }
 
     def __init__(self):
-        self.current = ''
-        self.pending = ''
-        self.lineno = 0
-        self.skip_until_token = None
-        self.skip_until_substring = None
+        self.start = ''  # character which started current stae
+        self.current = 'text'  # current state
+        self.pending = ''  # buffer of current state data
+        self.lineno = 0  # current token lineno
+        self.skip_until_token = None  # inside token until this is met
+        self.skip_until_tag = None  # inside literal tag until this is met
 
-    def finalize(self, strip=False):
-        if self.pending.strip():
-            data = self._minify(self.pending, self.current, True)
+    def finalize(self):
+        if self.pending:
+            data = self._minify(self.pending, self.current, self.start, True)
             yield self.token_class(self.lineno, 'data', data)
+        self.start = ''
         self.pending = ''
 
-    def _minify(self, data, current, incomplete=False):
-        if current == '<':
-            for name, until in self.block_tags.items():
-                if data.startswith(name):
-                    self.skip_until_substring = until
-                    break
-            last = self.re_whitespace.groups
-            return self.re_whitespace.sub(
-                lambda m: ' ' if m.group(last) else m.group(0),
-                data.rstrip()
-                )
-        elif current == '':
-            prefix = ''
-            if self.skip_until_substring:
-                substring = self.skip_until_substring
-                if substring in data:
-                    self.skip_until_substring = None
-                    index = data.index(substring) + len(substring)
-                    prefix = data[:index]
-                    data = data[index:]
-                else:
-                    prefix = data
-                    data = ''
-            return prefix + (data if data.strip() else '')
+    def _minify(self, data, current, start, partial=False):
+        if current == 'tag':
+            tagstart = start == '<'
+            data = self.re_whitespace.sub(' ', data[1:] if tagstart else data)
+            if tagstart:
+                data = data.lstrip() if partial else data.strip()
+                tagname = data.split(' ', 1)[0]
+                self.skip_until_tag = self.block_tags.get(tagname)
+                return '<' + data
+            elif partial:
+                return data.rstrip()
+            return start if data.strip() == start else data
+        elif current == 'text' and not self.skip_until_tag:
+            return start if data.strip() == start else data
         return data
 
-    def _next(self, data, current):
+    def _next(self, data, current, start):
         endmark = None
         endnext = None
         endindex = len(data) + 1
+        endindexstart = len(start)
         for mark, next in self.jumps[current].items():
-            index = data.find(mark)
+            index = data.find(mark, endindexstart)
             if -1 < index < endindex:
                 endmark = mark
                 endnext = next
                 endindex = index
         return endmark, endindex, endnext
 
-    def _process(self, lineno, value, current):
-        endmark, endindex, endnext = self._next(value, current)
+    def _process(self, lineno, value, current, start):
+        endmark, endindex, endnext = self._next(value, current, start)
         if endmark:
-            s = self._minify(value[:endindex], current) + endmark
-            yield s, value[endindex + len(endmark):], endnext
+            s = self._minify(value[:endindex], current, start)
+            yield s, value[endindex:], endnext, endmark
 
     def feed(self, token):
         if self.skip_until_token:
             yield token
             if token.type == self.skip_until_token:
                 self.skip_until_token = None
-        elif token.type in self.block_tokens:
-            for data in self.finalize(token.type == 'block_begin'):
+            return
+
+        if token.type in self.block_tokens:
+            for data in self.finalize():
                 yield data
             yield token
             self.skip_until_token = self.block_tokens[token.type]
-        else:
-            size = len(token.value)
-            lno = self.lineno
-            value = self.pending + token.value
-            current = self.current
-            loop = True
-            while loop:
-                loop = False
-                lno = self.lineno if len(value) > size else token.lineno
-                for data, value, current in self._process(lno, value, current):
-                    loop = value
-                    self.token_class(lno, 'data', data)
-            self.lineno = lno
-            self.pending = value
-            self.current = current
+            return
+
+        size = len(token.value)
+        start = self.start
+        lno = self.lineno
+        val = self.pending + token.value
+        curr = self.current
+        loop = val
+        while loop:
+            loop = None
+            lno = self.lineno if len(val) > size else token.lineno
+            for data, val, curr, start in self._process(lno, val, curr, start):
+                yield self.token_class(lno, 'data', data)
+                loop = val
+        self.start = start
+        self.lineno = lno
+        self.pending = val
+        self.current = curr
 
 
 class HTMLCompress(jinja2.ext.Extension):
