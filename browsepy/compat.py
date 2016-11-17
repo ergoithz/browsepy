@@ -57,9 +57,9 @@ def which(name,
     :type env_path: list of str
     :param is_executable_fnc: callable will be used to detect if path is
                               executable, defaults to `isexec`
-    :type is_executable_fnc: callable
+    :type is_executable_fnc: Callable
     :param path_join_fnc: callable will be used to join path components
-    :type path_join_fnc: callable
+    :type path_join_fnc: Callable
     :return: absolute path
     :rtype: str or None
     '''
@@ -120,7 +120,7 @@ def getcwd(fs_encoding=fs_encoding, cwd_fnc=os.getcwd):
     :param fs_encoding: filesystem encoding, defaults to autodetected
     :type fs_encoding: str
     :param cwd_fnc: callable used to get the path, defaults to os.getcwd
-    :type cwd_fnc: callable
+    :type cwd_fnc: Callable
     :return: path
     :rtype: str
     '''
