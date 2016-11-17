@@ -3,9 +3,11 @@
 browsepy
 ========
 
-Simple web file browser with directory gzipped tarball download
+Simple web file browser with directory gzipped tarball download, file upload,
+removal and plugins.
 
-More details on the `github page <https://github.com/ergoithz/browsepy/>`_.
+More details on project's README and
+`github page <https://github.com/ergoithz/browsepy/>`_.
 
 
 Development Version
@@ -17,6 +19,10 @@ repository from `github`_::
     git clone git@github.com:ergoithz/browsepy.git
 
 .. _github: https://github.com/ergoithz/browsepy
+
+License
+-------
+MIT (see LICENSE file).
 """
 
 import os
@@ -72,6 +78,11 @@ setup(
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],
+    entry_points={
+        'console_scripts': {
+            'browsepy=browsepy.__main__:main'
+        }
+    },
     package_data={  # ignored by sdist (see MANIFEST.in), used by bdist_wheel
         'browsepy': [
             'templates/*',

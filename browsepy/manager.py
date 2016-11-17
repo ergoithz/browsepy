@@ -44,6 +44,9 @@ class PluginManagerBase(object):
 
     @property
     def namespaces(self):
+        '''
+        List of plugin namespaces taken from app config.
+        '''
         return self.app.config['plugin_namespaces'] if self.app else []
 
     def __init__(self, app=None):
