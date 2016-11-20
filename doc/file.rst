@@ -1,4 +1,4 @@
-file module
+File Module
 ===========
 
 .. automodule:: browsepy.file

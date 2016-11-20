@@ -21,6 +21,8 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+import browsepy.__meta__ as meta  # noqa
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -57,8 +59,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'browsepy'
-copyright = '2016, Felipe A. Hernandez'
+project = meta.__app__
+copyright = '2015, Felipe A. Hernandez'
 author = 'Felipe A. Hernandez'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -154,7 +156,8 @@ html_theme = 'alabaster'
 # html_logo = None
 
 # The name of an image file (relative to this directory) to use as a favicon of
-# the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# the docs.  This file should be a Windows icon file (.ico) being 16x16 or
+# 32x32
 # pixels large.
 #
 # html_favicon = None

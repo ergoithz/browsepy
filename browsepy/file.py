@@ -219,6 +219,13 @@ class Node(object):
         return self.type.split('/', 1)[0]
 
     def __init__(self, path=None, app=None, **defaults):
+        '''
+        :param path: local path
+        :type path: str
+        :param path: optional app instance
+        :type path: flask.app
+        :param **defaults: attributes will be set to object
+        '''
         self.path = compat.fsdecode(path) if path else None
         self.app = current_app if app is None else app
         self.__dict__.update(defaults)
@@ -286,6 +293,15 @@ class Node(object):
 
 @Node.register_file_class
 class File(Node):
+    '''
+    Filesystem file class.
+
+    :attr:`can_download` is fixed to True.
+    :attr:`can_upload` is fixed to False.
+    :attr:`is_directory` is fixed to False.
+    :attr:`generic` is set to False, so static method :method:`from_urlpath`
+                    will always return instances of this class.
+    '''
     can_download = True
     can_upload = False
     is_directory = False
@@ -395,6 +411,17 @@ class File(Node):
 
 @Node.register_directory_class
 class Directory(Node):
+    '''
+    Filesystem directory class.
+
+    :attr:`mimetype` is fixed to 'inode/directory', so mimetype detection
+                     functions won't be called in this case.
+    :attr:`is_file` is fixed to False.
+    :attr:`size` is fixed to 0 (zero).
+    :attr:`encoding` is fixed to 'default'.
+    :attr:`generic` is set to False, so static method :method:`from_urlpath`
+                    will always return instances of this class.
+    '''
     _listdir_cache = None
     mimetype = 'inode/directory'
     is_file = False
@@ -461,14 +488,34 @@ class Directory(Node):
 
     @cached_property
     def is_directory(self):
+        '''
+        Get if path points to a real directory.
+
+        :returns: True if real directory, False otherwise
+        :rtype: bool
+        '''
         return os.path.isdir(self.path)
 
     @cached_property
     def can_download(self):
+        '''
+        Get if path is downloadable (if app's `directory_downloadable` config
+        property is True).
+
+        :returns: True if downloadable, False otherwise
+        :rtype: bool
+        '''
         return self.app.config['directory_downloadable']
 
     @cached_property
     def can_upload(self):
+        '''
+        Get if a file can be uploaded to path (if directory path is under app's
+        `directory_upload` config property).
+
+        :returns: True if a file can be upload to directory, False otherwise
+        :rtype: bool
+        '''
         dirbase = self.app.config["directory_upload"]
         return dirbase and (
             dirbase == self.path or
@@ -477,6 +524,12 @@ class Directory(Node):
 
     @cached_property
     def is_empty(self):
+        '''
+        Get if directory is empty (based on :meth:_listdir).
+
+        :returns: True if this directory has no entries, False otherwise.
+        :rtype: bool
+        '''
         if self._listdir_cache is not None:
             return bool(self._listdir_cache)
         for entry in self._listdir():
@@ -558,8 +611,7 @@ class Directory(Node):
 
     def listdir(self, sortkey=None, reverse=False):
         '''
-        Get sorted list (by `is_directory` and `name` properties) of File
-        objects.
+        Get sorted list (by given sortkey and reverse params) of File objects.
 
         :return: sorted list of File instances
         :rtype: list of File
@@ -707,10 +759,18 @@ class TarFileStream(object):
 
 
 class OutsideDirectoryBase(Exception):
+    '''
+    Exception thrown when trying to access to a file outside path defined on
+    `directory_base` config property.
+    '''
     pass
 
 
 class OutsideRemovableBase(Exception):
+    '''
+    Exception thrown when trying to access to a file outside path defined on
+    `directory_remove` config property.
+    '''
     pass
 
 

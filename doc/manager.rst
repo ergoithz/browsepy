@@ -1,5 +1,5 @@
-manager module
-==============
+PluginManager Module
+====================
 
 .. automodule:: browsepy.manager
   :members:
