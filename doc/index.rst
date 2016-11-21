@@ -6,41 +6,51 @@
 Welcome to browsepy's documentation!
 ====================================
 
-Welcome to Flask’s documentation. Starting with installation and Quickstart is
-recommended. More detailed Tutorial about integrating :module:`browsepy` as
+Welcome to browsepy’s documentation. Starting with installation and Quickstart
+is recommended. More detailed tutorial about integrating :mod:`browsepy` as
 module or plugin development are also available.
 
-Browsepy has few dependencies: Flasn and scandir. Flask is an awesome web microframework and scandir is a directory listing library which `is included
-<https://www.python.org/dev/peps/pep-0471/>`_ in Python's standard library
-starting from Python 3.5, if you want to dive into their documentation, check
-out the following links:
+Browsepy has few dependencies: `Flask`_ and `Scandir`_. `Flask`_ is an awesome
+web microframework while `Scandir`_ is a directory listing library which `was
+included <https://www.python.org/dev/peps/pep-0471/>`_ in Python 3.5's
+standard library.
+
+If you want to dive into their documentation, check out the following links:
 
 * `Flask Documentation
-  <https://flask.pocoo.org/docs/>`_
+  <http://flask.pocoo.org/docs/>`_
 * `Scandir Readme
   <https://github.com/benhoyt/scandir/blob/master/README.rst>`_
 * `Scandir Python Documentation
   <https://docs.python.org/3.5/library/os.html#os.scandir>`_
 
+.. _Flask: http://jinja.pocoo.org/
+.. _Scandir: http://werkzeug.pocoo.org/
 
-Contents:
+User’s Guide
+============
+Instructions for users, implementors and developers.
 
 .. toctree::
    :maxdepth: 2
 
+   quickstart
    plugins
 
 API Reference
 =============
+Specific information about functions, class or methods.
+
 .. toctree::
    :maxdepth: 2
 
    manager
    file
-
+   compat
 
 Indices and tables
 ==================
+Random documentation content references.
 
 * :ref:`genindex`
 * :ref:`modindex`

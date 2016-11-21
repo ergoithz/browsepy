@@ -44,12 +44,12 @@ class Node(object):
     being inherited by plugins.
 
     When inheriting, the following attributes should be overwritten in order
-    to specify :staticmethod:from_urlpath behavior:
-        :attr:generic if true, an instance of directory_class or file_class
-                      will be created instead of an instance of this class
-                      itself.
-        :attr:directory_class class will be used for directory nodes,
-        :attr:file_class class will be used for file nodes.
+    to specify :meth:`from_urlpath` classmethod behavior:
+
+    * :attr:`generic`, if true, an instance of directory_class or file_class
+      will be created instead of an instance of this class tself.
+    * :attr:`directory_class`, class will be used for directory nodes,
+    * :attr:`file_class`, class will be used for file nodes.
     '''
     generic = True
     directory_class = None  # set later at import time
@@ -296,11 +296,16 @@ class File(Node):
     '''
     Filesystem file class.
 
-    :attr:`can_download` is fixed to True.
-    :attr:`can_upload` is fixed to False.
-    :attr:`is_directory` is fixed to False.
-    :attr:`generic` is set to False, so static method :method:`from_urlpath`
-                    will always return instances of this class.
+    Some notes:
+
+    * :attr:`can_download` is fixed to True, so Files can be downloaded
+      inconditionaly.
+    * :attr:`can_upload` is fixed to False, so nothing can be uploaded to
+      file path.
+    * :attr:`is_directory` is fixed to False, so no further checks are
+      performed.
+    * :attr:`generic` is set to False, so static method :method:`from_urlpath`
+      will always return instances of this class.
     '''
     can_download = True
     can_upload = False
@@ -414,13 +419,15 @@ class Directory(Node):
     '''
     Filesystem directory class.
 
-    :attr:`mimetype` is fixed to 'inode/directory', so mimetype detection
-                     functions won't be called in this case.
-    :attr:`is_file` is fixed to False.
-    :attr:`size` is fixed to 0 (zero).
-    :attr:`encoding` is fixed to 'default'.
-    :attr:`generic` is set to False, so static method :method:`from_urlpath`
-                    will always return instances of this class.
+    Some notes:
+
+    * :attr:`mimetype` is fixed to 'inode/directory', so mimetype detection
+      functions won't be called in this case.
+    * :attr:`is_file` is fixed to False, so no further checks are needed.
+    * :attr:`size` is fixed to 0 (zero), so stats are not required for this.
+    * :attr:`encoding` is fixed to 'default'.
+    * :attr:`generic` is set to False, so static method :method:`from_urlpath`
+      will always return instances of this class.
     '''
     _listdir_cache = None
     mimetype = 'inode/directory'
@@ -636,7 +643,7 @@ class TarFileStream(object):
 
     Note on corroutines: this class uses threading by default, but
     corroutine-based applications can change this behavior overriding the
-    :attr:event_class and :attr:thread_class values.
+    :attr:`event_class` and :attr:`thread_class` values.
     '''
     event_class = threading.Event
     thread_class = threading.Thread

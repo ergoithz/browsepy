@@ -174,8 +174,8 @@ Endpoints are Flask endpoint names, and endpoint handler functions must receive
 a "filename" parameter for stylesheet and script widgets (allowing it to point
 using with Flask's statics view) and a "path" argument for other cases. In the
 former case it is recommended to use
-:staticmethod:`browsepy.file.Node.from_urlpath` static method to create the
-appropriate file/directory object (see :module:`browsepy.file`).
+:meth:`browsepy.file.Node.from_urlpath` static method to create the
+appropriate file/directory object (see :mod:`browsepy.file`).
 
 Considerations
 --------------

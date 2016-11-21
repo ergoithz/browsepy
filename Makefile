@@ -1,3 +1,5 @@
+.PHONY: doc clean pep8
+
 test:
 ifdef debug
 	python setup.py test --debug=$(debug)
@@ -11,8 +13,11 @@ clean:
 	find browsepy -type d -name "__pycache__" -delete
 	$(MAKE) -C doc clean
 
-doc: *
+doc:
 	$(MAKE) -C doc html
+
+showdoc: doc
+	xdg-open file://${CURDIR}/doc/.build/html/index.html >> /dev/null
 
 pep8:
 	find browsepy -type f -name "*.py" -exec pep8 --ignore=E123,E126,E121 {} +

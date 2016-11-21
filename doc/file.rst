@@ -6,15 +6,56 @@ File Module
 For more advanced use-cases dealing with the filesystem, the browsepy's own
 classes (`Node`, `File` and `Directory`) can be used (or inherited).
 
-:class:`Node` is meant for implementing your own special filesystem nodes, via
-inheritance (it's abstract so shouldn't be instantiated directly). Just
-remember to overload its :attr:`Node.generic` attribute value to False.
+:class:`Node` class is meant for implementing your own special filesystem
+nodes, via inheritance (it's abstract so shouldn't be instantiated directly).
+Just remember to overload its :attr:`Node.generic` attribute value to False.
 
-Both :class:`File` :class:`Directory` can be used as is or implementing, via
-inheritance, extra logic like different default widgets, virtual data (see
-player plugin).
+Both :class:`File` and :class:`Directory` classes can be instantiated or
+extended, via inheritance, with logic like different default widgets, virtual data (see player plugin code).
 
+Node
+----
 
-.. automodule:: browsepy.file
+.. currentmodule:: browsepy.file
+
+.. autoclass:: Node
   :members:
+  :inherited-members:
   :undoc-members:
+
+Directory
+---------
+
+.. autoclass:: Directory
+  :show-inheritance:
+  :members:
+  :inherited-members:
+  :undoc-members:
+
+File
+----
+
+.. autoclass:: File
+  :show-inheritance:
+  :members:
+  :inherited-members:
+  :undoc-members:
+
+Exceptions
+----------
+
+.. autoclass:: OutsideDirectoryBase
+  :show-inheritance:
+
+.. autoclass:: OutsideRemovableBase
+  :show-inheritance:
+
+Utility functions
+-----------------
+
+.. autofunction:: fmt_size
+.. autofunction:: abspath_to_urlpath
+.. autofunction:: urlpath_to_abspath
+.. autofunction:: check_under_base
+.. autofunction:: secure_filename
+.. autofunction:: alternative_filename

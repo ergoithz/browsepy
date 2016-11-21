@@ -79,9 +79,9 @@ setup(
         'browsepy.plugin.player',
         ],
     entry_points={
-        'console_scripts': {
+        'console_scripts': (
             'browsepy=browsepy.__main__:main'
-        }
+        )
     },
     package_data={  # ignored by sdist (see MANIFEST.in), used by bdist_wheel
         'browsepy': [
