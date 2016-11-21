@@ -1,6 +1,8 @@
 Implementing plugins
 ====================
 
+.. currentmodule:: browsepy.manager
+
 browsepy is extensible via its powerful plugin API. Any plugin can
 
 Protocol
@@ -8,7 +10,7 @@ Protocol
 
 The plugin manager subsystem expects a `register_plugin` callable at module
 level (in your __init__ module globals) which will be called with the manager
-itself (type :class:`browsepy.manager.PluginManager`) as first parameter.
+itself (type :class:`PluginManager`) as first parameter.
 
 Plugin manager exposes several methods to register widgets and mimetype
 detection functions.
@@ -80,7 +82,7 @@ A common `register_plugin` widget looks like (taken from player plugin):
 In case you need to add extra command-line-arguments to browsepy command,
 :func:`register_arguments` method can be also declared (like register_plugin,
 at your plugin's module level). It will receive a
-:class:`browsepy.manager.ArgumentPluginManager` instance, providing an argument-related subset of whole plugin manager's functionality.
+:class:`ArgumentPluginManager` instance, providing an argument-related subset of whole plugin manager's functionality.
 
 A simple `register_arguments` example (from by player plugin):
 
@@ -106,7 +108,7 @@ A simple `register_arguments` example (from by player plugin):
 Widgets
 -------
 
-Widget registration is provided by :meth:`browsepy.manager.PluginManager.register_widget`.
+Widget registration is provided by :meth:`PluginManager.register_widget`.
 
 You can alternatively pass a widget object, via `widget` keyword argument, or use a pure functional approach by passing `place`, `type` and widget-specific
 properties as keyword arguments.
@@ -118,7 +120,7 @@ a callable to `filter` argument keyword, which will receive a
 
 For those wanting the object-oriented approach, and for reference for those
 wanting to know widget properties for using the functional way,
-:attr:`browsepy.manager.WidgetPluginManager.widget_types` dictionary is
+:attr:`WidgetPluginManager.widget_types` dictionary is
 available.
 
 
@@ -170,29 +172,17 @@ drawn), and this properties are mutually excluyent:
 
 Endpoints are Flask endpoint names, and endpoint handler functions must receive
 a "filename" parameter for stylesheet and script widgets (allowing it to point
-using with Flask's statics view) and a "path" argument for other cases.
-
-Classes
--------
-
-For more advanced use-cases dealing with the filesystem, the browsepy's own
-classes (`Node`, `File` and `Directory`) can be used (or inherited)
-
-:class:`browsepy.file.Node` is meant for implementing your own special
-filesystem nodes, via inheritance (it's abstract so shouldn't be used
-directly). Just remember to overload its :attr:`generic` attribute value to
-False.
-
-Both :class:`browsepy.file.File` :class:`browsepy.file.Directory` can be used
-as is or implementing, ia inheritance, extra logic like different default
-widgets, virtual data (see player plugin).
+using with Flask's statics view) and a "path" argument for other cases. In the
+former case it is recommended to use
+:staticmethod:`browsepy.file.Node.from_urlpath` static method to create the
+appropriate file/directory object (see :module:`browsepy.file`).
 
 Considerations
 --------------
 
 When developing plugins, implementors should always choose the less intrusive
 approach, so new browsepy versions will not likely get broken. That's why
-stuff like :meth:`browsepy.manager.PluginManager.reguster_blueprint` is
+stuff like :meth:`PluginManager.register_blueprint` is
 provided and its usage is preferred over directly registering blueprints
 via plugin manager's app reference (or even module-level app reference).
 

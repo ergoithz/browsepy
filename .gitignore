@@ -2,6 +2,9 @@
 .c9/*
 .idea/*
 .coverage
+dist/*
+build/*
+doc/.build/*
 env/*
 env2/*
 env3/*
