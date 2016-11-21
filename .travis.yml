@@ -16,16 +16,13 @@ matrix:
     env: PIP_PARAMS=""
 
 install:
-  - pip install pep8
-  - pip install coveralls $PIP_PARAMS
-  - pip install . $PIP_PARAMS
+  - pip install travis-sphinx pep8 coveralls . $PIP_PARAMS
 
 script:
-  - make pep8
-  - make coverage
+  - make travis-script
 
 after_success:
-  - coveralls
+  - make travis-success
 
 notifications:
   email: false

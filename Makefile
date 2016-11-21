@@ -1,4 +1,4 @@
-.PHONY: doc clean pep8
+.PHONY: doc clean pep8 travis
 
 test:
 ifdef debug
@@ -24,3 +24,10 @@ pep8:
 
 coverage:
 	coverage run --source=browsepy setup.py test
+
+travis-script: pep8 coverage
+	travis-sphinx --source=doc build
+
+travis-success:
+	coveralls
+	travis-sphinx deploy
