@@ -26,7 +26,7 @@ coverage:
 	coverage run --source=browsepy setup.py test
 
 travis-script: pep8 coverage
-	travis-sphinx --source=doc build
+	travis-sphinx --nowarn --source=doc build
 
 travis-success:
 	coveralls
