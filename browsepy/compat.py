@@ -6,6 +6,9 @@ import os.path
 import sys
 import itertools
 
+import warnings
+import functools
+
 FS_ENCODING = sys.getfilesystemencoding()
 PY_LEGACY = sys.version_info < (3, )
 ENV_PATH = []  # populated later
@@ -115,6 +118,33 @@ def getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd):
     if isinstance(path, bytes):
         path = fsdecode(path, fs_encoding=fs_encoding)
     return os.path.abspath(path)
+
+
+def deprecated(func_or_text):
+    '''
+    Decorator used to mark functions as deprecated. It will result in a
+    warning being emmitted hen the function is called.
+
+    :param func: function or method
+    :type func: callable
+    '''
+
+    def inner(func):
+        message = (
+            'Deprecated function {}.'.format(func.__name__)
+            if callable(func_or_text) else
+            func_or_text
+            )
+
+        @functools.wraps(func)
+        def new_func(*args, **kwargs):
+            warnings.simplefilter('always', DeprecationWarning)
+            warnings.warn(message, category=DeprecationWarning, stacklevel=2)
+            warnings.simplefilter('default', DeprecationWarning)
+            return func(*args, **kwargs)
+        return new_func
+    return inner(func_or_text) if callable(func_or_text) else inner
+
 
 ENV_PATH[:] = (
   fsdecode(path.strip('"'))

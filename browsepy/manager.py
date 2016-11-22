@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import re
 import sys
 import argparse
 import warnings
 import collections
 
 from . import mimetype
+from .compat import deprecated
 
 
 def defaultsnamedtuple(name, fields, defaults=None):
@@ -187,24 +189,30 @@ class WidgetPluginManager(RegistrablePluginManager):
             'Link',
             ('place', 'type', 'css', 'icon', 'text', 'endpoint', 'href'),
             {
+                'type': 'link',
                 'text': lambda f: f.name,
                 'icon': lambda f: f.category
             }),
         'button': defaultsnamedtuple(
             'Button',
-            ('place', 'type', 'css', 'text', 'endpoint', 'href')),
+            ('place', 'type', 'css', 'text', 'endpoint', 'href'),
+            {'type': 'button'}),
         'upload': defaultsnamedtuple(
             'Upload',
-            ('place', 'type', 'css', 'text', 'endpoint', 'action')),
+            ('place', 'type', 'css', 'text', 'endpoint', 'action'),
+            {'type': 'upload'}),
         'stylesheet': defaultsnamedtuple(
             'Stylesheet',
-            ('place', 'type', 'endpoint', 'filename', 'href')),
+            ('place', 'type', 'endpoint', 'filename', 'href'),
+            {'type': 'stylesheet'}),
         'script': defaultsnamedtuple(
             'Script',
-            ('place', 'type', 'endpoint', 'filename', 'src')),
+            ('place', 'type', 'endpoint', 'filename', 'src'),
+            {'type': 'script'}),
         'html': defaultsnamedtuple(
             'Html',
-            ('place', 'type', 'html')),
+            ('place', 'type', 'html'),
+            {'type': 'html'}),
     }
 
     def clear(self):
@@ -230,7 +238,8 @@ class WidgetPluginManager(RegistrablePluginManager):
         '''
         return list(self.iter_widgets(file, place))
 
-    def _resolve_widget(self, file, widget):
+    @classmethod
+    def _resolve_widget(cls, file, widget):
         '''
         Resolve widget callable properties into static ones.
 
@@ -527,3 +536,41 @@ class PluginManager(BlueprintPluginManager, WidgetPluginManager,
         method.
         '''
         super(PluginManager, self).clear()
+
+    @deprecated
+    def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
+        deprecated_places = {
+            'javascript': 'scripts',
+            'style': 'styles',
+            'button': 'entry-actions',
+            'link': 'entry-link',
+            None: 'none'
+            }
+        widget_mimetype_re = re.compile(
+            '^%s$' % '$|^'.join(
+                map(re.escape, mimetypes)
+                ).replace('\\*', '[^/]+')
+            )
+        print(widget_mimetype_re.pattern)
+        widget_type = getattr(widget, '_type', 'base')
+        widget_fields = self.widget_types[widget_type]._fields
+        widget_props = {
+            name: getattr(widget, name)
+            for name in widget_fields
+            if hasattr(widget, name)
+            }
+        widget_props.update(
+            type=widget_type,
+            place=deprecated_places.get(
+                widget_props['place'],
+                widget_props['place']
+                ),
+            filter=lambda f: widget_mimetype_re.match(f.type) is not None
+            )
+        if 'endpoint' in widget_fields:
+            widget_props['endpoint'] = endpoint
+        self.register_widget(**widget_props)
+
+    @deprecated
+    def get_actions(self, file):
+        return self.get_widgets(file=file)
