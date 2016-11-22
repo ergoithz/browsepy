@@ -8,6 +8,8 @@ matrix:
     env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
   - python: "pypy"
     env: PIP_PARAMS=""
+  - python: "pypy3"
+    env: PIP_PARAMS=""
   - python: "3.3"
     env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
   - python: "3.4"

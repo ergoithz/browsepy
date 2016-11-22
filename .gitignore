@@ -1,6 +1,7 @@
 .git/*
 .c9/*
 .idea/*
+.htmlcov/*
 .coverage
 dist/*
 build/*
