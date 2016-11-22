@@ -20,18 +20,6 @@ except ImportError:
 fs_encoding = sys.getfilesystemencoding()
 
 
-def isnonstriterable(iterable):
-    '''
-    Check if given object is a non-str iterable.
-
-    :param iterable: potential iterable object
-    :type iterable: object or builtin
-    :return: True if given objects is not str but iterable, False otherwise
-    :rtype: bool
-    '''
-    return hasattr(iterable, '__iter__') and not isinstance(iterable, str_base)
-
-
 def isexec(path):
     '''
     Check if given path points to an executable file.
@@ -138,9 +126,9 @@ if PY_LEGACY:
     FileNotFoundError = type('FileNotFoundError', (OSError,), {})
     range = xrange  # noqa
     filter = itertools.ifilter
-    str_base = basestring  # noqa
 else:
     FileNotFoundError = FileNotFoundError
     range = range
     filter = filter
-    str_base = str
+    basestring = str
+    unicode = str

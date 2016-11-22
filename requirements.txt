@@ -1,3 +1,6 @@
 flask
 scandir
 sphinx
+pep8
+coverage
+setuptools

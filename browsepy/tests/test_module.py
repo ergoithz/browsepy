@@ -155,6 +155,74 @@ class Page302Exception(PageException):
     pass
 
 
+class TestCompat(unittest.TestCase):
+    module = browsepy.compat
+
+    def test_which(self):
+        self.assertTrue(self.module.which('python'))
+        self.assertIsNone(self.module.which('lets-put-a-wrong-executable'))
+
+    def test_fsdecode(self):
+        path = b'/a/\xc3\xb1'
+        self.assertEqual(
+            self.module.fsdecode(path, os_name='posix', fs_encoding='utf-8'),
+            path.decode('utf-8')
+            )
+        path = b'/a/\xf1'
+        self.assertEqual(
+            self.module.fsdecode(path, os_name='nt', fs_encoding='latin-1'),
+            path.decode('latin-1')
+            )
+        path = b'/a/\xf1'
+        self.assertRaises(
+            UnicodeDecodeError,
+            self.module.fsdecode,
+            path,
+            fs_encoding='utf-8',
+            errors='strict'
+        )
+
+    def test_fsencode(self):
+        path = b'/a/\xc3\xb1'
+        self.assertEqual(
+            self.module.fsencode(
+                path.decode('utf-8'),
+                fs_encoding='utf-8'
+                ),
+            path
+            )
+        path = b'/a/\xf1'
+        self.assertEqual(
+            self.module.fsencode(
+                path.decode('latin-1'),
+                fs_encoding='latin-1'
+                ),
+            path
+            )
+        path = b'/a/\xf1'
+        self.assertEqual(
+            self.module.fsencode(path, fs_encoding='utf-8'),
+            path
+            )
+
+    def test_getcwd(self):
+        self.assertIsInstance(self.module.getcwd(), self.module.unicode)
+        self.assertIsInstance(
+            self.module.getcwd(
+                fs_encoding='latin-1',
+                cwd_fnc=lambda: b'\xf1'
+                ),
+            self.module.unicode
+            )
+        self.assertIsInstance(
+            self.module.getcwd(
+                fs_encoding='utf-8',
+                cwd_fnc=lambda: b'\xc3\xb1'
+                ),
+            self.module.unicode
+            )
+
+
 class TestApp(unittest.TestCase):
     module = browsepy
     generic_page_class = Page

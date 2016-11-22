@@ -1,4 +1,4 @@
-.PHONY: doc clean pep8 travis
+.PHONY: doc clean pep8 coverage travis
 
 test:
 ifdef debug
@@ -8,7 +8,7 @@ else
 endif
 
 clean:
-	rm -rf build dist browsepy.egg-info htmlcov MANIFEST .eggs *.egg
+	rm -rf build dist browsepy.egg-info htmlcov MANIFEST .eggs *.egg .coverage
 	find browsepy -type f -name "*.py[co]" -delete
 	find browsepy -type d -name "__pycache__" -delete
 	$(MAKE) -C doc clean
@@ -24,6 +24,10 @@ pep8:
 
 coverage:
 	coverage run --source=browsepy setup.py test
+
+showcoverage: coverage
+	coverage html
+	xdg-open file://${CURDIR}/htmlcov/index.html >> /dev/null
 
 travis-script: pep8 coverage
 	travis-sphinx --nowarn --source=doc build
