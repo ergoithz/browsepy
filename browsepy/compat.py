@@ -133,3 +133,10 @@ else:
     filter = filter
     basestring = str
     unicode = str
+
+# monkeypatch fix for flask bug https://github.com/pallets/flask/pull/1841
+if hasattr(sys, 'pypy_version_info') and not hasattr(sys, 'exc_clear'):
+    import flask
+    if flask.__version__ < '0.11.2':  # fixed version, but unreleased
+        import flask._compat
+        flask._compat._Mgr.__exit__ = lambda *a: None
