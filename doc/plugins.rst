@@ -3,14 +3,18 @@ Implementing plugins
 
 .. currentmodule:: browsepy.manager
 
-browsepy is extensible via its powerful plugin API. Any plugin can
+browsepy is extensible via its powerful plugin API. A plugin can register
+its own Flask blueprints, widgets (filtering by file), mimetype functions and command line arguments.
+
+A fully functional :mod:`browsepy.plugin.player` plugin module is provided as
+example.
 
 Protocol
 --------
 
 The plugin manager subsystem expects a `register_plugin` callable at module
-level (in your __init__ module globals) which will be called with the manager
-itself (type :class:`PluginManager`) as first parameter.
+level (in your **__init__** module globals) which will be called with the
+manager itself (type :class:`PluginManager`) as first parameter.
 
 Plugin manager exposes several methods to register widgets and mimetype
 detection functions.
@@ -130,6 +134,7 @@ Here is the "widget_types" for referrence.
 .. code-block:: python
 
   class WidgetPluginManager(RegistrablePluginManager):
+      ''' ... '''
       widget_types = {
           'base': defaultsnamedtuple(
               'Widget',
