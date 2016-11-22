@@ -6,9 +6,8 @@
 Welcome to browsepy's documentation!
 ====================================
 
-Welcome to browsepy’s documentation. Starting with installation and Quickstart
-is recommended. More detailed tutorial about integrating :mod:`browsepy` as
-module or plugin development are also available.
+Welcome to browsepy's documentation. It's recommended to start reading
+installation and Quickstart. More detailed tutorials about integrating :mod:`browsepy` as module or plugin development are available too.
 
 Browsepy has few dependencies: `Flask`_ and `Scandir`_. `Flask`_ is an awesome
 web microframework while `Scandir`_ is a directory listing library which `was
@@ -27,7 +26,7 @@ If you want to dive into their documentation, check out the following links:
 .. _Flask: http://jinja.pocoo.org/
 .. _Scandir: http://werkzeug.pocoo.org/
 
-User’s Guide
+User's Guide
 ============
 Instructions for users, implementors and developers.
 

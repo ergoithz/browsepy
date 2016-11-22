@@ -169,7 +169,7 @@ class Node(object):
     def urlpath(self):
         '''
         Get the url substring corresponding to this node for those endpoints
-        accepting a 'path' parameter, suitable for :method:from_urlpath.
+        accepting a 'path' parameter, suitable for :meth:`from_urlpath`.
 
         :returns: relative-url-like for node's path
         :rtype: str
@@ -304,7 +304,7 @@ class File(Node):
       file path.
     * :attr:`is_directory` is fixed to False, so no further checks are
       performed.
-    * :attr:`generic` is set to False, so static method :method:`from_urlpath`
+    * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
       will always return instances of this class.
     '''
     can_download = True
@@ -426,7 +426,7 @@ class Directory(Node):
     * :attr:`is_file` is fixed to False, so no further checks are needed.
     * :attr:`size` is fixed to 0 (zero), so stats are not required for this.
     * :attr:`encoding` is fixed to 'default'.
-    * :attr:`generic` is set to False, so static method :method:`from_urlpath`
+    * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
       will always return instances of this class.
     '''
     _listdir_cache = None
@@ -532,7 +532,7 @@ class Directory(Node):
     @cached_property
     def is_empty(self):
         '''
-        Get if directory is empty (based on :meth:_listdir).
+        Get if directory is empty (based on :meth:`_listdir`).
 
         :returns: True if this directory has no entries, False otherwise.
         :rtype: bool
@@ -679,7 +679,7 @@ class TarFileStream(object):
     def fill(self):
         '''
         Writes data on internal tarfile instance, which writes to current
-        object, using :method:write.
+        object, using :meth:`write`.
 
         As this method is blocking, it is used inside a thread.
 
@@ -698,7 +698,7 @@ class TarFileStream(object):
         This method blocks tarfile execution once internal buffer is full.
 
         As this method is blocking, it is used inside the same thread of
-        :method:fill.
+        :meth:`fill`.
 
         :param data: bytes to write to internal buffer
         :type data: bytes
@@ -715,10 +715,10 @@ class TarFileStream(object):
     def read(self, want=0):
         '''
         Read method, gets data from internal buffer while releasing
-        :method:writelocks when needed.
+        :meth:`write` locks when needed.
 
         The lock usage means it must ran on a different thread than
-        :method:fill, ie. the main thread, otherwise will deadlock.
+        :meth:`fill`, ie. the main thread, otherwise will deadlock.
 
         The combination of both write and this method running on different
         threads makes tarfile being streamed on-the-fly, with data chunks being
@@ -753,10 +753,10 @@ class TarFileStream(object):
         '''
         Iterate through tarfile result chunks.
 
-        Similarly to :method:read, this methos must ran on a different thread
-        than :method:write calls.
+        Similarly to :meth:`read`, this methos must ran on a different thread
+        than :meth:`write` calls.
 
-        :yields: data chunks as taken from :method:read.
+        :yields: data chunks as taken from :meth:`read`.
         :ytype: bytes
         '''
         data = self.read()

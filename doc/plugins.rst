@@ -110,8 +110,9 @@ Widgets
 
 Widget registration is provided by :meth:`PluginManager.register_widget`.
 
-You can alternatively pass a widget object, via `widget` keyword argument, or use a pure functional approach by passing `place`, `type` and widget-specific
-properties as keyword arguments.
+You can alternatively pass a widget object, via `widget` keyword
+argument, or use a pure functional approach by passing `place`,
+`type` and widget-specific properties as keyword arguments.
 
 In addition to that, you can define in which cases widget will be shown passing
 a callable to `filter` argument keyword, which will receive a

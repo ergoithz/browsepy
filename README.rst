@@ -29,7 +29,7 @@ browsepy
   :target: https://pypi.python.org/pypi/browsepy/
   :alt: Python 2.7+, 3.3+
 
-Simple web file browser using flask
+The simple web file browser.
 
 Screenshots
 -----------

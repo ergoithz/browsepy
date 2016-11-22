@@ -4,7 +4,8 @@ File Module
 .. currentmodule:: browsepy.file
 
 For more advanced use-cases dealing with the filesystem, the browsepy's own
-classes (`Node`, `File` and `Directory`) can be used (or inherited).
+classes (:class:`Node`, :class:`File` and :class:`Directory`) can be
+instantiated and inherited.
 
 :class:`Node` class is meant for implementing your own special filesystem
 nodes, via inheritance (it's abstract so shouldn't be instantiated directly).
