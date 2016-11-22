@@ -6,6 +6,7 @@ import os.path
 import sys
 import itertools
 
+FS_ENCODING = sys.getfilesystemencoding()
 PY_LEGACY = sys.version_info < (3, )
 ENV_PATH = []  # populated later
 
@@ -16,8 +17,6 @@ except ImportError:
         raise
     scandir = os.scandir
     walk = os.walk
-
-fs_encoding = sys.getfilesystemencoding()
 
 
 def isexec(path):
@@ -58,7 +57,7 @@ def which(name,
     return None
 
 
-def fsdecode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
+def fsdecode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
     '''
     Decode given path.
 
@@ -79,7 +78,7 @@ def fsdecode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
     return path.decode(fs_encoding, errors=errors)
 
 
-def fsencode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
+def fsencode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
     '''
     Encode given path.
 
@@ -100,7 +99,7 @@ def fsencode(path, os_name=os.name, fs_encoding=fs_encoding, errors=None):
     return path.encode(fs_encoding, errors=errors)
 
 
-def getcwd(fs_encoding=fs_encoding, cwd_fnc=os.getcwd):
+def getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd):
     '''
     Get current work directory's absolute path.
     Like os.getcwd but garanteed to return an unicode-str object.
@@ -126,6 +125,8 @@ if PY_LEGACY:
     FileNotFoundError = type('FileNotFoundError', (OSError,), {})
     range = xrange  # noqa
     filter = itertools.ifilter
+    basestring = basestring
+    unicode = unicode
 else:
     FileNotFoundError = FileNotFoundError
     range = range

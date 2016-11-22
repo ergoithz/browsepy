@@ -916,7 +916,7 @@ def check_under_base(path, base, os_sep=os.sep):
     return path == base or path.startswith(prefix)
 
 
-def secure_filename(path, destiny_os=os.name, fs_encoding=compat.fs_encoding):
+def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
     '''
     Get rid of parent path components and special filenames.
 
