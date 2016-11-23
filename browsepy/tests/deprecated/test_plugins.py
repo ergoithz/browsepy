@@ -122,6 +122,9 @@ class TestPlayerBase(unittest.TestCase):
     hostname = 'testing'
     urlprefix = '%s://%s' % (scheme, hostname)
 
+    def assertUrlEqual(self, a, b):
+        self.assertIn(a, (b, '%s%s' % (self.urlprefix, b)))
+
     def setUp(self):
         self.app = flask.Flask(self.__class__.__name__)
         self.app.config['directory_remove'] = None
@@ -216,7 +219,7 @@ class TestIntegration(TestIntegrationBase):
         widgets = manager.get_widgets(file=file, place='styles')
         self.assertEqual(len(widgets), 1)
         self.assertIsInstance(widgets[0], manager.widget_types['stylesheet'])
-        self.assertEqual(widgets[0].href, '%s/static/a.css' % self.urlprefix)
+        self.assertUrlEqual(widgets[0].href, '/static/a.css')
 
         widget = self.widget_module.JavascriptWidget('static', filename='a.js')
         manager.register_widget(widget)
@@ -233,7 +236,7 @@ class TestIntegration(TestIntegrationBase):
         widgets = manager.get_widgets(file=file, place='scripts')
         self.assertEqual(len(widgets), 1)
         self.assertIsInstance(widgets[0], manager.widget_types['script'])
-        self.assertEqual(widgets[0].src, '%s/static/a.js' % self.urlprefix)
+        self.assertUrlEqual(widgets[0].src, '/static/a.js')
 
     def test_for_file(self):
         manager = self.manager_module.MimetypeActionPluginManager(self.app)
