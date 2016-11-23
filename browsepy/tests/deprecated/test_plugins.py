@@ -87,9 +87,9 @@ class TestPlugins(unittest.TestCase):
             endpoints,
             sorted(('test_x_x', 'test_a_x', 'test_x_a', 'test_a_a')))
         self.assertEqual(
-            self.app.view_functions['test_plugin.root'](),
-            'test_plugin_root')
-        self.assertIn('test_plugin', self.app.blueprints)
+            self.app.view_functions['old_test_plugin.root'](),
+            'old_test_plugin')
+        self.assertIn('old_test_plugin', self.app.blueprints)
 
         self.assertRaises(
             self.manager_module.PluginNotFoundError,
@@ -109,9 +109,9 @@ def register_plugin(manager):
     manager.register_action('test_b_x', widget_class('test_b_x'), ('b/*',))
 
     test_plugin_blueprint = flask.Blueprint(
-        'test_old_api_plugin', __name__, url_prefix='/test_plugin_blueprint')
+        'old_test_plugin', __name__, url_prefix='/old_test_plugin_blueprint')
     test_plugin_blueprint.add_url_rule(
-        '/', endpoint='root', view_func=lambda: 'test_plugin_root')
+        '/', endpoint='root', view_func=lambda: 'old_test_plugin')
 
     manager.register_blueprint(test_plugin_blueprint)
 
@@ -193,6 +193,7 @@ class TestIntegration(TestIntegrationBase):
         self.assertEqual(actions[5].widget, widget)
 
     def test_register_widget(self):
+        file = self.file_module.Node()
         manager = self.manager_module.MimetypeActionPluginManager()
         widget = self.widget_module.StyleWidget('static', filename='a.css')
         manager.register_widget(widget)
@@ -206,10 +207,12 @@ class TestIntegration(TestIntegrationBase):
         self.assertIsInstance(widgets[0], self.widget_module.StyleWidget)
         self.assertEqual(widgets[0], widget)
 
-        widgets = manager.get_widgets(place='styles')
+        widgets = manager.get_widgets(file=file, place='styles')
         self.assertEqual(len(widgets), 1)
         self.assertIsInstance(widgets[0], manager.widget_types['stylesheet'])
-        self.assertEqual(widgets[0].href, '/static/a.css')
+
+        with self.app.app_context():
+            self.assertEqual(widgets[0].href, '/static/a.css')
 
         widget = self.widget_module.JavascriptWidget('static', filename='a.js')
         manager.register_widget(widget)
@@ -223,10 +226,12 @@ class TestIntegration(TestIntegrationBase):
         self.assertIsInstance(widgets[0], self.widget_module.JavascriptWidget)
         self.assertEqual(widgets[0], widget)
 
-        widgets = manager.get_widgets(place='scripts')
+        widgets = manager.get_widgets(file=file, place='scripts')
         self.assertEqual(len(widgets), 1)
         self.assertIsInstance(widgets[0], manager.widget_types['script'])
-        self.assertEqual(widgets[0].src, '/static/a.js')
+
+        with self.app.app_context():
+            self.assertEqual(widgets[0].src, '/static/a.js')
 
     def test_for_file(self):
         manager = self.manager_module.MimetypeActionPluginManager()

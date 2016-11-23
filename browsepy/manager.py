@@ -544,11 +544,7 @@ class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
         type = getattr(widget, '_type', 'base')
         fields = self.widget_types[type]._fields
         props = {
-            name: (
-                self._widget_attrgetter(widget, name)
-                if dynamic else
-                getattr(widget, name, name)
-                )
+            name: self._widget_attrgetter(widget, name)
             for name in fields
             if hasattr(widget, name)
             }
