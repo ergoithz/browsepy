@@ -7,6 +7,8 @@ import argparse
 import warnings
 import collections
 
+from werkzeug.utils import cached_property
+
 from . import mimetype
 from .compat import deprecated
 
@@ -39,6 +41,10 @@ class WidgetException(Exception):
 
 
 class WidgetParameterException(WidgetException):
+    pass
+
+
+class InvalidArgumentError(ValueError):
     pass
 
 
@@ -348,8 +354,8 @@ class WidgetPluginManager(RegistrablePluginManager):
         :returns: created or given widget object
         :rtype: object
         '''
-        if not widget and not (place and type):
-            raise TypeError(
+        if bool(widget) == bool(place or type):
+            raise InvalidArgumentError(
                 'register_widget takes either place and type or widget'
                 )
         widget = widget or self.create_widget(place, type, **kwargs)
@@ -500,7 +506,74 @@ class ArgumentPluginManager(PluginManagerBase):
         return getattr(self._argparse_arguments, name, default)
 
 
-class PluginManager(BlueprintPluginManager, WidgetPluginManager,
+class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
+    '''
+    Deprecated plugin API
+    '''
+    @cached_property
+    def _widget(self):
+        from . import widget
+        return widget
+
+    @cached_property
+    @deprecated('Deprecated attribute style_class')
+    def style_class(self):
+        return self._widget.StyleWidget
+
+    @cached_property
+    @deprecated('Deprecated attribute button_class')
+    def button_class(self):
+        return self._widget.ButtonWidget
+
+    @cached_property
+    @deprecated('Deprecated attribute javascript_class')
+    def javascript_class(self):
+        return self._widget.JavascriptWidget
+
+    @cached_property
+    @deprecated('Deprecated attribute link_class')
+    def link_class(self):
+        return self._widget.LinkWidget
+
+    @deprecated('Deprecated method register_action')
+    def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
+        deprecated_places = {
+            'javascript': 'scripts',
+            'style': 'styles',
+            'button': 'entry-actions',
+            'link': 'entry-link',
+            }
+        widget_mimetype_re = re.compile(
+            '^%s$' % '$|^'.join(
+                map(re.escape, mimetypes)
+                ).replace('\\*', '[^/]+')
+            )
+        widget_type = getattr(widget, '_type', 'base')
+        widget_fields = self.widget_types[widget_type]._fields
+        widget_props = {
+            name: getattr(widget, name)
+            for name in widget_fields
+            if hasattr(widget, name)
+            }
+        widget_props.update(
+            type=widget_type,
+            place=deprecated_places.get(
+                widget_props['place'],
+                widget_props['place']
+                ),
+            filter=lambda f: widget_mimetype_re.match(f.type) is not None
+            )
+        if 'endpoint' in widget_fields:
+            widget_props['endpoint'] = endpoint
+        self.register_widget(**widget_props)
+
+    @deprecated('Deprecated method get_actions')
+    def get_actions(self, file):
+        return self.get_widgets(file=file)
+
+
+class PluginManager(MimetypeActionPluginManager,
+                    BlueprintPluginManager, WidgetPluginManager,
                     MimetypePluginManager, ArgumentPluginManager):
     '''
     Main plugin manager
@@ -536,41 +609,3 @@ class PluginManager(BlueprintPluginManager, WidgetPluginManager,
         method.
         '''
         super(PluginManager, self).clear()
-
-    @deprecated
-    def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
-        deprecated_places = {
-            'javascript': 'scripts',
-            'style': 'styles',
-            'button': 'entry-actions',
-            'link': 'entry-link',
-            None: 'none'
-            }
-        widget_mimetype_re = re.compile(
-            '^%s$' % '$|^'.join(
-                map(re.escape, mimetypes)
-                ).replace('\\*', '[^/]+')
-            )
-        print(widget_mimetype_re.pattern)
-        widget_type = getattr(widget, '_type', 'base')
-        widget_fields = self.widget_types[widget_type]._fields
-        widget_props = {
-            name: getattr(widget, name)
-            for name in widget_fields
-            if hasattr(widget, name)
-            }
-        widget_props.update(
-            type=widget_type,
-            place=deprecated_places.get(
-                widget_props['place'],
-                widget_props['place']
-                ),
-            filter=lambda f: widget_mimetype_re.match(f.type) is not None
-            )
-        if 'endpoint' in widget_fields:
-            widget_props['endpoint'] = endpoint
-        self.register_widget(**widget_props)
-
-    @deprecated
-    def get_actions(self, file):
-        return self.get_widgets(file=file)

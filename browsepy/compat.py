@@ -12,6 +12,7 @@ import functools
 FS_ENCODING = sys.getfilesystemencoding()
 PY_LEGACY = sys.version_info < (3, )
 ENV_PATH = []  # populated later
+TRUE_VALUES = frozenset(('true', 'yes', '1', 'enable', 'enabled', True, 1))
 
 try:
     from scandir import scandir, walk
@@ -120,7 +121,20 @@ def getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd):
     return os.path.abspath(path)
 
 
-def deprecated(func_or_text):
+def getdebug(environ=os.environ, true_values=TRUE_VALUES):
+    '''
+    Get if app is expected to be ran in debug mode looking at environment
+    variables.
+
+    :param environ: environment dict-like object
+    :type environ: collections.abc.Mapping
+    :returns: True if debug contains a true-like string, False otherwise
+    :rtype: bool
+    '''
+    return environ.get('DEBUG', '').lower() in true_values
+
+
+def deprecated(func_or_text, environ=os.environ):
     '''
     Decorator used to mark functions as deprecated. It will result in a
     warning being emmitted hen the function is called.
@@ -128,7 +142,6 @@ def deprecated(func_or_text):
     :param func: function or method
     :type func: callable
     '''
-
     def inner(func):
         message = (
             'Deprecated function {}.'.format(func.__name__)
@@ -138,9 +151,11 @@ def deprecated(func_or_text):
 
         @functools.wraps(func)
         def new_func(*args, **kwargs):
-            warnings.simplefilter('always', DeprecationWarning)
-            warnings.warn(message, category=DeprecationWarning, stacklevel=2)
-            warnings.simplefilter('default', DeprecationWarning)
+            with warnings.catch_warnings():
+                if getdebug(environ):
+                    warnings.simplefilter('always', DeprecationWarning)
+                warnings.warn(message, category=DeprecationWarning,
+                              stacklevel=3)
             return func(*args, **kwargs)
         return new_func
     return inner(func_or_text) if callable(func_or_text) else inner

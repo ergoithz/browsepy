@@ -158,6 +158,40 @@ class Page302Exception(PageException):
 class TestCompat(unittest.TestCase):
     module = browsepy.compat
 
+    def _warn(self, message, category=None, stacklevel=None):
+        if not hasattr(self, '_warnings'):
+            self._warnings = []
+        self._warnings.append({
+            'message': message,
+            'category': category,
+            'stacklevel': stacklevel
+            })
+
+    def assertWarnsRegex(self, expected_warning, expected_regex, fnc,
+                         *args, **kwargs):
+        supa = super(TestCompat, self)
+        if hasattr(supa, 'assertWarnsRegex'):
+            self.assertWarnsRegex = supa.assertWarnsRegex
+            return self.assertWarnsRegex(expected_warning, expected_regex,
+                                         fnc, *args, **kwargs)
+        import warnings
+        old_warn = warnings.warn
+        warnings.warn = self._warn
+        try:
+            fnc(*args, **kwargs)
+        finally:
+            warnings.warn = old_warn
+        warnings = ()
+        if hasattr(self, '_warnings'):
+            warnings = self._warnings
+            del self._warnings
+        regex = re.compile(expected_regex)
+        self.assertTrue(any(
+            warn['category'] == expected_warning and
+            regex.match(warn['message'])
+            for warn in warnings
+        ))
+
     def test_which(self):
         self.assertTrue(self.module.which('python'))
         self.assertIsNone(self.module.which('lets-put-a-wrong-executable'))
@@ -220,6 +254,22 @@ class TestCompat(unittest.TestCase):
                 cwd_fnc=lambda: b'\xc3\xb1'
                 ),
             self.module.unicode
+            )
+
+    def test_getdebug(self):
+        enabled = ('TRUE', 'true', 'True', '1', 'yes', 'enabled')
+        for case in enabled:
+            self.assertTrue(self.module.getdebug({'DEBUG': case}))
+        disabled = ('FALSE', 'false', 'False', '', '0', 'no', 'disabled')
+        for case in disabled:
+            self.assertFalse(self.module.getdebug({'DEBUG': case}))
+
+    def test_deprecated(self):
+        environ = {'DEBUG': 'true'}
+        self.assertWarnsRegex(
+            DeprecationWarning,
+            'DEPRECATED',
+            self.module.deprecated('DEPRECATED', environ)(lambda: None)
             )
 
 
@@ -826,6 +876,24 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.upload, self.base)
         self.assertEqual(result.plugin, plugins)
 
+        result = self.parser.parse_args([
+            '--directory=%s' % self.base,
+            '--initial='
+            ])
+        self.assertEqual(result.host, '127.0.0.1')
+        self.assertEqual(result.port, 8080)
+        self.assertEqual(result.directory, self.base)
+        self.assertIsNone(result.initial)
+        self.assertIsNone(result.removable)
+        self.assertIsNone(result.upload)
+        self.assertListEqual(result.plugin, [])
+
+        self.assertRaises(
+            SystemExit,
+            self.parser.parse_args,
+            ['--directory=%s' % __file__]
+        )
+
     def test_main(self):
         params = {}
         self.module.main(
@@ -841,6 +909,32 @@ class TestMain(unittest.TestCase):
             }
         params_subset = {k: v for k, v in params.items() if k in defaults}
         self.assertEqual(defaults, params_subset)
+
+
+class TestMimetypePluginManager(unittest.TestCase):
+    module = browsepy.manager
+
+    def test_mimetype(self):
+        manager = self.module.MimetypePluginManager()
+        self.assertEqual(
+            manager.get_mimetype('potato'),
+            'application/octet-stream'
+            )
+        self.assertEqual(
+            manager.get_mimetype('potato.txt'),
+            'text/plain'
+            )
+        manager.register_mimetype_function(
+            lambda x: 'application/xml' if x == 'potato' else None
+            )
+        self.assertEqual(
+            manager.get_mimetype('potato.txt'),
+            'text/plain'
+            )
+        self.assertEqual(
+            manager.get_mimetype('potato'),
+            'application/xml'
+            )
 
 
 class TestPlugins(unittest.TestCase):
@@ -881,6 +975,11 @@ class TestPlugins(unittest.TestCase):
             self.manager.load_plugin,
             'non_existent_plugin_module'
             )
+
+        self.assertRaises(
+            self.manager_module.InvalidArgumentError,
+            self.manager.register_widget
+        )
 
 
 def register_plugin(manager):

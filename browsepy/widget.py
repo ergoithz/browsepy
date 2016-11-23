@@ -1,17 +1,28 @@
 '''
-WARNING: deprecated module
+WARNING: deprecated module.
+
+API defined in this module has been deprecated in version 0.5 will likely be
+removed at 0.6.
 '''
+import warnings
+
 from markupsafe import Markup
 from flask import url_for
 
 from .compat import deprecated
 
 
+warnings.warn('Deprecated module widget',  category=DeprecationWarning)
+
+
 class WidgetBase(object):
     _type = 'link'
     place = None
 
-    @deprecated('Deprecated widget API.')
+    @deprecated('Deprecated widget API')
+    def __new__(cls, *args, **kwargs):
+        return super(WidgetBase, cls).__new__(cls)
+
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs

@@ -51,19 +51,13 @@ class ArgParse(argparse.ArgumentParser):
         self.add_argument('--debug', action='store_true', help='debug mode')
 
     def _plugin(self, arg):
-        if not arg:
-            return []
-        return arg.split(',')
+        return arg.split(',') if arg else []
 
     def _directory(self, arg):
         if not arg:
             return None
         if PY_LEGACY and hasattr(sys.stdin, 'encoding'):
-            encoding = sys.stdin.encoding
-            if encoding is None:
-                # if we are running without a terminal
-                # assume default encoding
-                encoding = sys.getdefaultencoding()
+            encoding = sys.stdin.encoding or sys.getdefaultencoding()
             arg = arg.decode(encoding)
         if os.path.isdir(arg):
             return os.path.abspath(arg)
@@ -73,6 +67,7 @@ class ArgParse(argparse.ArgumentParser):
 def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     plugin_manager = app.extensions['plugin_manager']
     args = plugin_manager.load_arguments(argv, parser())
+    os.environ['DEBUG'] = 'true' if args.debug else ''
     app.config.update(
         directory_base=args.directory,
         directory_start=args.initial or args.directory,

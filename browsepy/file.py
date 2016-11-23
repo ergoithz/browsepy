@@ -17,7 +17,7 @@ from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
 
 from . import compat
-from .compat import range
+from .compat import range, deprecated
 
 
 logger = logging.getLogger(__name__)

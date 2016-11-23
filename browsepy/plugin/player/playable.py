@@ -2,6 +2,7 @@
 import sys
 import codecs
 import os.path
+import warnings
 
 from browsepy.compat import range, PY_LEGACY
 from browsepy.file import Node, File, Directory, \
@@ -34,7 +35,10 @@ class PLSFileParser(object):
         )
 
     def __init__(self, path):
-        self._parser = self.parser_class()
+        with warnings.catch_warnings():
+            # We already know about SafeConfigParser deprecation!
+            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            self._parser = self.parser_class()
         self._parser.read(path)
 
     def getint(self, section, key, fallback=NOT_SET):
