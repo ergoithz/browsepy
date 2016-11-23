@@ -532,22 +532,22 @@ class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
 
         return handler
 
-    @classmethod
-    def _widget_attrgetter(cls, widget, name):
+    def _widget_attrgetter(self, widget, name):
         def handler(f):
-            return getattr(widget.for_file(f), name)
+            with self.app.app_context():
+                return getattr(widget.for_file(f), name)
         return handler
 
-    @classmethod
     def _widget_props(self, widget, endpoint=None, mimetypes=(),
                       dynamic=False):
         type = getattr(widget, '_type', 'base')
         fields = self.widget_types[type]._fields
-        props = {
-            name: self._widget_attrgetter(widget, name)
-            for name in fields
-            if hasattr(widget, name)
-            }
+        with self.app.app_context():
+            props = {
+                name: self._widget_attrgetter(widget, name)
+                for name in fields
+                if hasattr(widget, name)
+                }
         props.update(
             type=type,
             place=self._deprecated_places.get(widget.place),

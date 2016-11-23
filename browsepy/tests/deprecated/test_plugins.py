@@ -118,9 +118,15 @@ def register_plugin(manager):
 
 class TestPlayerBase(unittest.TestCase):
     module = player
+    scheme = 'test'
+    hostname = 'testing'
+    urlprefix = '%s://%s' % (scheme, hostname)
 
     def setUp(self):
         self.app = flask.Flask(self.__class__.__name__)
+        self.app.config['directory_remove'] = None
+        self.app.config['SERVER_NAME'] = self.hostname
+        self.app.config['PREFERRED_URL_SCHEME'] = self.scheme
         self.manager = ManagerMock()
 
 
@@ -162,7 +168,7 @@ class TestIntegration(TestIntegrationBase):
         self.assertIn(self.player_module.player, self.app.blueprints.values())
 
     def test_register_action(self):
-        manager = self.manager_module.MimetypeActionPluginManager()
+        manager = self.manager_module.MimetypeActionPluginManager(self.app)
         widget = self.widget_module.WidgetBase()  # empty
         manager.register_action('browse', widget, mimetypes=('*/*',))
         actions = manager.get_actions(FileMock(mimetype='text/plain'))
@@ -194,7 +200,7 @@ class TestIntegration(TestIntegrationBase):
 
     def test_register_widget(self):
         file = self.file_module.Node()
-        manager = self.manager_module.MimetypeActionPluginManager()
+        manager = self.manager_module.MimetypeActionPluginManager(self.app)
         widget = self.widget_module.StyleWidget('static', filename='a.css')
         manager.register_widget(widget)
         widgets = manager.get_widgets('style')
@@ -210,9 +216,7 @@ class TestIntegration(TestIntegrationBase):
         widgets = manager.get_widgets(file=file, place='styles')
         self.assertEqual(len(widgets), 1)
         self.assertIsInstance(widgets[0], manager.widget_types['stylesheet'])
-
-        with self.app.app_context():
-            self.assertEqual(widgets[0].href, '/static/a.css')
+        self.assertEqual(widgets[0].href, '%s/static/a.css' % self.urlprefix)
 
         widget = self.widget_module.JavascriptWidget('static', filename='a.js')
         manager.register_widget(widget)
@@ -229,21 +233,21 @@ class TestIntegration(TestIntegrationBase):
         widgets = manager.get_widgets(file=file, place='scripts')
         self.assertEqual(len(widgets), 1)
         self.assertIsInstance(widgets[0], manager.widget_types['script'])
-
-        with self.app.app_context():
-            self.assertEqual(widgets[0].src, '/static/a.js')
+        self.assertEqual(widgets[0].src, '%s/static/a.js' % self.urlprefix)
 
     def test_for_file(self):
-        manager = self.manager_module.MimetypeActionPluginManager()
+        manager = self.manager_module.MimetypeActionPluginManager(self.app)
         widget = self.widget_module.LinkWidget(icon='asdf', text='something')
         manager.register_action('browse', widget, mimetypes=('*/plain',))
-        file = self.file_module.File('asdf.txt', plugin_manager=manager)
+        file = self.file_module.File('asdf.txt', plugin_manager=manager,
+                                     app=self.app)
         self.assertEqual(file.link.icon, 'asdf')
         self.assertEqual(file.link.text, 'something')
 
         widget = self.widget_module.LinkWidget()
         manager.register_action('browse', widget, mimetypes=('*/plain',))
-        file = self.file_module.File('asdf.txt', plugin_manager=manager)
+        file = self.file_module.File('asdf.txt', plugin_manager=manager,
+                                     app=self.app)
         self.assertEqual(file.link.text, 'asdf.txt')
 
     def test_from_file(self):
