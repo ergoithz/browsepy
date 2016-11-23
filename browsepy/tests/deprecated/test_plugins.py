@@ -143,7 +143,7 @@ class TestPlayer(TestPlayerBase):
             self.manager.mimetype_functions)
 
         widgets = [action[1] for action in self.manager.widgets]
-        self.assertIn('player.static', widgets)
+        self.assertIn('deprecated_player.static', widgets)
 
         widgets = [action[2] for action in self.manager.widgets]
         self.assertIn({'filename': 'css/browse.css'}, widgets)
@@ -163,9 +163,11 @@ class TestIntegrationBase(TestPlayerBase):
 class TestIntegration(TestIntegrationBase):
     def test_register_plugin(self):
         self.app.config.update(self.browsepy_module.app.config)
-        self.app.config['plugin_namespaces'] = (
-            'browsepy.tests.deprecated.plugin',
-            )
+        self.app.config.update(
+            SERVER_NAME=self.hostname,
+            PREFERRED_URL_SCHEME=self.scheme,
+            plugin_namespaces=('browsepy.tests.deprecated.plugin',)
+        )
         self.manager = self.manager_module.PluginManager(self.app)
         self.manager.load_plugin('player')
         self.assertIn(self.player_module.player, self.app.blueprints.values())

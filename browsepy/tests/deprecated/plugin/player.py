@@ -78,7 +78,10 @@ def register_plugin(manager):
     manager.register_blueprint(player)
     manager.register_mimetype_function(detect_playable_mimetype)
 
-    style = manager.style_class('player.static', filename='css/browse.css')
+    style = manager.style_class(
+        'deprecated_player.static',
+        filename='css/browse.css'
+        )
     manager.register_widget(style)
 
     button_widget = manager.button_class(css='play')

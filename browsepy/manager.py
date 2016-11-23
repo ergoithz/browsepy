@@ -7,6 +7,7 @@ import argparse
 import warnings
 import collections
 
+from flask import current_app
 from werkzeug.utils import cached_property
 
 from . import mimetype
@@ -534,7 +535,8 @@ class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
 
     def _widget_attrgetter(self, widget, name):
         def handler(f):
-            with self.app.app_context():
+            app = f.app or self.app or current_app
+            with app.app_context():
                 return getattr(widget.for_file(f), name)
         return handler
 
