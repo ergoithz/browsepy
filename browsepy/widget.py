@@ -12,11 +12,11 @@ from flask import url_for
 from .compat import deprecated
 
 
-warnings.warn('Deprecated module widget',  category=DeprecationWarning)
+warnings.warn('Deprecated module widget', category=DeprecationWarning)
 
 
 class WidgetBase(object):
-    _type = 'link'
+    _type = 'base'
     place = None
 
     @deprecated('Deprecated widget API')

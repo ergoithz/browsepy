@@ -58,7 +58,7 @@ class Node(object):
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     can_download = False
 
-    @property
+    @cached_property
     def plugin_manager(self):
         '''
         Get current app's plugin manager.
@@ -228,7 +228,7 @@ class Node(object):
         '''
         self.path = compat.fsdecode(path) if path else None
         self.app = current_app if app is None else app
-        self.__dict__.update(defaults)
+        self.__dict__.update(defaults)  # only for attr and cached_property
 
     def remove(self):
         '''

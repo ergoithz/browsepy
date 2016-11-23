@@ -89,9 +89,6 @@ def browse_sortkey_reverse(prop):
     if prop.startswith('-'):
         prop = prop[1:]
         reverse = True
-    elif prop.startswith('+'):
-        prop = prop[1:]
-        reverse = False
     else:
         reverse = False
 

@@ -179,6 +179,12 @@ class TestPlayable(TestIntegrationBase):
             open(file, 'w').close()
             node = browsepy_file.Directory(tmpdir)
             self.assertTrue(self.module.PlayableDirectory.detect(node))
+
+            directory = self.module.PlayableDirectory(tmpdir)
+            entries = directory.entries()
+            self.assertEqual(next(entries).path, file)
+            self.assertRaises(StopIteration, next, entries)
+
             os.remove(file)
             self.assertFalse(self.module.PlayableDirectory.detect(node))
         finally:

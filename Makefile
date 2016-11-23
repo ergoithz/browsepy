@@ -1,6 +1,6 @@
 .PHONY: doc clean pep8 coverage travis
 
-test:
+test: pep8
 ifdef debug
 	python setup.py test --debug=$(debug)
 else
@@ -29,7 +29,7 @@ showcoverage: coverage
 	coverage html
 	xdg-open file://${CURDIR}/htmlcov/index.html >> /dev/null
 
-travis-script: pep8 coverage
+travis-script: coverage
 	travis-sphinx --nowarn --source=doc build
 
 travis-success:

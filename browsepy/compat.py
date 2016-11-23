@@ -139,8 +139,24 @@ def deprecated(func_or_text, environ=os.environ):
     Decorator used to mark functions as deprecated. It will result in a
     warning being emmitted hen the function is called.
 
-    :param func: function or method
-    :type func: callable
+    Usage:
+
+    >>> @deprecated
+    ... def fnc():
+    ...     pass
+
+    Usage (custom message):
+
+    >>> @deprecated('This is deprecated')
+    ... def fnc():
+    ...     pass
+
+    :param func_or_text: message or callable to decorate
+    :type func_or_text: callable
+    :param environ: optional environment mapping
+    :type environ: collections.abc.Mapping
+    :returns: nested decorator or new decorated function (depending on params)
+    :rtype: callable
     '''
     def inner(func):
         message = (
@@ -159,6 +175,32 @@ def deprecated(func_or_text, environ=os.environ):
             return func(*args, **kwargs)
         return new_func
     return inner(func_or_text) if callable(func_or_text) else inner
+
+
+def usedoc(other):
+    '''
+    Decorator which copies __doc__ of given object into decorated one.
+
+    Usage:
+
+    >>> def fnc1():
+    ...     """docstring"""
+    ...     pass
+    >>> @usedoc(fnc1)
+    ... def fnc2():
+    ...     pass
+    >>> fnc2.__doc__
+    'docstring'collections.abc.D
+
+    :param other: anything with a __doc__ attribute
+    :type other: any
+    :returns: decorator function
+    :rtype: callable
+    '''
+    def inner(fnc):
+        fnc.__doc__ = fnc.__doc__ or getattr(other, '__doc__')
+        return fnc
+    return inner
 
 
 ENV_PATH[:] = (

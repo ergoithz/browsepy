@@ -5,8 +5,8 @@ import unittest
 
 import flask
 import browsepy
-import browsepy.manager
-import browsepy.widget
+import browsepy.file as browsepy_file
+import browsepy.widget as browsepy_widget
 import browsepy.manager as browsepy_manager
 
 from .plugin import player as player
@@ -53,6 +53,7 @@ class FileMock(object):
     def category(self):
         return self.mimetype.split('/')[0]
 
+    is_directory = False
     name = 'unnamed'
 
     def __init__(self, **kwargs):
@@ -61,7 +62,7 @@ class FileMock(object):
 
 class TestPlugins(unittest.TestCase):
     app_module = browsepy
-    manager_module = browsepy.manager
+    manager_module = browsepy_manager
 
     def setUp(self):
         self.app = self.app_module.app
@@ -98,7 +99,7 @@ class TestPlugins(unittest.TestCase):
 
 
 def register_plugin(manager):
-    widget_class = browsepy.widget.WidgetBase
+    widget_class = browsepy_widget.WidgetBase
 
     manager._plugin_loaded = True
     manager.register_action('test_x_x', widget_class('test_x_x'), ('*/*',))
@@ -146,6 +147,8 @@ class TestIntegrationBase(TestPlayerBase):
     player_module = player
     browsepy_module = browsepy
     manager_module = browsepy_manager
+    widget_module = browsepy_widget
+    file_module = browsepy_file
 
 
 class TestIntegration(TestIntegrationBase):
@@ -157,6 +160,91 @@ class TestIntegration(TestIntegrationBase):
         self.manager = self.manager_module.PluginManager(self.app)
         self.manager.load_plugin('player')
         self.assertIn(self.player_module.player, self.app.blueprints.values())
+
+    def test_register_action(self):
+        manager = self.manager_module.MimetypeActionPluginManager()
+        widget = self.widget_module.WidgetBase()  # empty
+        manager.register_action('browse', widget, mimetypes=('*/*',))
+        actions = manager.get_actions(FileMock(mimetype='text/plain'))
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].widget, widget)
+        manager.register_action('browse', widget, mimetypes=('text/*',))
+        actions = manager.get_actions(FileMock(mimetype='text/plain'))
+        self.assertEqual(len(actions), 2)
+        self.assertEqual(actions[1].widget, widget)
+        manager.register_action('browse', widget, mimetypes=('text/plain',))
+        actions = manager.get_actions(FileMock(mimetype='text/plain'))
+        self.assertEqual(len(actions), 3)
+        self.assertEqual(actions[2].widget, widget)
+        widget = self.widget_module.ButtonWidget()
+        manager.register_action('browse', widget, mimetypes=('text/plain',))
+        actions = manager.get_actions(FileMock(mimetype='text/plain'))
+        self.assertEqual(len(actions), 4)
+        self.assertEqual(actions[3].widget, widget)
+        widget = self.widget_module.LinkWidget()
+        manager.register_action('browse', widget, mimetypes=('*/plain',))
+        actions = manager.get_actions(FileMock(mimetype='text/plain'))
+        self.assertEqual(len(actions), 5)
+        self.assertNotEqual(actions[4].widget, widget)
+        widget = self.widget_module.LinkWidget(icon='file', text='something')
+        manager.register_action('browse', widget, mimetypes=('*/plain',))
+        actions = manager.get_actions(FileMock(mimetype='text/plain'))
+        self.assertEqual(len(actions), 6)
+        self.assertEqual(actions[5].widget, widget)
+
+    def test_register_widget(self):
+        manager = self.manager_module.MimetypeActionPluginManager()
+        widget = self.widget_module.StyleWidget('static', filename='a.css')
+        manager.register_widget(widget)
+        widgets = manager.get_widgets('style')
+        self.assertEqual(len(widgets), 1)
+        self.assertIsInstance(widgets[0], self.widget_module.StyleWidget)
+        self.assertEqual(widgets[0], widget)
+
+        widgets = manager.get_widgets(place='style')
+        self.assertEqual(len(widgets), 1)
+        self.assertIsInstance(widgets[0], self.widget_module.StyleWidget)
+        self.assertEqual(widgets[0], widget)
+
+        widgets = manager.get_widgets(place='styles')
+        self.assertEqual(len(widgets), 1)
+        self.assertIsInstance(widgets[0], manager.widget_types['stylesheet'])
+        self.assertEqual(widgets[0].href, '/static/a.css')
+
+        widget = self.widget_module.JavascriptWidget('static', filename='a.js')
+        manager.register_widget(widget)
+        widgets = manager.get_widgets('javascript')
+        self.assertEqual(len(widgets), 1)
+        self.assertIsInstance(widgets[0], self.widget_module.JavascriptWidget)
+        self.assertEqual(widgets[0], widget)
+
+        widgets = manager.get_widgets(place='javascript')
+        self.assertEqual(len(widgets), 1)
+        self.assertIsInstance(widgets[0], self.widget_module.JavascriptWidget)
+        self.assertEqual(widgets[0], widget)
+
+        widgets = manager.get_widgets(place='scripts')
+        self.assertEqual(len(widgets), 1)
+        self.assertIsInstance(widgets[0], manager.widget_types['script'])
+        self.assertEqual(widgets[0].src, '/static/a.js')
+
+    def test_for_file(self):
+        manager = self.manager_module.MimetypeActionPluginManager()
+        widget = self.widget_module.LinkWidget(icon='asdf', text='something')
+        manager.register_action('browse', widget, mimetypes=('*/plain',))
+        file = self.file_module.File('asdf.txt', plugin_manager=manager)
+        self.assertEqual(file.link.icon, 'asdf')
+        self.assertEqual(file.link.text, 'something')
+
+        widget = self.widget_module.LinkWidget()
+        manager.register_action('browse', widget, mimetypes=('*/plain',))
+        file = self.file_module.File('asdf.txt', plugin_manager=manager)
+        self.assertEqual(file.link.text, 'asdf.txt')
+
+    def test_from_file(self):
+        file = self.file_module.File('asdf.txt')
+        widget = self.widget_module.LinkWidget.from_file(file)
+        self.assertEqual(widget.text, 'asdf.txt')
 
 
 class TestPlayable(TestIntegrationBase):
