@@ -9,13 +9,16 @@ Installation
 ------------
 
 browsepy is available at the `Python Package Index <https://pypi.python.org/>`_
-so you can use pip to install. Please note that `virtualenv`_ or :mod:`venv` usage, for Python 2 and Python 3 respectively, is highly recommended when working with pip.
+so you can use pip to install. Please note that `virtualenv`_ or :mod:`venv`
+usage, for Python 2 and Python 3 respectively, is highly recommended when
+working with pip.
 
 .. code-block:: bash
 
   pip install browsepy
 
-Alternatively, you can get the development version from our `github repository`_ using `git`_.
+Alternatively, you can get the development version from our
+`github repository`_ using `git`_.
 
 .. code-block:: bash
 
@@ -32,7 +35,7 @@ Usage
 This examples assume python's `bin` directory is in `PATH`, otherwise try
 replacing `browsepy` with `python -m browsepy`.
 
-Serving $HOME/shared to all addresses:
+Serving `$HOME/shared` to all addresses:
 
 .. code-block:: bash
 

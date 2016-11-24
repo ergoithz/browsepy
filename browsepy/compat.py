@@ -204,8 +204,11 @@ def usedoc(other):
 
 
 ENV_PATH[:] = (
-  fsdecode(path.strip('"'))
-  for path in os.environ['PATH'].split(os.pathsep)
+  fsdecode(path.strip('"').replace('<SCAPED-PATHSEP>', os.pathsep))
+  for path in os
+    .environ['PATH']  # noqa
+    .replace('\\%s' % os.pathsep, '<SCAPED-PATHSEP>')
+    .split(os.pathsep)
   )
 
 if PY_LEGACY:

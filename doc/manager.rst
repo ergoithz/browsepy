@@ -22,6 +22,7 @@ module-level functions.
 .. autoclass:: ArgumentPluginManager
   :members:
   :inherited-members:
+  :undoc-members:
 
 .. _manager-plugin:
 
@@ -34,6 +35,9 @@ will be passed to :func:`register_plugin` plugin module-level functions.
 .. autoclass:: PluginManager
   :members:
   :inherited-members:
+  :undoc-members:
+  :exclude-members: register_action, get_actions, action_class, style_class,
+                    button_class, javascript_class, link_class, widget_types
 
   .. autoattribute:: widget_types
 

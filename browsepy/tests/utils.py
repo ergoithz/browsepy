@@ -16,7 +16,7 @@ def clear_localstack(stack):
 
 def clear_flask_context():
     '''
-    Clear flask app and request globals.
+    Clear flask current_app and request globals.
 
     When using :meth:`flask.Flask.test_client`, even as context manager,
     the flask's globals :attr:`flask.current_app` and :attr:`flask.request`

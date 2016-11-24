@@ -32,8 +32,8 @@ Contributing Builtin Plugins
 Browsepy's team is open to contributions of any kind, even about adding
 built-in plugins, as long as they comply with the following requirements:
 
-* Plugins must be sufficiently covered by tests to avoid lowering the
-  overall project's test coverage.
+* Plugins must be sufficiently covered by tests to avoid lowering browsepy's
+  overall test coverage.
 * Plugins must not add external requirements to browsepy, optional
   requirements are allowed if plugin can work without them, even with
   limited functionality.
