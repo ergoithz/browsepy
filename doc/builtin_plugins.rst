@@ -1,3 +1,5 @@
+.. _builtin-plugins:
+
 Bultin Plugins
 ==============
 
@@ -5,6 +7,8 @@ A player plugin is provided by default, and more are planned.
 
 Builtin-plugins serve as developers reference, while also being useful for
 unit-testing.
+
+.. _builtin-plugins-player:
 
 Player
 ------
@@ -20,6 +24,7 @@ Sources are available at browsepy's `plugin.player`_ submodule.
 
 .. _plugin.player: https://github.com/ergoithz/browsepy/tree/master/browsepy/plugin/player
 
+.. _builtin-plugins-contributing:
 
 Contributing Builtin Plugins
 ----------------------------

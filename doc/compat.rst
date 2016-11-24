@@ -1,3 +1,5 @@
+.. _compat:
+
 Compat Module
 =============
 

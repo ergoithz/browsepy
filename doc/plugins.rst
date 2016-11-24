@@ -1,3 +1,5 @@
+.. _plugins:
+
 Plugin Development
 ==================
 
@@ -9,11 +11,13 @@ its own Flask blueprints, widgets (filtering by file), mimetype functions and co
 A fully functional :mod:`browsepy.plugin.player` plugin module is provided as
 example.
 
+.. _plugins-namespace:
+
 Plugin Namespace
 ----------------
 
 Plugins are regular python modules. They're are loaded using the `--plugin`
-:ref:`console argument <Usage>`.
+:ref:`console argument <quickstart-usage>`.
 
 Plugin namespaces and name prefixes are defined on 'plugin_namespaces' entry at
 :attr:`browsepy.app.config` as a tuple. Prefixes are those ending with an
@@ -30,6 +34,8 @@ Summarizing:
 * Any python module can be loaded as plugin by its full module name.
 
 Knowing that, you could name your own plugin so it could be loaded easily.
+
+.. _plugins-namespace-examples:
 
 Examples
 ++++++++
@@ -61,6 +67,7 @@ above:
 
   browsepy --plugin=my_plugin.my_nested_plugin
 
+.. _plugins-protocol:
 
 Protocol
 --------
@@ -162,6 +169,8 @@ A simple `register_arguments` example (from by player plugin):
           help='enable directories as playlist'
           )
 
+.. _widgets:
+
 Widgets
 -------
 
@@ -236,6 +245,8 @@ former case it is recommended to use
 :meth:`browsepy.file.Node.from_urlpath` static method to create the
 appropriate file/directory object (see :mod:`browsepy.file`).
 
+.. _plugins-considerations:
+
 Considerations
 --------------
 
@@ -249,7 +260,7 @@ preferred over directly registering blueprints via plugin manager's app
 reference (or even module-level app reference).
 
 A gooed way to keep your plugin working on future browsepy releases is
-:ref:`mainlining it <Contributing Builtin Plugins>`.
+:ref:`mainlining it <builtin-plugins-contributing>`.
 
 Said that, feel free to hack everything you want. Pull requests are
 definitely welcome.

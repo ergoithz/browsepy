@@ -1,3 +1,5 @@
+.. _file:
+
 File Module
 ===========
 
@@ -14,6 +16,8 @@ Just remember to overload its :attr:`Node.generic` attribute value to False.
 Both :class:`File` and :class:`Directory` classes can be instantiated or
 extended, via inheritance, with logic like different default widgets, virtual data (see player plugin code).
 
+.. _file-node:
+
 Node
 ----
 
@@ -24,6 +28,8 @@ Node
   :inherited-members:
   :undoc-members:
 
+.. _file-directory:
+
 Directory
 ---------
 
@@ -32,6 +38,8 @@ Directory
   :members:
   :inherited-members:
   :undoc-members:
+
+.. _file-file:
 
 File
 ----
@@ -42,6 +50,8 @@ File
   :inherited-members:
   :undoc-members:
 
+.. _file-exceptions:
+
 Exceptions
 ----------
 
@@ -50,6 +60,8 @@ Exceptions
 
 .. autoclass:: OutsideRemovableBase
   :show-inheritance:
+
+.. _file-util:
 
 Utility functions
 -----------------

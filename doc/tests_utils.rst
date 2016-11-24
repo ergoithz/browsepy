@@ -1,3 +1,5 @@
+.. _test-utils:
+
 Test Utility Module
 ===================
 

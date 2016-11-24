@@ -1,5 +1,9 @@
+.. _quickstart:
+
 Quickstart
 ==========
+
+.. _quickstart-installation:
 
 Installation
 ------------
@@ -20,6 +24,8 @@ Alternatively, you can get the development version from our `github repository`_
 .. _virtualenv: https://virtualenv.pypa.io/
 .. _github repository: https://github.com/ergoithz/browsepy
 .. _git: https://git-scm.com/
+
+.. _quickstart-usage:
 
 Usage
 -----

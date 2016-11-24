@@ -1,3 +1,5 @@
+.. _integrations:
+
 Integrations
 ============
 
@@ -32,6 +34,8 @@ reloaded using the `reload` method.
 
 The other way of loading a plugin programatically is calling plugin manager's
 `load_plugin` method.
+
+.. _integrations-cherrymusic:
 
 Cherrypy and Cherrymusic
 -------------------------
