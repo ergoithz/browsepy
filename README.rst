@@ -63,11 +63,13 @@ New in 0.5
   extensible, so they can be considered stable now. As a side-effect backward
   compatibility on some edge cases could be broken (please fill an issue if
   your code is affected).
+
   * Old widget API have been deprecated and warnings will be shown if used.
   * Widget registration in a single call (passing a widget instances is still
     available though), no more action-widget duality.
   * Callable-based widget filtering (no longer limited to mimetypes).
   * A raw HTML widget for maximum flexibility.
+
 * Plugins can register command-line arguments now.
 * Player plugin is now able to load m3u and pls playlists, and optionally
   play everything on a directory (adding a command-line argument).
