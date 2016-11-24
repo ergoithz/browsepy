@@ -14,16 +14,19 @@ clean:
 	find browsepy -type d -name "__pycache__" -delete
 	$(MAKE) -C doc clean
 
-build: clean
+build-env:
 	mkdir -p build
 	python3 -m venv build/env3
 	build/env3/bin/pip install pip --upgrade
 	build/env3/bin/pip install wheel
+
+build: clean build-env
 	env3/bin/python setup.py bdist_wheel --require-scandir
 	env3/bin/python setup.py sdist
 
-upload: build
-	python setup.py upload
+upload: clean build-env
+	env3/bin/python setup.py bdist_wheel upload --require-scandir
+	env3/bin/python setup.py sdist upload
 
 doc:
 	$(MAKE) -C doc html
