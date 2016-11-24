@@ -8,10 +8,22 @@ else
 endif
 
 clean:
-	rm -rf build dist browsepy.egg-info htmlcov MANIFEST .eggs *.egg .coverage
+	rm -rf build dist browsepy.egg-info htmlcov MANIFEST \
+	       .eggs *.egg .coverage
 	find browsepy -type f -name "*.py[co]" -delete
 	find browsepy -type d -name "__pycache__" -delete
 	$(MAKE) -C doc clean
+
+build: clean
+	mkdir -p build
+	python3 -m venv build/env3
+	build/env3/bin/pip install pip --upgrade
+	build/env3/bin/pip install wheel
+	env3/bin/python setup.py bdist_wheel --require-scandir
+	env3/bin/python setup.py sdist
+
+upload: build
+	python setup.py upload
 
 doc:
 	$(MAKE) -C doc html

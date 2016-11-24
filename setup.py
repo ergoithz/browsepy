@@ -45,7 +45,10 @@ with open('README.rst') as f:
 
 extra_requires = []
 
-if not hasattr(os, 'scandir'):
+opt = '--require-scandir'
+if not hasattr(os, 'scandir') or opt in sys.argv:
+    if opt in sys.argv:
+        sys.argv.remove(opt)
     extra_requires.append('scandir')
 
 for debugger in ('ipdb', 'pudb', 'pdb'):
@@ -58,7 +61,7 @@ setup(
     name=__app__,
     version=__version__,
     url='https://github.com/ergoithz/browsepy',
-    download_url='https://github.com/ergoithz/browsepy/tarball/0.3.2',
+    download_url='https://github.com/ergoithz/browsepy/tarball/0.5.0',
     license=__license__,
     author='Felipe A. Hernandez',
     author_email='ergoithz@gmail.com',
@@ -75,6 +78,8 @@ setup(
     packages=[
         'browsepy',
         'browsepy.tests',
+        'browsepy.tests.deprecated',
+        'browsepy.tests.deprecated.plugin',
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],

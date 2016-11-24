@@ -4,3 +4,4 @@ sphinx
 pep8
 coverage
 setuptools
+wheel
