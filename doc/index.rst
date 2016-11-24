@@ -34,7 +34,9 @@ Instructions for users, implementors and developers.
    :maxdepth: 2
 
    quickstart
+   builtin_plugins
    plugins
+   integrations
 
 API Reference
 =============
@@ -46,6 +48,7 @@ Specific information about functions, class or methods.
    manager
    file
    compat
+   tests_utils
 
 Indices and tables
 ==================

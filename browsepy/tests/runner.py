@@ -6,6 +6,7 @@ import unittest
 class DebuggerTextTestResult(unittest._TextTestResult):  # pragma: no cover
     def __init__(self, stream, descriptions, verbosity, debugger):
         self.debugger = debugger
+        self.shouldStop = True
         supa = super(DebuggerTextTestResult, self)
         supa.__init__(stream, descriptions, verbosity)
 

@@ -1,5 +1,5 @@
-Implementing plugins
-====================
+Plugin Development
+==================
 
 .. currentmodule:: browsepy.manager
 
@@ -8,6 +8,59 @@ its own Flask blueprints, widgets (filtering by file), mimetype functions and co
 
 A fully functional :mod:`browsepy.plugin.player` plugin module is provided as
 example.
+
+Plugin Namespace
+----------------
+
+Plugins are regular python modules. They're are loaded using the `--plugin`
+:ref:`console argument <Usage>`.
+
+Plugin namespaces and name prefixes are defined on 'plugin_namespaces' entry at
+:attr:`browsepy.app.config` as a tuple. Prefixes are those ending with an
+underscore. Its default value is browsepy's built-in module namespace
+`browsepy.plugins`, `browsepy_` prefix and empty namespace (so any plugin could
+be used with it's original module name).
+
+Summarizing:
+
+* Any python module inside `browsepy.plugin` can be loaded as plugin by its
+  relative name.
+* Any python module prefixed by `browsepy_` can be loaded as plugin by its
+  unprefixed name, ie. `myplugin` instead of `browsepy_myplugin`.
+* Any python module can be loaded as plugin by its full module name.
+
+Knowing that, you could name your own plugin so it could be loaded easily.
+
+Examples
+++++++++
+
+Your built-in module, placed at `browsepy/plugins/my_builtin_module.py` after
+forking browsepy itself:
+
+.. code-block:: bash
+
+  browsepy --plugin=my_builtin_module
+
+Your prefixed module, an external python module in python's library path,
+named `browsepy_prefixed_plugin`:
+
+.. code-block:: bash
+
+  browsepy --plugin=prefixed_plugin
+
+Your module, an external python module in python's library path, named `my_plugin`.
+
+.. code-block:: bash
+
+  browsepy --plugin=my_plugin
+
+Also note you can also use nested module names with any combination of the
+above:
+
+.. code-block:: bash
+
+  browsepy --plugin=my_plugin.my_nested_plugin
+
 
 Protocol
 --------
@@ -186,11 +239,17 @@ appropriate file/directory object (see :mod:`browsepy.file`).
 Considerations
 --------------
 
-When developing plugins, implementors should always choose the less intrusive
-approach, so new browsepy versions will not likely get broken. That's why
-stuff like :meth:`PluginManager.register_blueprint` is
-provided and its usage is preferred over directly registering blueprints
-via plugin manager's app reference (or even module-level app reference).
+Name your plugin wisely, look at `pypi <https://pypi.python.org/>`_ for
+conflicting module names.
 
-Said that, feel free to hack everything you want. Pull requests are definitely
-welcome.
+Always choose the less intrusive approach on plugin development, so new
+browsepy versions will not likely get broken. That's why stuff like
+:meth:`PluginManager.register_blueprint` is provided and its usage is
+preferred over directly registering blueprints via plugin manager's app
+reference (or even module-level app reference).
+
+A gooed way to keep your plugin working on future browsepy releases is
+:ref:`mainlining it <Contributing Builtin Plugins>`.
+
+Said that, feel free to hack everything you want. Pull requests are
+definitely welcome.

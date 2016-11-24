@@ -362,5 +362,6 @@ texinfo_documents = [
 # intersphinx_mapping = {'https://docs.python.org/': None}
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'flask': ('http://flask.pocoo.org/docs/', None)
+    'flask': ('http://flask.pocoo.org/docs/', None),
+    'werkzeug': ('http://werkzeug.pocoo.org/docs/', None),
     }

@@ -19,6 +19,7 @@ import browsepy.file
 import browsepy.manager
 import browsepy.__main__
 import browsepy.compat
+import browsepy.tests.utils as test_utils
 
 PY_LEGACY = browsepy.compat.PY_LEGACY
 range = browsepy.compat.range
@@ -352,7 +353,8 @@ class TestApp(unittest.TestCase):
                     )(response.status_code)
             result = page_class.from_source(response.data, response)
             response.close()
-            return result
+        test_utils.clear_flask_context()
+        return result
 
     def post(self, endpoint, **kwargs):
         status_code = kwargs.pop('status_code', 200)
@@ -368,7 +370,9 @@ class TestApp(unittest.TestCase):
                     response.status_code,
                     self.page_exceptions[None]
                     )(response.status_code)
-            return self.list_page_class.from_source(response.data, response)
+            result = self.list_page_class.from_source(response.data, response)
+        test_utils.clear_flask_context()
+        return result
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():
@@ -651,6 +655,7 @@ class TestApp(unittest.TestCase):
             for cookie in page.response.headers.getlist('set-cookie'):
                 if cookie.startswith('browse-sorting='):
                     self.assertLessEqual(len(cookie), 4000)
+        test_utils.clear_flask_context()
 
 
 class TestFile(unittest.TestCase):
@@ -949,6 +954,7 @@ class TestPlugins(unittest.TestCase):
         self.manager = self.manager_module.PluginManager(self.app)
 
     def tearDown(self):
+        self.manager.clear()
         self.app.config['plugin_namespaces'] = self.original_namespaces
 
     def test_manager(self):
@@ -980,6 +986,13 @@ class TestPlugins(unittest.TestCase):
             self.manager_module.InvalidArgumentError,
             self.manager.register_widget
         )
+
+    def test_namespace_prefix(self):
+        self.assertTrue(self.manager.import_plugin(self.plugin_name))
+        self.app.config['plugin_namespaces'] = (
+            self.plugin_namespace + '.test_',
+            )
+        self.assertTrue(self.manager.import_plugin('module'))
 
 
 def register_plugin(manager):

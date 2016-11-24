@@ -9,7 +9,7 @@ import browsepy.file as browsepy_file
 import browsepy.widget as browsepy_widget
 import browsepy.manager as browsepy_manager
 
-from .plugin import player as player
+from browsepy.tests.deprecated.plugin import player as player
 
 
 class ManagerMock(object):
@@ -149,7 +149,7 @@ class TestPlayer(TestPlayerBase):
         self.assertIn({'filename': 'css/browse.css'}, widgets)
 
         actions = [action[0] for action in self.manager.actions]
-        self.assertIn('player.audio', actions)
+        self.assertIn('deprecated_player.audio', actions)
 
 
 class TestIntegrationBase(TestPlayerBase):
@@ -168,8 +168,8 @@ class TestIntegration(TestIntegrationBase):
             PREFERRED_URL_SCHEME=self.scheme,
             plugin_namespaces=('browsepy.tests.deprecated.plugin',)
         )
-        self.manager = self.manager_module.PluginManager(self.app)
-        self.manager.load_plugin('player')
+        manager = self.manager_module.PluginManager(self.app)
+        manager.load_plugin('player')
         self.assertIn(self.player_module.player, self.app.blueprints.values())
 
     def test_register_action(self):

@@ -88,7 +88,7 @@ def register_plugin(manager):
     link_widget = manager.link_class()
     for widget in (link_widget, button_widget):
         manager.register_action(
-            'player.audio',
+            'deprecated_player.audio',
             widget,
             mimetypes=(
                 'audio/mpeg',

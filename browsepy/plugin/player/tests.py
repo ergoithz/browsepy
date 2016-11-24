@@ -12,6 +12,7 @@ import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
 import browsepy.plugin.player.playable as player_playable
+import browsepy.tests.utils as test_utils
 
 
 class ManagerMock(object):
@@ -187,6 +188,7 @@ class TestPlayable(TestIntegrationBase):
 
             os.remove(file)
             self.assertFalse(self.module.PlayableDirectory.detect(node))
+
         finally:
             shutil.rmtree(tmpdir)
 
@@ -276,7 +278,9 @@ class TestBlueprint(TestPlayerBase):
     def get(self, endpoint, **kwargs):
         with self.app.test_client() as client:
             url = self.url_for(endpoint, **kwargs)
-            return client.get(url)
+            response = client.get(url)
+        test_utils.clear_flask_context()
+        return response
 
     def file(self, path, data=''):
         apath = os.path.join(self.app.config['directory_base'], path)

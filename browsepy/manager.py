@@ -101,7 +101,9 @@ class PluginManagerBase(object):
         :raises PluginNotFoundError: if not found on any namespace
         '''
         names = [
-            '%s.%s' % (namespace, plugin) if namespace else plugin
+            '%s%s%s' % (namespace, '' if namespace[-1] == '_' else '.', plugin)
+            if namespace else
+            plugin
             for namespace in self.namespaces
             ]
 
