@@ -4,13 +4,20 @@
 import os.path
 
 from flask import Blueprint, render_template
+from werkzeug.exceptions import NotFound
 
-from .playable import PlayableFile, MetaPlayListFile, mimetypes
+from browsepy import stream_template
+from browsepy.file import OutsideDirectoryBase
+
+from .playable import PlayableFile, PlayableDirectory, \
+                      PlayListFile, detect_playable_mimetype
+
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
 
 player = Blueprint(
-    'player', __name__,
+    'player',
+    __name__,
     url_prefix='/play',
     template_folder=os.path.join(__basedir__, 'templates'),
     static_folder=os.path.join(__basedir__, 'static'),
@@ -19,22 +26,62 @@ player = Blueprint(
 
 @player.route('/audio/<path:path>')
 def audio(path):
-    f = PlayableFile.from_urlpath(path)
-    return render_template('audio.player.html', file=f)
+    try:
+        file = PlayableFile.from_urlpath(path)
+        if file.is_file:
+            return render_template('audio.player.html', file=file)
+    except OutsideDirectoryBase:
+        pass
+    return NotFound()
 
 
 @player.route('/list/<path:path>')
 def playlist(path):
-    f = MetaPlayListFile.from_urlpath(path)
-    return render_template('list.player.html', file=f)
+    try:
+        file = PlayListFile.from_urlpath(path)
+        if file.is_file:
+            return stream_template(
+                'audio.player.html',
+                file=file,
+                playlist=True
+                )
+    except OutsideDirectoryBase:
+        pass
+    return NotFound()
 
 
-def detect_playable_mimetype(path, os_sep=os.sep):
-    basename = path.rsplit(os_sep)[-1]
-    if '.' in basename:
-        ext = basename.rsplit('.')[-1]
-        return mimetypes.get(ext, None)
-    return None
+@player.route("/directory", defaults={"path": ""})
+@player.route('/directory/<path:path>')
+def directory(path):
+    try:
+        file = PlayableDirectory.from_urlpath(path)
+        if file.is_directory:
+            return stream_template(
+                'audio.player.html',
+                file=file,
+                playlist=True
+                )
+    except OutsideDirectoryBase:
+        pass
+    return NotFound()
+
+
+def register_arguments(manager):
+    '''
+    Register arguments using given plugin manager.
+
+    This method is called before `register_plugin`.
+
+    :param manager: plugin manager
+    :type manager: browsepy.manager.PluginManager
+    '''
+
+    # Arguments are forwarded to argparse:ArgumentParser.add_argument,
+    # https://docs.python.org/3.7/library/argparse.html#the-add-argument-method
+    manager.register_argument(
+        '--player-directory-play', action='store_true',
+        help='enable directories as playlist'
+        )
 
 
 def register_plugin(manager):
@@ -47,24 +94,52 @@ def register_plugin(manager):
     manager.register_blueprint(player)
     manager.register_mimetype_function(detect_playable_mimetype)
 
-    style = manager.style_class('player.static', filename='css/browse.css')
-    manager.register_widget(style)
+    # add style tag
+    manager.register_widget(
+        place='styles',
+        type='stylesheet',
+        endpoint='player.static',
+        filename='css/browse.css'
+    )
 
-    button_widget = manager.button_class(css='play')
-    link_widget = manager.link_class()
-    for widget in (link_widget, button_widget):
-        manager.register_action(
-            'player.audio',
-            widget,
-            mimetypes=(
-                'audio/mpeg',
-                'audio/ogg',
-                'audio/wav',
-            ))
-        manager.register_action(
-            'player.playlist',
-            widget,
-            mimetypes=(
-                'audio/x-mpegurl',  # m3u, m3u8
-                'audio/x-scpls',  # pls
-            ))
+    # register link actions
+    manager.register_widget(
+        place='entry-link',
+        type='link',
+        endpoint='player.audio',
+        filter=PlayableFile.detect
+    )
+    manager.register_widget(
+        place='entry-link',
+        icon='playlist',
+        type='link',
+        endpoint='player.playlist',
+        filter=PlayListFile.detect
+    )
+
+    # register action buttons
+    manager.register_widget(
+        place='entry-actions',
+        css='play',
+        type='button',
+        endpoint='player.audio',
+        filter=PlayableFile.detect
+    )
+    manager.register_widget(
+        place='entry-actions',
+        css='play',
+        type='button',
+        endpoint='player.playlist',
+        filter=PlayListFile.detect
+    )
+
+    # check argument (see `register_arguments`) before registering
+    if manager.get_argument('player_directory_play'):
+        # register header button
+        manager.register_widget(
+            place='header',
+            type='button',
+            endpoint='player.directory',
+            text='Play directory',
+            filter=PlayableDirectory.detect
+            )

@@ -1,7 +1,8 @@
 checks:
-    python:
-        code_rating: true
-        duplicate_code: true
+  python:
+    code_rating: true
+    duplicate_code: true
 filter:
-    excluded_paths:
-        - "*/test*.py"
+  excluded_paths:
+    - "*/tests.py"
+    - "*/tests/*"

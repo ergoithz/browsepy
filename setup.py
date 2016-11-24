@@ -3,9 +3,11 @@
 browsepy
 ========
 
-Simple web file browser with directory gzipped tarball download
+Simple web file browser with directory gzipped tarball download, file upload,
+removal and plugins.
 
-More details on the `github page <https://github.com/ergoithz/browsepy/>`_.
+More details on project's README and
+`github page <https://github.com/ergoithz/browsepy/>`_.
 
 
 Development Version
@@ -17,7 +19,15 @@ repository from `github`_::
     git clone git@github.com:ergoithz/browsepy.git
 
 .. _github: https://github.com/ergoithz/browsepy
+
+License
+-------
+MIT (see LICENSE file).
 """
+
+import os
+import sys
+
 try:
     from setuptools import setup
 except ImportError:
@@ -25,8 +35,7 @@ except ImportError:
 
 with open('browsepy/__meta__.py') as f:
     data = {}
-    code = compile(f.read(), 'browsepy/__meta__.py', 'exec')
-    exec(code, data, data)
+    exec(compile(f.read(), f.name, 'exec'), data, data)
     __app__ = data['__app__']
     __version__ = data['__version__']
     __license__ = data['__license__']
@@ -34,11 +43,25 @@ with open('browsepy/__meta__.py') as f:
 with open('README.rst') as f:
     __doc__ = f.read()
 
+extra_requires = []
+
+opt = '--require-scandir'
+if not hasattr(os, 'scandir') or opt in sys.argv:
+    if opt in sys.argv:
+        sys.argv.remove(opt)
+    extra_requires.append('scandir')
+
+for debugger in ('ipdb', 'pudb', 'pdb'):
+    opt = '--debug=%s' % debugger
+    if opt in sys.argv:
+        os.environ['UNITTEST_DEBUG'] = debugger
+        sys.argv.remove(opt)
+
 setup(
     name=__app__,
     version=__version__,
     url='https://github.com/ergoithz/browsepy',
-    download_url='https://github.com/ergoithz/browsepy/tarball/0.3.2',
+    download_url='https://github.com/ergoithz/browsepy/tarball/0.5.0',
     license=__license__,
     author='Felipe A. Hernandez',
     author_email='ergoithz@gmail.com',
@@ -55,9 +78,16 @@ setup(
     packages=[
         'browsepy',
         'browsepy.tests',
+        'browsepy.tests.deprecated',
+        'browsepy.tests.deprecated.plugin',
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],
+    entry_points={
+        'console_scripts': (
+            'browsepy=browsepy.__main__:main'
+        )
+    },
     package_data={  # ignored by sdist (see MANIFEST.in), used by bdist_wheel
         'browsepy': [
             'templates/*',
@@ -68,8 +98,9 @@ setup(
             'templates/*',
             'static/*/*',
         ]},
-    install_requires=['flask'],
+    install_requires=['flask'] + extra_requires,
     test_suite='browsepy.tests',
+    test_runner='browsepy.tests.runner:DebuggerTextTestRunner',
     zip_safe=False,
     platforms='any'
 )

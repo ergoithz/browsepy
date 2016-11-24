@@ -11,14 +11,15 @@ import tarfile
 import xml.etree.ElementTree as ET
 import io
 import stat
+import mimetypes
 
 import flask
 import browsepy
 import browsepy.file
 import browsepy.manager
-import browsepy.widget
 import browsepy.__main__
 import browsepy.compat
+import browsepy.tests.utils as test_utils
 
 PY_LEGACY = browsepy.compat.PY_LEGACY
 range = browsepy.compat.range
@@ -29,92 +30,258 @@ class FileMock(object):
         self.__dict__.update(kwargs)
 
 
+class PluginMock(object):
+    registered_arguments_manager = None
+    registered_arguments = False
+    registered_plugin_manager = None
+    registered_plugin = False
+
+    def register_arguments(self, manager):
+        self.registered_arguments_manager = manager
+        self.registered_arguments = True
+        manager.register_argument('--pluginmock', action='store_true')
+
+    def register_plugin(self, manager):
+        self.registered_plugin_manager = manager
+        self.registered_plugin = True
+
+
+class AppMock(object):
+    config = browsepy.app.config.copy()
+
+
 class Page(object):
-    @classmethod
-    def itertext(cls, element):
-        # TODO(ergoithz) on python2 drop: replace by element.itertext()
-        yield element.text or ''
-        for child in element:
-            for text in cls.itertext(child):
-                yield text
-            yield child.tail or ''
+    if hasattr(ET.Element, 'itertext'):
+        @classmethod
+        def itertext(cls, element):
+            return element.itertext()
+    else:
+        # Old 2.7 minors
+        @classmethod
+        def itertext(cls, element):
+            yield element.text or ''
+            for child in element:
+                for text in cls.itertext(child):
+                    yield text
+                yield child.tail or ''
+
+    def __init__(self, data, response=None):
+        self.data = data
+        self.response = response
 
     @classmethod
     def innerText(cls, element):
         return ''.join(cls.itertext(element))
 
+    @classmethod
+    def from_source(cls, source, response=None):
+        return cls(source, response)
+
 
 class ListPage(Page):
     path_strip_re = re.compile('\s+/\s+')
 
-    def __init__(self, path, directories, files, removable, upload):
+    def __init__(self, path, directories, files, removable, upload, source,
+                 response=None):
         self.path = path
         self.directories = directories
         self.files = files
         self.removable = removable
         self.upload = upload
+        self.source = source
+        self.response = response
 
     @classmethod
-    def from_source(cls, source):
+    def from_source(cls, source, response=None):
         html = ET.fromstring(source)
         rows = [
             (
-                row[0].attrib.get('class') == 'dir-icon',
+                row[0].attrib.get('class') == 'icon inode',
                 row[1].find('.//a').attrib['href'],
-                any(
-                    button.attrib.get('class') == 'remove button'
-                    for button in row[2].findall('.//a')
-                    )
+                any(button.attrib.get('class') == 'button remove'
+                    for button in row[2].findall('.//a'))
             )
             for row in html.findall('.//table/tbody/tr')
         ]
         return cls(
             cls.path_strip_re.sub(
-                '/', cls.innerText(html.find('.//h1'))).strip(),
+                '/',
+                cls.innerText(html.find('.//h1'))
+                ).strip(),
             [url for isdir, url, removable in rows if isdir],
             [url for isdir, url, removable in rows if not isdir],
-            all(
-                removable
+            all(removable
                 for isdir, url, removable in rows
                 ) if rows else False,
-            html.find('.//form//input[@type=\'file\']') is not None
+            html.find('.//form//input[@type=\'file\']') is not None,
+            source,
+            response
         )
 
 
 class ConfirmPage(Page):
-    def __init__(self, path, name, back):
+    def __init__(self, path, name, back, source, response=None):
         self.path = path
         self.name = name
         self.back = back
+        self.source = source
+        self.response = response
 
     @classmethod
-    def from_source(cls, source):
+    def from_source(cls, source, response=None):
         html = ET.fromstring(source)
         name = cls.innerText(html.find('.//strong')).strip()
         prefix = html.find('.//strong').attrib.get('data-prefix', '')
 
         return cls(
-            prefix+name,
+            prefix + name,
             name,
-            html.find('.//form[@method=\'get\']').attrib['action']
+            html.find('.//form[@method=\'get\']').attrib['action'],
+            source,
+            response
         )
 
 
 class PageException(Exception):
-    def __init__(self, status):
+    def __init__(self, status, *args):
         self.status = status
+        super(PageException, self).__init__(status, *args)
 
 
 class Page404Exception(PageException):
     pass
 
 
+class Page302Exception(PageException):
+    pass
+
+
+class TestCompat(unittest.TestCase):
+    module = browsepy.compat
+
+    def _warn(self, message, category=None, stacklevel=None):
+        if not hasattr(self, '_warnings'):
+            self._warnings = []
+        self._warnings.append({
+            'message': message,
+            'category': category,
+            'stacklevel': stacklevel
+            })
+
+    def assertWarnsRegex(self, expected_warning, expected_regex, fnc,
+                         *args, **kwargs):
+        supa = super(TestCompat, self)
+        if hasattr(supa, 'assertWarnsRegex'):
+            self.assertWarnsRegex = supa.assertWarnsRegex
+            return self.assertWarnsRegex(expected_warning, expected_regex,
+                                         fnc, *args, **kwargs)
+        import warnings
+        old_warn = warnings.warn
+        warnings.warn = self._warn
+        try:
+            fnc(*args, **kwargs)
+        finally:
+            warnings.warn = old_warn
+        warnings = ()
+        if hasattr(self, '_warnings'):
+            warnings = self._warnings
+            del self._warnings
+        regex = re.compile(expected_regex)
+        self.assertTrue(any(
+            warn['category'] == expected_warning and
+            regex.match(warn['message'])
+            for warn in warnings
+        ))
+
+    def test_which(self):
+        self.assertTrue(self.module.which('python'))
+        self.assertIsNone(self.module.which('lets-put-a-wrong-executable'))
+
+    def test_fsdecode(self):
+        path = b'/a/\xc3\xb1'
+        self.assertEqual(
+            self.module.fsdecode(path, os_name='posix', fs_encoding='utf-8'),
+            path.decode('utf-8')
+            )
+        path = b'/a/\xf1'
+        self.assertEqual(
+            self.module.fsdecode(path, os_name='nt', fs_encoding='latin-1'),
+            path.decode('latin-1')
+            )
+        path = b'/a/\xf1'
+        self.assertRaises(
+            UnicodeDecodeError,
+            self.module.fsdecode,
+            path,
+            fs_encoding='utf-8',
+            errors='strict'
+        )
+
+    def test_fsencode(self):
+        path = b'/a/\xc3\xb1'
+        self.assertEqual(
+            self.module.fsencode(
+                path.decode('utf-8'),
+                fs_encoding='utf-8'
+                ),
+            path
+            )
+        path = b'/a/\xf1'
+        self.assertEqual(
+            self.module.fsencode(
+                path.decode('latin-1'),
+                fs_encoding='latin-1'
+                ),
+            path
+            )
+        path = b'/a/\xf1'
+        self.assertEqual(
+            self.module.fsencode(path, fs_encoding='utf-8'),
+            path
+            )
+
+    def test_getcwd(self):
+        self.assertIsInstance(self.module.getcwd(), self.module.unicode)
+        self.assertIsInstance(
+            self.module.getcwd(
+                fs_encoding='latin-1',
+                cwd_fnc=lambda: b'\xf1'
+                ),
+            self.module.unicode
+            )
+        self.assertIsInstance(
+            self.module.getcwd(
+                fs_encoding='utf-8',
+                cwd_fnc=lambda: b'\xc3\xb1'
+                ),
+            self.module.unicode
+            )
+
+    def test_getdebug(self):
+        enabled = ('TRUE', 'true', 'True', '1', 'yes', 'enabled')
+        for case in enabled:
+            self.assertTrue(self.module.getdebug({'DEBUG': case}))
+        disabled = ('FALSE', 'false', 'False', '', '0', 'no', 'disabled')
+        for case in disabled:
+            self.assertFalse(self.module.getdebug({'DEBUG': case}))
+
+    def test_deprecated(self):
+        environ = {'DEBUG': 'true'}
+        self.assertWarnsRegex(
+            DeprecationWarning,
+            'DEPRECATED',
+            self.module.deprecated('DEPRECATED', environ)(lambda: None)
+            )
+
+
 class TestApp(unittest.TestCase):
     module = browsepy
+    generic_page_class = Page
     list_page_class = ListPage
     confirm_page_class = ConfirmPage
     page_exceptions = {
         404: Page404Exception,
+        302: Page302Exception,
         None: PageException
     }
 
@@ -151,7 +318,7 @@ class TestApp(unittest.TestCase):
 
     def clear(self, path):
         assert path.startswith(self.base + os.sep), \
-            'Cannot clear directories out of base'
+               'Cannot clear directories out of base'
 
         for sub in os.listdir(path):
             sub = os.path.join(path, sub)
@@ -164,41 +331,48 @@ class TestApp(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def get(self, endpoint, **kwargs):
+        status_code = kwargs.pop('status_code', 200)
+        follow_redirects = kwargs.pop('follow_redirects', False)
         if endpoint in ('index', 'browse'):
             page_class = self.list_page_class
         elif endpoint == 'remove':
             page_class = self.confirm_page_class
+        elif endpoint == 'sort' and follow_redirects:
+            page_class = self.list_page_class
         else:
-            page_class = None
-
-        with self.app.test_client() as client:
-            response = client.get(self.url_for(endpoint, **kwargs))
-            if response.status_code != 200:
+            page_class = self.generic_page_class
+        with kwargs.pop('client', None) or self.app.test_client() as client:
+            response = client.get(
+                self.url_for(endpoint, **kwargs),
+                follow_redirects=follow_redirects
+                )
+            if response.status_code != status_code:
                 raise self.page_exceptions.get(
                     response.status_code,
                     self.page_exceptions[None]
                     )(response.status_code)
-            result = (
-                response.data
-                if page_class is None else
-                page_class.from_source(response.data)
-                )
+            result = page_class.from_source(response.data, response)
             response.close()
-            return result
+        test_utils.clear_flask_context()
+        return result
 
     def post(self, endpoint, **kwargs):
+        status_code = kwargs.pop('status_code', 200)
         data = kwargs.pop('data') if 'data' in kwargs else {}
-        with self.app.test_client() as client:
+        with kwargs.pop('client', None) or self.app.test_client() as client:
             response = client.post(
                 self.url_for(endpoint, **kwargs),
                 data=data,
-                follow_redirects=True)
-            if response.status_code != 200:
+                follow_redirects=True
+                )
+            if response.status_code != status_code:
                 raise self.page_exceptions.get(
                     response.status_code,
                     self.page_exceptions[None]
                     )(response.status_code)
-            return self.list_page_class.from_source(response.data)
+            result = self.list_page_class.from_source(response.data, response)
+        test_utils.clear_flask_context()
+        return result
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():
@@ -253,8 +427,8 @@ class TestApp(unittest.TestCase):
         with open(os.path.join(self.start, 'testfile3.txt'), 'wb') as f:
             f.write(content)
 
-        data = self.get('open', path='start/testfile3.txt')
-        self.assertEqual(data, content)
+        page = self.get('open', path='start/testfile3.txt')
+        self.assertEqual(page.data, content)
 
         self.assertRaises(
             Page404Exception,
@@ -308,10 +482,10 @@ class TestApp(unittest.TestCase):
 
         with open(binfile, 'wb') as f:
             f.write(bindata)
-        data = self.get('download_file', path='testfile.bin')
+        page = self.get('download_file', path='testfile.bin')
         os.remove(binfile)
 
-        self.assertEqual(data, bindata)
+        self.assertEqual(page.data, bindata)
 
         self.assertRaises(
             Page404Exception,
@@ -324,10 +498,10 @@ class TestApp(unittest.TestCase):
 
         with open(binfile, 'wb') as f:
             f.write(bindata)
-        data = self.get('download_directory', path='start')
+        page = self.get('download_directory', path='start')
         os.remove(binfile)
 
-        iodata = io.BytesIO(data)
+        iodata = io.BytesIO(page.data)
         with tarfile.open('start.tgz', mode="r:gz", fileobj=iodata) as tgz:
             tgz_files = [
                 member.name
@@ -344,13 +518,13 @@ class TestApp(unittest.TestCase):
         )
 
     def test_upload(self):
-        c = unichr if PY_LEGACY else chr  # NOQA
+        def genbytesio(nbytes, encoding):
+            c = unichr if PY_LEGACY else chr  # noqa
+            return io.BytesIO(''.join(map(c, range(nbytes))).encode(encoding))
 
         files = {
-            'testfile.txt':
-                io.BytesIO(''.join(map(c, range(127))).encode('ascii')),
-            'testfile.bin':
-                io.BytesIO(''.join(map(c, range(255))).encode('utf-8')),
+            'testfile.txt': genbytesio(127, 'ascii'),
+            'testfile.bin': genbytesio(255, 'utf-8'),
         }
         output = self.post(
             'upload',
@@ -368,7 +542,7 @@ class TestApp(unittest.TestCase):
         self.clear(self.upload)
 
     def test_upload_duplicate(self):
-        c = unichr if PY_LEGACY else chr  # NOQA
+        c = unichr if PY_LEGACY else chr  # noqa
 
         files = (
             ('testfile.txt', 'something'),
@@ -399,6 +573,90 @@ class TestApp(unittest.TestCase):
         self.assertEqual(file_contents, expected_file_contents)
         self.clear(self.upload)
 
+    def test_sort(self):
+        files = {
+            'a.txt': 'aaa',
+            'b.png': 'aa',
+            'c.zip': 'a'
+        }
+        by_name = [
+            self.url_for('open', path=name)
+            for name in sorted(files)
+            ]
+        by_name_desc = list(reversed(by_name))
+
+        by_type = [
+            self.url_for('open', path=name)
+            for name in sorted(files, key=lambda x: mimetypes.guess_type(x)[0])
+            ]
+        by_type_desc = list(reversed(by_type))
+
+        by_size = [
+            self.url_for('open', path=name)
+            for name in sorted(files, key=lambda x: len(files[x]))
+            ]
+        by_size_desc = list(reversed(by_size))
+
+        for name, content in files.items():
+            path = os.path.join(self.base, name)
+            with open(path, 'wb') as f:
+                f.write(content.encode('ascii'))
+
+        client = self.app.test_client()
+        page = self.get('browse', client=client)
+        self.assertListEqual(page.files, by_name)
+
+        self.assertRaises(
+            Page302Exception,
+            self.get, 'sort', property='text', client=client
+        )
+
+        page = self.get('browse', client=client)
+        self.assertListEqual(page.files, by_name)
+
+        page = self.get('sort', property='-text', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_name_desc)
+
+        page = self.get('sort', property='type', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_type)
+
+        page = self.get('sort', property='-type', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_type_desc)
+
+        page = self.get('sort', property='size', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_size)
+
+        page = self.get('sort', property='-size', client=client,
+                        follow_redirects=True)
+        self.assertListEqual(page.files, by_size_desc)
+
+        # We're unable to test modified sorting due filesystem time resolution
+        page = self.get('sort', property='modified', client=client,
+                        follow_redirects=True)
+
+        page = self.get('sort', property='-modified', client=client,
+                        follow_redirects=True)
+
+    def test_sort_cookie_size(self):
+        files = [chr(i) * 255 for i in range(97, 123)]
+        for name in files:
+            path = os.path.join(self.base, name)
+            os.mkdir(path)
+
+        client = self.app.test_client()
+        for name in files:
+            page = self.get('sort', property='modified', path=name,
+                            client=client, status_code=302)
+
+            for cookie in page.response.headers.getlist('set-cookie'):
+                if cookie.startswith('browse-sorting='):
+                    self.assertLessEqual(len(cookie), 4000)
+        test_utils.clear_flask_context()
+
 
 class TestFile(unittest.TestCase):
     module = browsepy.file
@@ -411,10 +669,10 @@ class TestFile(unittest.TestCase):
         shutil.rmtree(self.workbench)
 
     def test_mime(self):
-        f = self.module.File('non_working_path')
+        f = self.module.File('non_working_path', app=self.app)
         self.assertEqual(f.mimetype, 'application/octet-stream')
 
-        f = self.module.File('non_working_path_with_ext.txt')
+        f = self.module.File('non_working_path_with_ext.txt', app=self.app)
         self.assertEqual(f.mimetype, 'text/plain')
 
         tmp_txt = os.path.join(self.workbench, 'ascii_text_file')
@@ -422,7 +680,7 @@ class TestFile(unittest.TestCase):
             f.write('ascii text')
 
         # test file command
-        f = self.module.File(tmp_txt)
+        f = self.module.File(tmp_txt, app=self.app)
         self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
         self.assertEqual(f.type, 'text/plain')
         self.assertEqual(f.encoding, 'us-ascii')
@@ -439,7 +697,7 @@ class TestFile(unittest.TestCase):
         old_path = os.environ['PATH']
         os.environ['PATH'] = bad_path + os.pathsep + old_path
 
-        f = self.module.File(tmp_txt)
+        f = self.module.File(tmp_txt, app=self.app)
         self.assertEqual(f.mimetype, 'application/octet-stream')
 
         os.environ['PATH'] = old_path
@@ -447,8 +705,8 @@ class TestFile(unittest.TestCase):
     def test_size(self):
         test_file = os.path.join(self.workbench, 'test.csv')
         with open(test_file, 'w') as f:
-            f.write(',\n'*512)
-        f = self.module.File(test_file)
+            f.write(',\n' * 512)
+        f = self.module.File(test_file, app=self.app)
 
         default = self.app.config['use_binary_multiples']
 
@@ -465,7 +723,7 @@ class TestFile(unittest.TestCase):
     def test_properties(self):
         empty_file = os.path.join(self.workbench, 'empty.txt')
         open(empty_file, 'w').close()
-        f = self.module.File(empty_file)
+        f = self.module.File(empty_file, app=self.app)
 
         self.assertEqual(f.name, 'empty.txt')
         self.assertEqual(f.can_download, True)
@@ -475,7 +733,7 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.is_directory, False)
 
     def test_choose_filename(self):
-        f = self.module.File(self.workbench)
+        f = self.module.Directory(self.workbench, app=self.app)
         first_file = os.path.join(self.workbench, 'testfile.txt')
 
         filename = f.choose_filename('testfile.txt', attempts=0)
@@ -505,7 +763,7 @@ class TestFileFunctions(unittest.TestCase):
     def test_fmt_size(self):
         fnc = self.module.fmt_size
         for n, unit in enumerate(self.module.binary_units):
-            self.assertEqual(fnc(2**(10*n)), (1, unit))
+            self.assertEqual(fnc(2**(10 * n)), (1, unit))
         for n, unit in enumerate(self.module.standard_units):
             self.assertEqual(fnc(1000**n, False), (1, unit))
 
@@ -518,64 +776,56 @@ class TestFileFunctions(unittest.TestCase):
         self.assertEqual(self.module.secure_filename('C:\\'), '')
         self.assertEqual(
             self.module.secure_filename('COM1.asdf', destiny_os='nt'),
-            ''
-            )
+            '')
         self.assertEqual(
             self.module.secure_filename('\xf1', fs_encoding='ascii'),
-            '_'
-            )
+            '_')
 
         if PY_LEGACY:
-            expected = unicode('\xf1', encoding='latin-1')  # NOQA
+            expected = unicode('\xf1', encoding='latin-1')  # noqa
             self.assertEqual(
                 self.module.secure_filename('\xf1', fs_encoding='utf-8'),
-                expected
-                )
+                expected)
             self.assertEqual(
                 self.module.secure_filename(expected, fs_encoding='utf-8'),
-                expected
-                )
+                expected)
         else:
             self.assertEqual(
                 self.module.secure_filename('\xf1', fs_encoding='utf-8'),
-                '\xf1'
-                )
+                '\xf1')
 
     def test_alternative_filename(self):
         self.assertEqual(
-            self.module.alternative_filename('test', 2), 'test (2)')
+            self.module.alternative_filename('test', 2),
+            'test (2)')
         self.assertEqual(
-            self.module.alternative_filename('test.txt', 2), 'test (2).txt')
+            self.module.alternative_filename('test.txt', 2),
+            'test (2).txt')
         self.assertEqual(
             self.module.alternative_filename('test.tar.gz', 2),
-            'test (2).tar.gz'
-            )
+            'test (2).tar.gz')
         self.assertEqual(
             self.module.alternative_filename('test.longextension', 2),
-            'test (2).longextension'
-            )
+            'test (2).longextension')
         self.assertEqual(
             self.module.alternative_filename('test.tar.tar.tar', 2),
-            'test.tar (2).tar.tar'
-            )
-        self.assertNotEqual(self.module.alternative_filename('test'), 'test')
+            'test.tar (2).tar.tar')
+        self.assertNotEqual(
+            self.module.alternative_filename('test'),
+            'test')
 
     def test_relativize_path(self):
         self.assertEqual(
             self.module.relativize_path('/parent/child', '/parent'),
-            'child'
-            )
+            'child')
         self.assertEqual(
             self.module.relativize_path(
                 '/grandpa/parent/child',
-                '/grandpa/parent'
-                ),
-            'child'
-            )
+                '/grandpa/parent'),
+            'child')
         self.assertEqual(
             self.module.relativize_path('/grandpa/parent/child', '/grandpa'),
-            'parent/child'
-            )
+            'parent/child')
         self.assertRaises(
             browsepy.OutsideDirectoryBase,
             self.module.relativize_path, '/other', '/parent'
@@ -631,6 +881,24 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.upload, self.base)
         self.assertEqual(result.plugin, plugins)
 
+        result = self.parser.parse_args([
+            '--directory=%s' % self.base,
+            '--initial='
+            ])
+        self.assertEqual(result.host, '127.0.0.1')
+        self.assertEqual(result.port, 8080)
+        self.assertEqual(result.directory, self.base)
+        self.assertIsNone(result.initial)
+        self.assertIsNone(result.removable)
+        self.assertIsNone(result.upload)
+        self.assertListEqual(result.plugin, [])
+
+        self.assertRaises(
+            SystemExit,
+            self.parser.parse_args,
+            ['--directory=%s' % __file__]
+        )
+
     def test_main(self):
         params = {}
         self.module.main(
@@ -639,11 +907,39 @@ class TestMain(unittest.TestCase):
             )
 
         defaults = {
-            'host': '127.0.0.1', 'port': 8080, 'debug': False,
+            'host': '127.0.0.1',
+            'port': 8080,
+            'debug': False,
             'threaded': True
             }
         params_subset = {k: v for k, v in params.items() if k in defaults}
         self.assertEqual(defaults, params_subset)
+
+
+class TestMimetypePluginManager(unittest.TestCase):
+    module = browsepy.manager
+
+    def test_mimetype(self):
+        manager = self.module.MimetypePluginManager()
+        self.assertEqual(
+            manager.get_mimetype('potato'),
+            'application/octet-stream'
+            )
+        self.assertEqual(
+            manager.get_mimetype('potato.txt'),
+            'text/plain'
+            )
+        manager.register_mimetype_function(
+            lambda x: 'application/xml' if x == 'potato' else None
+            )
+        self.assertEqual(
+            manager.get_mimetype('potato.txt'),
+            'text/plain'
+            )
+        self.assertEqual(
+            manager.get_mimetype('potato'),
+            'application/xml'
+            )
 
 
 class TestPlugins(unittest.TestCase):
@@ -652,12 +948,13 @@ class TestPlugins(unittest.TestCase):
 
     def setUp(self):
         self.app = self.app_module.app
-        self.manager = self.manager_module.PluginManager(self.app)
         self.original_namespaces = self.app.config['plugin_namespaces']
         self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
         self.app.config['plugin_namespaces'] = (self.plugin_namespace,)
+        self.manager = self.manager_module.PluginManager(self.app)
 
     def tearDown(self):
+        self.manager.clear()
         self.app.config['plugin_namespaces'] = self.original_namespaces
 
     def test_manager(self):
@@ -666,15 +963,17 @@ class TestPlugins(unittest.TestCase):
 
         endpoints = sorted(
             action.endpoint
-            for action in self.manager.get_actions(FileMock(mimetype='a/a'))
+            for action in self.manager.get_widgets(FileMock(mimetype='a/a'))
             )
 
         self.assertEqual(
             endpoints,
-            sorted(('test_x_x', 'test_a_x', 'test_x_a', 'test_a_a')))
+            sorted(('test_x_x', 'test_a_x', 'test_x_a', 'test_a_a'))
+            )
         self.assertEqual(
             self.app.view_functions['test_plugin.root'](),
-            'test_plugin_root')
+            'test_plugin_root'
+            )
         self.assertIn('test_plugin', self.app.blueprints)
 
         self.assertRaises(
@@ -683,21 +982,60 @@ class TestPlugins(unittest.TestCase):
             'non_existent_plugin_module'
             )
 
+        self.assertRaises(
+            self.manager_module.InvalidArgumentError,
+            self.manager.register_widget
+        )
+
+    def test_namespace_prefix(self):
+        self.assertTrue(self.manager.import_plugin(self.plugin_name))
+        self.app.config['plugin_namespaces'] = (
+            self.plugin_namespace + '.test_',
+            )
+        self.assertTrue(self.manager.import_plugin('module'))
+
 
 def register_plugin(manager):
-    widget_class = browsepy.widget.WidgetBase
-
     manager._plugin_loaded = True
-    manager.register_action('test_x_x', widget_class('test_x_x'), ('*/*',))
-    manager.register_action('test_a_x', widget_class('test_a_x'), ('a/*',))
-    manager.register_action('test_x_a', widget_class('test_x_a'), ('*/a',))
-    manager.register_action('test_a_a', widget_class('test_a_a'), ('a/a',))
-    manager.register_action('test_b_x', widget_class('test_b_x'), ('b/*',))
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_x_x',
+        filter=lambda f: True
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_a_x',
+        filter=lambda f: f.mimetype.startswith('a/')
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_x_a',
+        filter=lambda f: f.mimetype.endswith('/a')
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_a_a',
+        filter=lambda f: f.mimetype == 'a/a'
+        )
+    manager.register_widget(
+        type='button',
+        place='entry-actions',
+        endpoint='test_b_x',
+        filter=lambda f: f.mimetype.startswith('b/')
+        )
 
     test_plugin_blueprint = flask.Blueprint(
-        'test_plugin', __name__, url_prefix='/test_plugin_blueprint')
+        'test_plugin',
+        __name__,
+        url_prefix='/test_plugin_blueprint')
     test_plugin_blueprint.add_url_rule(
-        '/', endpoint='root', view_func=lambda: 'test_plugin_root')
+        '/',
+        endpoint='root',
+        view_func=lambda: 'test_plugin_root')
 
     manager.register_blueprint(test_plugin_blueprint)
 

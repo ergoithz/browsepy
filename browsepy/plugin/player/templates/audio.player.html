@@ -1,2 +1,90 @@
+{% extends "browse.html" %}
 
-{% extends "base.player.html" %}
+{% block styles %}
+  {{ super() }}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('player.static', filename='css/jplayer.blue.monday.min.css') }}"/>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('player.static', filename='css/base.css') }}"/>
+{% endblock %}
+
+{% block content %}
+<div
+  class="jp-jplayer"
+  data-player-swf="{{ url_for('player.static', filename='js') }}"
+  {% if playlist %}
+    data-player-urls="
+      {%- for entry in file.entries() -%}
+        {%- if not loop.first -%}|{%- endif -%}
+        {{- entry.media_format -}}|
+        {{- entry.name -}}|
+        {{- url_for('open', path=entry.urlpath) -}}
+      {%- endfor -%}
+    "
+  {% else %}
+    data-player-title="{{ file.name }}"
+    data-player-format="{{ file.media_format }}"
+    data-player-url="{{ url_for('open', path=file.urlpath) }}"
+  {% endif %}
+  ></div>
+<div class="jp-audio" role="application" aria-label="media player">
+  <div class="jp-type-{% if playlist %}playlist{% else %}single{% endif %}">
+    <div class="jp-gui jp-interface">
+      <div class="jp-controls">
+        {% if playlist %}
+          <button class="jp-previous" role="button" tabindex="0">previous</button>
+        {% endif %}
+        <button class="jp-play" role="button" tabindex="0">play</button>
+        {% if playlist %}
+          <button class="jp-next" role="button" tabindex="0">next</button>
+        {% endif %}
+        <button class="jp-stop" role="button" tabindex="0">stop</button>
+      </div>
+      <div class="jp-progress">
+        <div class="jp-seek-bar">
+          <div class="jp-play-bar"></div>
+        </div>
+      </div>
+      <div class="jp-volume-controls">
+        <button class="jp-mute" role="button" tabindex="0">mute</button>
+        <button class="jp-volume-max" role="button" tabindex="0">max volume</button>
+        <div class="jp-volume-bar">
+          <div class="jp-volume-bar-value"></div>
+        </div>
+      </div>
+      <div class="jp-time-holder">
+        <div class="jp-current-time" role="timer" aria-label="time">&nbsp;</div>
+        <div class="jp-duration" role="timer" aria-label="duration">&nbsp;</div>
+        <div class="jp-toggles">
+          <button class="jp-repeat" role="button" tabindex="0">repeat</button>
+            {% if playlist %}
+              <button class="jp-shuffle" role="button" tabindex="0">shuffle</button>
+            {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="jp-details">
+      <div class="jp-title" aria-label="title">&nbsp;</div>
+    </div>
+    {% if playlist %}
+      <div class="jp-playlist">
+        <ul>
+          <li>&nbsp;</li>
+        </ul>
+      </div>
+    {% endif %}
+    <div class="jp-no-solution">
+      <span>Update Required</span>
+      In order to get this player working either update your browse or your <a href="http://get.adobe.com/flashplayer/" target="_blank">Flash plugin</a>.
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('player.static', filename='js/jquery.min.js') }}"></script>
+  <script src="{{ url_for('player.static', filename='js/jquery.jplayer.min.js') }}"></script>
+  {% if playlist %}
+    <script src="{{ url_for('player.static', filename='js/jplayer.playlist.min.js') }}"></script>
+  {% endif %}
+  <script src="{{ url_for('player.static', filename='js/base.js') }}"></script>
+{% endblock %}

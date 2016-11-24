@@ -1,3 +1,7 @@
-a.button.play:after{
-    content: "\e903";
+a.button.play:after {
+  content: "\e903";
+}
+
+.playlist.icon:after{
+  content: "\e907";
 }

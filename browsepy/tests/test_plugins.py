@@ -1,2 +1,2 @@
 
-from browsepy.plugin.player.tests import *  # NOQA
+from browsepy.plugin.player.tests import *  # noqa

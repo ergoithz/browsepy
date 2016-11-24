@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import sys
 import os
 import os.path
 import re
@@ -12,153 +11,368 @@ import string
 import tarfile
 import random
 import datetime
-import functools
+import logging
 
-from flask import current_app, send_from_directory, Response
+from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
 
-from .compat import PY_LEGACY, range
+from . import compat
+from .compat import range, deprecated
 
-undescore_replace = '%s:underscore' % __name__
-codecs.register_error(undescore_replace,
-                      (lambda error: (u'_', error.start + 1))
-                      if PY_LEGACY else
-                      (lambda error: ('_', error.start + 1))
+
+logger = logging.getLogger(__name__)
+unicode_underscore = '_'.decode('utf-8') if compat.PY_LEGACY else '_'
+underscore_replace = '%s:underscore' % __name__
+codecs.register_error(underscore_replace,
+                      lambda error: (unicode_underscore, error.start + 1)
                       )
-if not PY_LEGACY:
-    unicode = str
+binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
+standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+common_path_separators = '\\/'
+restricted_chars = '\\/\0'
+restricted_names = ('.', '..', '::', os.sep)
+nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
+                   'LPT2', 'LPT3', 'PRN', 'NUL')
+fs_safe_characters = string.ascii_uppercase + string.digits
 
 
-class File(object):
+class Node(object):
+    '''
+    Abstract filesystem node class.
+
+    This represents an unspecified entity with a filesystem's path suitable for
+    being inherited by plugins.
+
+    When inheriting, the following attributes should be overwritten in order
+    to specify :meth:`from_urlpath` classmethod behavior:
+
+    * :attr:`generic`, if true, an instance of directory_class or file_class
+      will be created instead of an instance of this class tself.
+    * :attr:`directory_class`, class will be used for directory nodes,
+    * :attr:`file_class`, class will be used for file nodes.
+    '''
+    generic = True
+    directory_class = None  # set later at import time
+    file_class = None  # set later at import time
+
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
-    parent_class = None  # none means current class
+    can_download = False
 
-    def __init__(self, path=None, app=None):
-        self.path = path
-        self.app = current_app if app is None else app
-
-    def remove(self):
-        if not self.can_remove:
-            raise OutsideRemovableBase("File outside removable base")
-        if self.is_directory:
-            shutil.rmtree(self.path)
-        else:
-            os.unlink(self.path)
-
-    def download(self):
-        if self.is_directory:
-            stream = TarFileStream(
-                self.path,
-                self.app.config["directory_tar_buffsize"]
-                )
-            return Response(stream, mimetype="application/octet-stream")
-        directory, name = os.path.split(self.path)
-        return send_from_directory(directory, name, as_attachment=True)
-
-    def contains(self, filename):
-        return os.path.exists(os.path.join(self.path, filename))
-
-    def choose_filename(self, filename, attempts=999):
-        new_filename = filename
-        for attempt in range(2, attempts+1):
-            if not self.contains(new_filename):
-                return new_filename
-            new_filename = alternative_filename(filename, attempt)
-        while self.contains(new_filename):
-            new_filename = alternative_filename(filename)
-        return new_filename
-
-    @property
+    @cached_property
     def plugin_manager(self):
+        '''
+        Get current app's plugin manager.
+
+        :returns: plugin manager instance
+        '''
         return self.app.extensions['plugin_manager']
 
-    @property
-    def default_action(self):
-        for action in self.actions:
-            if action.widget.place == 'link':
-                return action
-        endpoint = 'browse' if self.is_directory else 'open'
-        widget = self.plugin_manager.link_class.from_file(self)
-        return self.plugin_manager.action_class(endpoint, widget)
+    @cached_property
+    def widgets(self):
+        '''
+        List widgets with filter return True for this node (or without filter).
+
+        Remove button is prepended if :property:can_remove returns true.
+
+        :returns: list of widgets
+        :rtype: list of namedtuple instances
+        '''
+        widgets = []
+        if self.can_remove:
+            widgets.append(
+                self.plugin_manager.create_widget(
+                    'entry-actions',
+                    'button',
+                    file=self,
+                    css='remove',
+                    endpoint='remove'
+                    )
+                )
+        return widgets + self.plugin_manager.get_widgets(file=self)
 
     @cached_property
-    def actions(self):
-        return self.plugin_manager.get_actions(self)
+    def link(self):
+        '''
+        Get last widget with place "entry-link".
 
-    @cached_property
-    def can_download(self):
-        return (
-            self.app.config['directory_downloadable'] or
-            not self.is_directory
-            )
+        :returns: widget on entry-link (ideally a link one)
+        :rtype: namedtuple instance
+        '''
+        link = None
+        for widget in self.widgets:
+            if widget.place == 'entry-link':
+                link = widget
+        return link
 
     @cached_property
     def can_remove(self):
-        dirbase = self.app.config["directory_remove"]
-        if dirbase:
-            return self.path.startswith(dirbase + os.sep)
-        return False
+        '''
+        Get if current node can be removed based on app config's
+        directory_remove.
 
-    @cached_property
-    def can_upload(self):
-        dirbase = self.app.config["directory_upload"]
-        if self.is_directory and dirbase:
-            return (
-                dirbase == self.path or
-                self.path.startswith(dirbase + os.sep)
-                )
-        return False
+        :returns: True if current node can be removed, False otherwise.
+        :rtype: bool
+        '''
+        dirbase = self.app.config["directory_remove"]
+        return dirbase and self.path.startswith(dirbase + os.sep)
 
     @cached_property
     def stats(self):
+        '''
+        Get current stats object as returned by os.stat function.
+
+        :returns: stats object
+        :rtype: posix.stat_result or nt.stat_result
+        '''
         return os.stat(self.path)
 
     @cached_property
-    def mimetype(self):
-        if self.is_directory:
-            return 'inode/directory'
-        return self.plugin_manager.get_mimetype(self.path)
-
-    @cached_property
-    def is_directory(self):
-        return os.path.isdir(self.path)
-
-    @cached_property
-    def is_file(self):
-        return os.path.isfile(self.path)
-
-    @cached_property
-    def is_empty(self):
-        return not self.raw_listdir
-
-    @cached_property
     def parent(self):
+        '''
+        Get parent node if available based on app config's directory_base.
+
+        :returns: parent object if available
+        :rtype: Node instance or None
+        '''
         if self.path == self.app.config['directory_base']:
             return None
-        parent_class = self.parent_class or self.__class__
-        return parent_class(os.path.dirname(self.path), self.app)
+        parent = os.path.dirname(self.path) if self.path else None
+        return self.directory_class(parent, self.app) if parent else None
 
     @cached_property
     def ancestors(self):
+        '''
+        Get list of ancestors until app config's directory_base is reached.
+
+        :returns: list of ancestors starting from nearest.
+        :rtype: list of Node objects
+        '''
         ancestors = []
         parent = self.parent
         while parent:
             ancestors.append(parent)
             parent = parent.parent
-        return tuple(ancestors)
-
-    @cached_property
-    def raw_listdir(self):
-        return os.listdir(self.path)
+        return ancestors
 
     @property
     def modified(self):
-        return datetime.datetime\
-            .fromtimestamp(self.stats.st_mtime)\
-            .strftime('%Y.%m.%d %H:%M:%S')
+        '''
+        Get human-readable last modification date-time.
+
+        :returns: iso9008-like date-time string (without timezone)
+        :rtype: str
+        '''
+        dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
+        return dt.strftime('%Y.%m.%d %H:%M:%S')
+
+    @property
+    def urlpath(self):
+        '''
+        Get the url substring corresponding to this node for those endpoints
+        accepting a 'path' parameter, suitable for :meth:`from_urlpath`.
+
+        :returns: relative-url-like for node's path
+        :rtype: str
+        '''
+        return abspath_to_urlpath(self.path, self.app.config['directory_base'])
+
+    @property
+    def name(self):
+        '''
+        Get the basename portion of node's path.
+
+        :returns: filename
+        :rtype: str
+        '''
+        return os.path.basename(self.path)
+
+    @property
+    def type(self):
+        '''
+        Get the mime portion of node's mimetype (without the encoding part).
+
+        :returns: mimetype
+        :rtype: str
+        '''
+        return self.mimetype.split(";", 1)[0]
+
+    @property
+    def category(self):
+        '''
+        Get mimetype category (first portion of mimetype before the slash).
+
+        :returns: mimetype category
+        :rtype: str
+
+        As of 2016-11-03's revision of RFC2046 it could be one of the
+        following:
+            * application
+            * audio
+            * example
+            * image
+            * message
+            * model
+            * multipart
+            * text
+            * video
+        '''
+        return self.type.split('/', 1)[0]
+
+    def __init__(self, path=None, app=None, **defaults):
+        '''
+        :param path: local path
+        :type path: str
+        :param path: optional app instance
+        :type path: flask.app
+        :param **defaults: attributes will be set to object
+        '''
+        self.path = compat.fsdecode(path) if path else None
+        self.app = current_app if app is None else app
+        self.__dict__.update(defaults)  # only for attr and cached_property
+
+    def remove(self):
+        '''
+        Does nothing except raising if can_remove property returns False.
+
+        :raises: OutsideRemovableBase if :property:can_remove returns false
+        '''
+        if not self.can_remove:
+            raise OutsideRemovableBase("File outside removable base")
+
+    @classmethod
+    def from_urlpath(cls, path, app=None):
+        '''
+        Alternative constructor which accepts a path as taken from URL and uses
+        the given app or the current app config to get the real path.
+
+        If class has attribute `generic` set to True, `directory_class` or
+        `file_class` will be used as type.
+
+        :param path: relative path as from URL
+        :param app: optional, flask application
+        :return: file object pointing to path
+        :rtype: File
+        '''
+        app = app or current_app
+        base = app.config['directory_base']
+        path = urlpath_to_abspath(path, base)
+        if not cls.generic:
+            kls = cls
+        elif os.path.isdir(path):
+            kls = cls.directory_class
+        else:
+            kls = cls.file_class
+        return kls(path=path, app=app)
+
+    @classmethod
+    def register_file_class(cls, kls):
+        '''
+        Convenience method for setting current class file_class property.
+
+        :param kls: class to set
+        :type kls: type
+        :returns: given class (enabling using this as decorator)
+        :rtype: type
+        '''
+        cls.file_class = kls
+        return kls
+
+    @classmethod
+    def register_directory_class(cls, kls):
+        '''
+        Convenience method for setting current class directory_class property.
+
+        :param kls: class to set
+        :type kls: type
+        :returns: given class (enabling using this as decorator)
+        :rtype: type
+        '''
+        cls.directory_class = kls
+        return kls
+
+
+@Node.register_file_class
+class File(Node):
+    '''
+    Filesystem file class.
+
+    Some notes:
+
+    * :attr:`can_download` is fixed to True, so Files can be downloaded
+      inconditionaly.
+    * :attr:`can_upload` is fixed to False, so nothing can be uploaded to
+      file path.
+    * :attr:`is_directory` is fixed to False, so no further checks are
+      performed.
+    * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
+      will always return instances of this class.
+    '''
+    can_download = True
+    can_upload = False
+    is_directory = False
+    generic = False
+
+    @cached_property
+    def widgets(self):
+        '''
+        List widgets with filter return True for this file (or without filter).
+
+        Entry link is prepended.
+        Download button is prepended if :property:can_download returns true.
+        Remove button is prepended if :property:can_remove returns true.
+
+        :returns: list of widgets
+        :rtype: list of namedtuple instances
+        '''
+        widgets = [
+            self.plugin_manager.create_widget(
+                'entry-link',
+                'link',
+                file=self,
+                endpoint='open'
+                )
+            ]
+        if self.can_download:
+            widgets.append(
+                self.plugin_manager.create_widget(
+                    'entry-actions',
+                    'button',
+                    file=self,
+                    css='download',
+                    endpoint='download_file'
+                    )
+                )
+        return widgets + super(File, self).widgets
+
+    @cached_property
+    def mimetype(self):
+        '''
+        Get full mimetype, with encoding if available.
+
+        :returns: mimetype
+        :rtype: str
+        '''
+        return self.plugin_manager.get_mimetype(self.path)
+
+    @cached_property
+    def is_file(self):
+        '''
+        Get if node is file.
+
+        :returns: True if file, False otherwise
+        :rtype: bool
+        '''
+        return os.path.isfile(self.path)
 
     @property
     def size(self):
+        '''
+        Get human-readable node size in bytes.
+        If directory, this will corresponds with own inode size.
+
+        :returns: fuzzy size with unit
+        :rtype: str
+        '''
         size, unit = fmt_size(
             self.stats.st_size,
             self.app.config["use_binary_multiples"]
@@ -168,39 +382,256 @@ class File(object):
         return "%.2f %s" % (size, unit)
 
     @property
-    def urlpath(self):
-        return abspath_to_urlpath(self.path, self.app.config['directory_base'])
-
-    @property
-    def name(self):
-        return os.path.basename(self.path)
-
-    @property
-    def type(self):
-        return self.mimetype.split(";", 1)[0]
-
-    @property
     def encoding(self):
+        '''
+        Get encoding part of mimetype, or "default" if not available.
+
+        :returns: file conding as returned by mimetype function or "default"
+        :rtype: str
+        '''
         if ";" in self.mimetype:
             match = self.re_charset.search(self.mimetype)
             gdict = match.groupdict() if match else {}
             return gdict.get("charset") or "default"
         return "default"
 
-    def listdir(self):
-        path_joiner = functools.partial(os.path.join, self.path)
-        content = [
-            self.__class__(path=path_joiner(path), app=self.app)
-            for path in self.raw_listdir
-            ]
-        content.sort(key=lambda f: (not f.is_directory, f.name.lower()))
-        return content
+    def remove(self):
+        '''
+        Remove file.
+        :raises OutsideRemovableBase: when not under removable base directory
+        '''
+        super(File, self).remove()
+        os.unlink(self.path)
 
-    @classmethod
-    def from_urlpath(cls, path, app=None):
-        app = app or current_app
-        base = app.config['directory_base']
-        return cls(path=urlpath_to_abspath(path, base), app=app)
+    def download(self):
+        '''
+        Get a Flask's send_file Response object pointing to this file.
+
+        :returns: Response object as returned by flask's send_file
+        :rtype: flask.Response
+        '''
+        directory, name = os.path.split(self.path)
+        return send_from_directory(directory, name, as_attachment=True)
+
+
+@Node.register_directory_class
+class Directory(Node):
+    '''
+    Filesystem directory class.
+
+    Some notes:
+
+    * :attr:`mimetype` is fixed to 'inode/directory', so mimetype detection
+      functions won't be called in this case.
+    * :attr:`is_file` is fixed to False, so no further checks are needed.
+    * :attr:`size` is fixed to 0 (zero), so stats are not required for this.
+    * :attr:`encoding` is fixed to 'default'.
+    * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
+      will always return instances of this class.
+    '''
+    _listdir_cache = None
+    mimetype = 'inode/directory'
+    is_file = False
+    size = 0
+    encoding = 'default'
+    generic = False
+
+    @cached_property
+    def widgets(self):
+        '''
+        List widgets with filter return True for this dir (or without filter).
+
+        Entry link is prepended.
+        Upload scripts and widget are added if :property:can_upload is true.
+        Download button is prepended if :property:can_download returns true.
+        Remove button is prepended if :property:can_remove returns true.
+
+        :returns: list of widgets
+        :rtype: list of namedtuple instances
+        '''
+        widgets = [
+            self.plugin_manager.create_widget(
+                'entry-link',
+                'link',
+                file=self,
+                endpoint='browse'
+                )
+            ]
+        if self.can_upload:
+            widgets.extend((
+                self.plugin_manager.create_widget(
+                    'head',
+                    'script',
+                    file=self,
+                    endpoint='static',
+                    filename='browse.directory.head.js'
+                ),
+                self.plugin_manager.create_widget(
+                    'scripts',
+                    'script',
+                    file=self,
+                    endpoint='static',
+                    filename='browse.directory.body.js'
+                ),
+                self.plugin_manager.create_widget(
+                    'header',
+                    'upload',
+                    file=self,
+                    text='Upload',
+                    endpoint='upload'
+                    )
+                ))
+        if self.can_download:
+            widgets.append(
+                self.plugin_manager.create_widget(
+                    'entry-actions',
+                    'button',
+                    file=self,
+                    css='download',
+                    endpoint='download_directory'
+                    )
+                )
+        return widgets + super(Directory, self).widgets
+
+    @cached_property
+    def is_directory(self):
+        '''
+        Get if path points to a real directory.
+
+        :returns: True if real directory, False otherwise
+        :rtype: bool
+        '''
+        return os.path.isdir(self.path)
+
+    @cached_property
+    def can_download(self):
+        '''
+        Get if path is downloadable (if app's `directory_downloadable` config
+        property is True).
+
+        :returns: True if downloadable, False otherwise
+        :rtype: bool
+        '''
+        return self.app.config['directory_downloadable']
+
+    @cached_property
+    def can_upload(self):
+        '''
+        Get if a file can be uploaded to path (if directory path is under app's
+        `directory_upload` config property).
+
+        :returns: True if a file can be upload to directory, False otherwise
+        :rtype: bool
+        '''
+        dirbase = self.app.config["directory_upload"]
+        return dirbase and (
+            dirbase == self.path or
+            self.path.startswith(dirbase + os.sep)
+            )
+
+    @cached_property
+    def is_empty(self):
+        '''
+        Get if directory is empty (based on :meth:`_listdir`).
+
+        :returns: True if this directory has no entries, False otherwise.
+        :rtype: bool
+        '''
+        if self._listdir_cache is not None:
+            return bool(self._listdir_cache)
+        for entry in self._listdir():
+            return False
+        return True
+
+    def remove(self):
+        '''
+        Remove directory tree.
+
+        :raises OutsideRemovableBase: when not under removable base directory
+        '''
+        super(Directory, self).remove()
+        shutil.rmtree(self.path)
+
+    def download(self):
+        '''
+        Get a Flask Response object streaming a tarball of this directory.
+
+        :returns: Response object
+        :rtype: flask.Response
+        '''
+        return self.app.response_class(
+            TarFileStream(
+                self.path,
+                self.app.config["directory_tar_buffsize"]
+                ),
+            mimetype="application/octet-stream"
+            )
+
+    def contains(self, filename):
+        '''
+        Check if directory contains an entry with given filename.
+
+        :param filename: filename will be check
+        :type filename: str
+        :returns: True if exists, False otherwise.
+        :rtype: bool
+        '''
+        return os.path.exists(os.path.join(self.path, filename))
+
+    def choose_filename(self, filename, attempts=999):
+        '''
+        Get a new filename which does not colide with any entry on directory,
+        based on given filename.
+
+        :param filename: base filename
+        :type filename: str
+        :param attempts: number of attempts, defaults to 999
+        :type attempts: int
+        :returns: filename
+        :rtype: str
+        '''
+        new_filename = filename
+        for attempt in range(2, attempts + 1):
+            if not self.contains(new_filename):
+                return new_filename
+            new_filename = alternative_filename(filename, attempt)
+        while self.contains(new_filename):
+            new_filename = alternative_filename(filename)
+        return new_filename
+
+    def _listdir(self):
+        '''
+        Iter unsorted entries on this directory.
+
+        :yields: Directory or File instance for each entry in directory
+        :ytype: Node
+        '''
+        precomputed_stats = os.name == 'nt'
+        for entry in compat.scandir(self.path):
+            kwargs = {'path': entry.path, 'app': self.app, 'parent': self}
+            if precomputed_stats and not entry.is_symlink():
+                kwargs['stats'] = entry.stats()
+            if entry.is_dir(follow_symlinks=True):
+                yield self.directory_class(**kwargs)
+                continue
+            yield self.file_class(**kwargs)
+
+    def listdir(self, sortkey=None, reverse=False):
+        '''
+        Get sorted list (by given sortkey and reverse params) of File objects.
+
+        :return: sorted list of File instances
+        :rtype: list of File
+        '''
+        if self._listdir_cache is None:
+            if sortkey:
+                data = sorted(self._listdir(), key=sortkey, reverse=reverse)
+            elif reverse:
+                data = list(reversed(self._listdir()))
+            else:
+                data = list(self._listdir())
+            self._listdir_cache = data
+        return self._listdir_cache
 
 
 class TarFileStream(object):
@@ -209,12 +640,26 @@ class TarFileStream(object):
 
     Buffsize can be provided, it must be 512 multiple (the tar block size) for
     compression.
+
+    Note on corroutines: this class uses threading by default, but
+    corroutine-based applications can change this behavior overriding the
+    :attr:`event_class` and :attr:`thread_class` values.
     '''
     event_class = threading.Event
     thread_class = threading.Thread
     tarfile_class = tarfile.open
 
     def __init__(self, path, buffsize=10240):
+        '''
+        Internal tarfile object will be created, and compression will start
+        on a thread until buffer became full with writes becoming locked until
+        a read occurs.
+
+        :param path: local path of directory whose content will be compressed.
+        :type path: str
+        :param buffsize: size of internal buffer on bytes, defaults to 10KiB
+        :type buffsize: int
+        '''
         self.path = path
         self.name = os.path.basename(path) + ".tgz"
 
@@ -232,6 +677,15 @@ class TarFileStream(object):
         self._th.start()
 
     def fill(self):
+        '''
+        Writes data on internal tarfile instance, which writes to current
+        object, using :meth:`write`.
+
+        As this method is blocking, it is used inside a thread.
+
+        This method is called automatically, on a thread, on initialization,
+        so there is little need to call it manually.
+        '''
         self._tarfile.add(self.path, "")
         self._tarfile.close()  # force stream flush
         self._finished += 1
@@ -239,6 +693,18 @@ class TarFileStream(object):
             self._result.set()
 
     def write(self, data):
+        '''
+        Write method used by internal tarfile instance to output data.
+        This method blocks tarfile execution once internal buffer is full.
+
+        As this method is blocking, it is used inside the same thread of
+        :meth:`fill`.
+
+        :param data: bytes to write to internal buffer
+        :type data: bytes
+        :returns: number of bytes written
+        :rtype: int
+        '''
         self._add.wait()
         self._data += data
         if len(self._data) > self._want:
@@ -247,6 +713,22 @@ class TarFileStream(object):
         return len(data)
 
     def read(self, want=0):
+        '''
+        Read method, gets data from internal buffer while releasing
+        :meth:`write` locks when needed.
+
+        The lock usage means it must ran on a different thread than
+        :meth:`fill`, ie. the main thread, otherwise will deadlock.
+
+        The combination of both write and this method running on different
+        threads makes tarfile being streamed on-the-fly, with data chunks being
+        processed and retrieved on demand.
+
+        :param want: number bytes to read, defaults to 0 (all available)
+        :type want: int
+        :returns: tarfile data as bytes
+        :rtype: bytes
+        '''
         if self._finished:
             if self._finished == 1:
                 self._finished += 1
@@ -268,6 +750,15 @@ class TarFileStream(object):
         return data
 
     def __iter__(self):
+        '''
+        Iterate through tarfile result chunks.
+
+        Similarly to :meth:`read`, this methos must ran on a different thread
+        than :meth:`write` calls.
+
+        :yields: data chunks as taken from :meth:`read`.
+        :ytype: bytes
+        '''
         data = self.read()
         while data:
             yield data
@@ -275,15 +766,19 @@ class TarFileStream(object):
 
 
 class OutsideDirectoryBase(Exception):
+    '''
+    Exception thrown when trying to access to a file outside path defined on
+    `directory_base` config property.
+    '''
     pass
 
 
 class OutsideRemovableBase(Exception):
+    '''
+    Exception thrown when trying to access to a file outside path defined on
+    `directory_remove` config property.
+    '''
     pass
-
-
-binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
-standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 
 
 def fmt_size(size, binary=True):
@@ -358,8 +853,6 @@ def urlpath_to_abspath(path, base, os_sep=os.sep):
         return realpath
     raise OutsideDirectoryBase("%r is not under %r" % (realpath, base))
 
-common_path_separators = '\\/'
-
 
 def generic_filename(path):
     '''
@@ -376,8 +869,6 @@ def generic_filename(path):
             _, path = path.rsplit(sep, 1)
     return path
 
-restricted_chars = '\\/\0'
-
 
 def clean_restricted_chars(path, restricted_chars=restricted_chars):
     '''
@@ -391,18 +882,9 @@ def clean_restricted_chars(path, restricted_chars=restricted_chars):
         path = path.replace(character, '_')
     return path
 
-restricted_names = ('.', '..', '::', os.sep)
-nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
-                   'LPT2', 'LPT3', 'PRN', 'NUL')
-fs_encoding = (
-    'unicode'
-    if os.name == 'nt' else
-    sys.getfilesystemencoding() or 'ascii'
-    )
 
-
-def check_forbidden_filename(filename, destiny_os=os.name,
-                             fs_encoding=fs_encoding,
+def check_forbidden_filename(filename,
+                             destiny_os=os.name,
                              restricted_names=restricted_names):
     '''
     Get if given filename is forbidden for current OS or filesystem.
@@ -434,34 +916,38 @@ def check_under_base(path, base, os_sep=os.sep):
     return path == base or path.startswith(prefix)
 
 
-def secure_filename(path, destiny_os=os.name, fs_encoding=fs_encoding):
+def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
     '''
     Get rid of parent path components and special filenames.
 
     If path is invalid or protected, return empty string.
 
     :param path: unsafe path
+    :type: str
     :param destiny_os: destination operative system
-    :param fs_encoding: destination filesystem filename encoding
+    :type destiny_os: str
     :return: filename or empty string
-    :rtype: str or unicode (due python version, destiny_os and fs_encoding)
+    :rtype: str
     '''
     path = generic_filename(path)
     path = clean_restricted_chars(path)
 
-    if check_forbidden_filename(path, destiny_os=destiny_os,
-                                fs_encoding=fs_encoding):
+    if check_forbidden_filename(path, destiny_os=destiny_os):
         return ''
 
-    if fs_encoding != 'unicode':
-        if PY_LEGACY and not isinstance(path, unicode):
-            path = unicode(path, encoding='latin-1')
-        path = path\
-            .encode(fs_encoding, errors=undescore_replace)\
-            .decode(fs_encoding)
-    return path
+    if isinstance(path, bytes):
+        path = path.decode('latin-1', errors=underscore_replace)
 
-fs_safe_characters = string.ascii_uppercase + string.digits
+    # Decode and recover from filesystem encoding in order to strip unwanted
+    # characters out
+    kwargs = dict(
+        os_name=destiny_os,
+        fs_encoding=fs_encoding,
+        errors=underscore_replace
+        )
+    fs_encoded_path = compat.fsencode(path, **kwargs)
+    fs_decoded_path = compat.fsdecode(fs_encoded_path, **kwargs)
+    return fs_decoded_path
 
 
 def alternative_filename(filename, attempt=None):
@@ -476,13 +962,12 @@ def alternative_filename(filename, attempt=None):
     :return: new filename
     :rtype: str or unicode
     '''
-    filename_parts = filename.rsplit('.', 2)
+    filename_parts = filename.rsplit(u'.', 2)
     name = filename_parts[0]
-    ext = ''.join('.%s' % ext for ext in filename_parts[1:])
+    ext = ''.join(u'.%s' % ext for ext in filename_parts[1:])
     if attempt is None:
-        extra = ' %s' % ''.join(
-            random.choice(fs_safe_characters) for i in range(8)
-            )
+        choose = random.choice
+        extra = u' %s' % ''.join(choose(fs_safe_characters) for i in range(8))
     else:
-        extra = ' (%d)' % attempt
-    return '%s%s%s' % (name, extra, ext)
+        extra = u' (%d)' % attempt
+    return u'%s%s%s' % (name, extra, ext)

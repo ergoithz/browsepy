@@ -2,7 +2,14 @@
 .c9/*
 .idea/*
 .coverage
+htmlcov/*
+dist/*
+build/*
+doc/.build/*
 env/*
+env2/*
+env3/*
 __pycache__/*
+*.egg/*
 *.egg-info/*
 *.pyc
