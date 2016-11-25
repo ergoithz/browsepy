@@ -1,6 +1,7 @@
 .PHONY: doc clean pep8 coverage travis
 
 test: pep8 flake8 eslint
+	python -c 'import yaml;yaml.load(open(".travis.yml").read())'
 ifdef debug
 	python setup.py test --debug=$(debug)
 else

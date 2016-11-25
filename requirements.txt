@@ -6,3 +6,4 @@ flake8
 coverage
 setuptools
 wheel
+pyaml

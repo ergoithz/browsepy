@@ -23,11 +23,11 @@ before_install:
 install:
   - pip install --upgrade pip
   - pip install travis-sphinx pep8 coveralls .
-  - [ -z "$eslint" ] && npm install eslint
+  - '[ -z "$eslint" ] && npm install eslint'
 
 script:
   - make travis-script
-  - [ -z "$eslint" ] make eslint
+  - '[ -z "$eslint" ] && make eslint'
 
 after_success:
   - make travis-success
