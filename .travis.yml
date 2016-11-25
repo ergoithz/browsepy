@@ -18,8 +18,7 @@ matrix:
   - python: "3.4"
     env: eslint=no
   - python: "3.5"
-    env: eslint=yes
-    env: PATH=$PATH:node_modules/.bin
+    env: eslint=yes PATH=$PATH:node_modules/.bin
 
 before_install:
   - alias node=nodejs
@@ -27,11 +26,11 @@ before_install:
 install:
   - pip install --upgrade pip
   - pip install travis-sphinx flake8 pep8 coveralls .
-  - '[ "$eslint" = "yes" ] && npm install eslint'
+  - 'if [ "$eslint" = "yes" ]; then npm install eslint; fi'
 
 script:
   - make travis-script
-  - '[ "$eslint" = "yes" ] && make eslint'
+  - 'if [ "$eslint" = "yes" ]; then make eslint; fi'
 
 after_success:
   - make travis-success
