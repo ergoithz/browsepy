@@ -1,6 +1,7 @@
 (function() {
   var
     $player = $('.jp-jplayer'),
+    playlists = (window._player = window._player || {playlist: []}).playlist,
     options = {
       swfPath: $player.attr('data-player-swf'),
       wmode: "window",
@@ -37,7 +38,7 @@
       }
     }
     options.supplied = formats.join(', ');
-    new jPlayerPlaylist(sel, list, options);
+    playlists.push(new jPlayerPlaylist(sel, list, options));
   } else {
     var
       media = {},

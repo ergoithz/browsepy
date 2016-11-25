@@ -136,7 +136,7 @@ class PlayListFile(PlayableBase):
 
     def _entries(self):
         return
-        yield
+        yield  # noqa
 
     def entries(self):
         for file in self._entries():
