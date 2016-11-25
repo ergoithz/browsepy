@@ -2,6 +2,7 @@ flask
 scandir
 sphinx
 pep8
+flake8
 coverage
 setuptools
 wheel

@@ -215,8 +215,8 @@ if PY_LEGACY:
     FileNotFoundError = type('FileNotFoundError', (OSError,), {})
     range = xrange  # noqa
     filter = itertools.ifilter
-    basestring = basestring
-    unicode = unicode
+    basestring = basestring  # noqa
+    unicode = unicode  # noqa
 else:
     FileNotFoundError = FileNotFoundError
     range = range
