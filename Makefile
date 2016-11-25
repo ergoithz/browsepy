@@ -41,8 +41,8 @@ pep8:
 
 eslint:
 	find browsepy -regextype posix-extended \
-		-regex "^browsepy/[^.]+\.([^m]+\.|m[^i]\.?|mi[^n]\.?|min[^.])*js$$" \
-		-exec eslint {} +
+		-regex "^[^.]+\.([^m]+\.|m[^i]\.?|mi[^n]\.?|min[^.])*js$$" \
+		-exec echo {} +
 
 flake8:
 	flake8 browsepy/
