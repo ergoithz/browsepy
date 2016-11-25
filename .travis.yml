@@ -1,36 +1,33 @@
 language: python
 
-addons:
+addon:
   apt:
-    packages:
-    - nodejs
+    nodejs
 
 matrix:
   include:
   - python: "2.7"
-    env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
   - python: "pypy"
-    env: PIP_PARAMS=""
   # pypy3 commented out until Flask 0.11.2 is out
   #- python: "pypy3"
   #  env: PIP_PARAMS=""
   - python: "3.3"
-    env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
   - python: "3.4"
-    env: PIP_PARAMS="--download-cache $HOME/.cache/pip"
   - python: "3.5"
-    env: PIP_PARAMS=""
+    env: eslint=yes
+    env: PATH=$PATH:node_modules/.bin
 
 before_install:
   - alias node=nodejs
 
 install:
-  - pip install travis-sphinx pep8 coveralls . $PIP_PARAMS
-  - npm install -g eslint
-  - export PATH=$PATH:`npm bin`
+  - pip install --upgrade pip
+  - pip install travis-sphinx pep8 coveralls .
+  - [ -z "$eslint" ] && npm install eslint
 
 script:
   - make travis-script
+  - [ -z "$eslint" ] make eslint
 
 after_success:
   - make travis-success

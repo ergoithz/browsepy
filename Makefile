@@ -1,6 +1,6 @@
 .PHONY: doc clean pep8 coverage travis
 
-test: review
+test: pep8 flake8 eslint
 ifdef debug
 	python setup.py test --debug=$(debug)
 else
@@ -46,8 +46,6 @@ eslint:
 flake8:
 	flake8 browsepy/
 
-review: pep8 flake8 eslint
-
 coverage:
 	coverage run --source=browsepy setup.py test
 
@@ -55,7 +53,7 @@ showcoverage: coverage
 	coverage html
 	xdg-open file://${CURDIR}/htmlcov/index.html >> /dev/null
 
-travis-script: review coverage
+travis-script: pep8 flake8 coverage
 	travis-sphinx --nowarn --source=doc build
 
 travis-success:
