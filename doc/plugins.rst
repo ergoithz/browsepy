@@ -191,7 +191,7 @@ wanting to know widget properties for using the functional way,
 available.
 
 
-Here is the "widget_types" for referrence.
+Here is the "widget_types" for reference.
 
 .. code-block:: python
 
@@ -225,18 +225,18 @@ Here is the "widget_types" for referrence.
               ('place', 'type', 'html')),
       }
 
-Function defaultsnamedtuple is just a namedtuple filling non-defined properties
-with values taken from a dictionary passed as third constructor's argument or
-None.
+Function :func:`browsepy.file.defaultsnamedtuple` is basically a
+:func:`collections.namedtuple` which takes its default values from the
+dictionary passed as third definition's argument, assuming None by default.
 
 So keep in mind place and type are always required (otherwise widget won't be
-drawn), and this properties are mutually excluyent:
+drawn), and this properties are mutually exclusive:
 
-* **link**: href superseedes endpoint.
-* **button**: href superseedes endpoint.
-* **upload**: action superseedes endpoint.
-* **stylesheet**: href superseedes endpoint and filename
-* **script**: src superseedes endpoint and filename.
+* **link**: attribute href supersedes endpoint.
+* **button**: attribute href supersedes endpoint.
+* **upload**: attribute action supersedes endpoint.
+* **stylesheet**: attribute href supersedes endpoint and filename
+* **script**: attribute src supersedes endpoint and filename.
 
 Endpoints are Flask endpoint names, and endpoint handler functions must receive
 a "filename" parameter for stylesheet and script widgets (allowing it to point

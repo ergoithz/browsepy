@@ -29,7 +29,8 @@ upload: clean build-env
 	build/env3/bin/python setup.py sdist upload
 
 doc:
-	$(MAKE) -C doc html
+	$(MAKE) -C doc html 2>&1 | grep -v \
+		'WARNING: more than one target found for cross-reference'
 
 showdoc: doc
 	xdg-open file://${CURDIR}/doc/.build/html/index.html >> /dev/null
