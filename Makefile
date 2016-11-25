@@ -1,6 +1,6 @@
 .PHONY: doc clean pep8 coverage travis
 
-test: pep8 flake8
+test: review
 ifdef debug
 	python setup.py test --debug=$(debug)
 else
@@ -38,8 +38,15 @@ showdoc: doc
 pep8:
 	find browsepy -type f -name "*.py" -exec pep8 --ignore=E123,E126,E121 {} +
 
+eslint:
+	find browsepy -regextype posix-extended \
+		-regex "[^.]+(\.([^m]|m[^i]|mi[^n])[^.]+)*\.js" \
+		-exec eslint {} +
+
 flake8:
 	flake8 browsepy/
+
+review: pep8 flake8 eslint
 
 coverage:
 	coverage run --source=browsepy setup.py test
@@ -48,7 +55,7 @@ showcoverage: coverage
 	coverage html
 	xdg-open file://${CURDIR}/htmlcov/index.html >> /dev/null
 
-travis-script: pep8 flake8 coverage
+travis-script: review coverage
 	travis-sphinx --nowarn --source=doc build
 
 travis-success:

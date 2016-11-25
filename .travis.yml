@@ -1,6 +1,9 @@
 language: python
 
-sudo: false
+addons:
+  apt:
+    packages:
+    - nodejs
 
 matrix:
   include:
@@ -18,8 +21,13 @@ matrix:
   - python: "3.5"
     env: PIP_PARAMS=""
 
+before_install:
+  - alias node=nodejs
+
 install:
   - pip install travis-sphinx pep8 coveralls . $PIP_PARAMS
+  - npm install -g eslint
+  - export PATH=$PATH:`npm bin`
 
 script:
   - make travis-script
