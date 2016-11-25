@@ -21,6 +21,7 @@ def by_python(path):
         "", encoding or ""
         )
 
+
 if which('file'):
     def by_file(path):
         try:
