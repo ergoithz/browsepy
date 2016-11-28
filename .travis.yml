@@ -15,9 +15,6 @@ matrix:
   - python: "3.5"
     env: eslint=yes
 
-before_install:
-  - alias node=nodejs
-
 install:
   - pip install --upgrade pip
   - pip install travis-sphinx flake8 pep8 coveralls .
