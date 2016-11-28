@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import sys
-import codecs
 import os.path
 
 from flask import Blueprint, render_template
-from flask._compat import with_metaclass
-from werkzeug.utils import cached_property
-from browsepy.compat import range, PY_LEGACY
-from browsepy.file import File, check_under_base
+from browsepy.file import File
 
 
 mimetypes = {

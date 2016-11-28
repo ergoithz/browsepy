@@ -81,6 +81,10 @@ class PluginManagerBase(object):
     def reload(self):
         '''
         Clear plugin manager state and reload plugins.
+
+        This method will make use of :meth:`clear` and :meth:`load_plugin`,
+        so all internal state will be cleared, and all plugins defined in
+        :data:`self.app.config['plugin_modules']` will be loaded.
         '''
         self.clear()
         for plugin in self.app.config.get('plugin_modules', ()):

@@ -11,7 +11,6 @@ import functools
 
 FS_ENCODING = sys.getfilesystemencoding()
 PY_LEGACY = sys.version_info < (3, )
-ENV_PATH = []  # populated later
 TRUE_VALUES = frozenset(('true', 'yes', '1', 'enable', 'enabled', True, 1))
 
 try:
@@ -33,32 +32,6 @@ def isexec(path):
     :rtype: bool
     '''
     return os.path.isfile(path) and os.access(path, os.X_OK)
-
-
-def which(name,
-          env_path=ENV_PATH,
-          is_executable_fnc=isexec,
-          path_join_fnc=os.path.join):
-    '''
-    Get command absolute path.
-
-    :param name: name of executable command
-    :type name: str
-    :param env_path: OS environment executable paths, defaults to autodetected
-    :type env_path: list of str
-    :param is_executable_fnc: callable will be used to detect if path is
-                              executable, defaults to `isexec`
-    :type is_executable_fnc: Callable
-    :param path_join_fnc: callable will be used to join path components
-    :type path_join_fnc: Callable
-    :return: absolute path
-    :rtype: str or None
-    '''
-    for path in env_path:
-        exe_file = path_join_fnc(path, name)
-        if is_executable_fnc(exe_file):
-            return exe_file
-    return None
 
 
 def fsdecode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
@@ -203,7 +176,7 @@ def usedoc(other):
     return inner
 
 
-ENV_PATH[:] = (
+ENV_PATH = tuple(
   fsdecode(path.strip('"').replace('<SCAPED-PATHSEP>', os.pathsep))
   for path in os
     .environ['PATH']  # noqa
@@ -211,12 +184,39 @@ ENV_PATH[:] = (
     .split(os.pathsep)
   )
 
+
+def which(name,
+          env_path=ENV_PATH,
+          is_executable_fnc=isexec,
+          path_join_fnc=os.path.join):
+    '''
+    Get command absolute path.
+
+    :param name: name of executable command
+    :type name: str
+    :param env_path: OS environment executable paths, defaults to autodetected
+    :type env_path: list of str
+    :param is_executable_fnc: callable will be used to detect if path is
+                              executable, defaults to `isexec`
+    :type is_executable_fnc: Callable
+    :param path_join_fnc: callable will be used to join path components
+    :type path_join_fnc: Callable
+    :return: absolute path
+    :rtype: str or None
+    '''
+    for path in env_path:
+        exe_file = path_join_fnc(path, name)
+        if is_executable_fnc(exe_file):
+            return exe_file
+    return None
+
+
 if PY_LEGACY:
-    FileNotFoundError = type('FileNotFoundError', (OSError,), {})
+    FileNotFoundError = type('FileNotFoundError', (OSError,), {})  # noqa
     range = xrange  # noqa
     filter = itertools.ifilter
-    basestring = basestring
-    unicode = unicode
+    basestring = basestring  # noqa
+    unicode = unicode  # noqa
 else:
     FileNotFoundError = FileNotFoundError
     range = range

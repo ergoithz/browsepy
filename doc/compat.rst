@@ -26,7 +26,8 @@ Compat Module
 .. attribute:: ENV_PATH
   :annotation: = ['/usr/local/bin', '/usr/bin', ... ]
 
-  List of paths where commands are located, taken and processed from `PATH` environment variable. Used by :func:`which`.
+  List of paths where commands are located, taken and processed from
+  :envvar:`PATH` environment variable. Used by :func:`which`.
 
 .. attribute:: TRUE_VALUES
   :annotation: = frozenset({'true', 'yes', '1', 'enable', 'enabled', True, 1})

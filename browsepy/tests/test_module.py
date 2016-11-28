@@ -14,6 +14,9 @@ import stat
 import mimetypes
 
 import flask
+
+from werkzeug.utils import cached_property
+
 import browsepy
 import browsepy.file
 import browsepy.manager
@@ -22,7 +25,7 @@ import browsepy.compat
 import browsepy.tests.utils as test_utils
 
 PY_LEGACY = browsepy.compat.PY_LEGACY
-range = browsepy.compat.range
+range = browsepy.compat.range  # noqa
 
 
 class FileMock(object):
@@ -168,13 +171,16 @@ class TestCompat(unittest.TestCase):
             'stacklevel': stacklevel
             })
 
-    def assertWarnsRegex(self, expected_warning, expected_regex, fnc,
-                         *args, **kwargs):
+    @cached_property
+    def assertWarnsRegex(self):
         supa = super(TestCompat, self)
         if hasattr(supa, 'assertWarnsRegex'):
-            self.assertWarnsRegex = supa.assertWarnsRegex
-            return self.assertWarnsRegex(expected_warning, expected_regex,
-                                         fnc, *args, **kwargs)
+            return supa.assertWarnsRegex
+        return self.customAssertWarnsRegex
+
+    def customAssertWarnsRegex(self, expected_warning, expected_regex, fnc,
+                               *args, **kwargs):
+
         import warnings
         old_warn = warnings.warn
         warnings.warn = self._warn
@@ -329,6 +335,7 @@ class TestApp(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base)
+        test_utils.clear_flask_context()
 
     def get(self, endpoint, **kwargs):
         status_code = kwargs.pop('status_code', 200)
@@ -655,7 +662,6 @@ class TestApp(unittest.TestCase):
             for cookie in page.response.headers.getlist('set-cookie'):
                 if cookie.startswith('browse-sorting='):
                     self.assertLessEqual(len(cookie), 4000)
-        test_utils.clear_flask_context()
 
 
 class TestFile(unittest.TestCase):
@@ -667,6 +673,7 @@ class TestFile(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.workbench)
+        test_utils.clear_flask_context()
 
     def test_mime(self):
         f = self.module.File('non_working_path', app=self.app)
@@ -954,8 +961,9 @@ class TestPlugins(unittest.TestCase):
         self.manager = self.manager_module.PluginManager(self.app)
 
     def tearDown(self):
-        self.manager.clear()
         self.app.config['plugin_namespaces'] = self.original_namespaces
+        self.manager.clear()
+        test_utils.clear_flask_context()
 
     def test_manager(self):
         self.manager.load_plugin(self.plugin_name)

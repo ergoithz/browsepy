@@ -1,6 +1,7 @@
 .PHONY: doc clean pep8 coverage travis
 
-test: pep8
+test: pep8 flake8 eslint
+	python -c 'import yaml;yaml.load(open(".travis.yml").read())'
 ifdef debug
 	python setup.py test --debug=$(debug)
 else
@@ -21,21 +22,31 @@ build-env:
 	build/env3/bin/pip install wheel
 
 build: clean build-env
-	env3/bin/python setup.py bdist_wheel --require-scandir
-	env3/bin/python setup.py sdist
+	build/env3/bin/python setup.py bdist_wheel
+	build/env3/bin/python setup.py sdist
 
 upload: clean build-env
-	env3/bin/python setup.py bdist_wheel upload --require-scandir
-	env3/bin/python setup.py sdist upload
+	build/env3/bin/python setup.py bdist_wheel upload
+	build/env3/bin/python setup.py sdist upload
 
 doc:
-	$(MAKE) -C doc html
+	$(MAKE) -C doc html 2>&1 | grep -v \
+		'WARNING: more than one target found for cross-reference'
 
 showdoc: doc
 	xdg-open file://${CURDIR}/doc/.build/html/index.html >> /dev/null
 
 pep8:
 	find browsepy -type f -name "*.py" -exec pep8 --ignore=E123,E126,E121 {} +
+
+eslint:
+	eslint \
+		--ignore-path .gitignore \
+		--ignore-pattern *.min.js \
+		${CURDIR}/browsepy
+
+flake8:
+	flake8 browsepy/
 
 coverage:
 	coverage run --source=browsepy setup.py test
@@ -44,7 +55,7 @@ showcoverage: coverage
 	coverage html
 	xdg-open file://${CURDIR}/htmlcov/index.html >> /dev/null
 
-travis-script: pep8 coverage
+travis-script: pep8 flake8 coverage
 	travis-sphinx --nowarn --source=doc build
 
 travis-success:

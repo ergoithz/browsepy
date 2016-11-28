@@ -1,9 +1,11 @@
 (function() {
   var
+    jPlayerPlaylist = window.jPlayerPlaylist,
     $player = $('.jp-jplayer'),
+    playlists = (window._player = window._player || {playlist: []}).playlist,
     options = {
       swfPath: $player.attr('data-player-swf'),
-      wmode: "window",
+      wmode: 'window',
       useStateClassSkin: true,
       autoBlur: false,
       smoothPlayBar: true,
@@ -24,7 +26,7 @@
         jPlayer: $player,
         cssSelectorAncestor: '.jp-audio'
       };
-    for (var i = 0, stack = [], d; o = urls[i++];) {
+    for (var i = 0, stack = [], d, o; (o = urls[i++]);) {
       stack.push(o);
       if (stack.length == 3) {
         d = {
@@ -37,7 +39,7 @@
       }
     }
     options.supplied = formats.join(', ');
-    new jPlayerPlaylist(sel, list, options);
+    playlists.push(new jPlayerPlaylist(sel, list, options));
   } else {
     var
       media = {},
@@ -45,8 +47,8 @@
     media.title = $player.attr('data-player-title');
     media[format] = $player.attr('data-player-url');
     options.supplied = format;
-    options.ready = function(event) {
-      $(this).jPlayer("setMedia", media).jPlayer("play");
+    options.ready = function() {
+      $(this).jPlayer('setMedia', media).jPlayer('play');
     };
     $player.jPlayer(options);
   }
