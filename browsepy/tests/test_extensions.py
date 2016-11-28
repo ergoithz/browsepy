@@ -9,7 +9,10 @@ class TestHTMLCompress(unittest.TestCase):
     extension = browsepy.extensions.HTMLCompress
 
     def setUp(self):
-        self.env = jinja2.Environment(extensions=[self.extension])
+        self.env = jinja2.Environment(
+            autoescape=True,
+            extensions=[self.extension]
+            )
 
     def render(self, html, **kwargs):
         return self.env.from_string(html).render(**kwargs)

@@ -26,6 +26,7 @@ MIT (see LICENSE file).
 """
 
 import os
+import os.path
 import sys
 
 try:
@@ -33,12 +34,15 @@ try:
 except ImportError:
     from distutils.core import setup
 
-with open('browsepy/__meta__.py') as f:
-    data = {}
-    exec(compile(f.read(), f.name, 'exec'), data, data)
-    meta_app = data['__app__']
-    meta_version = data['__version__']
-    meta_license = data['__license__']
+sys_path = sys.path[:]
+sys.path[:] = (os.path.abspath('browsepy'),)
+__import__('__meta__')
+sys.path[:] = sys_path
+
+meta = sys.modules['__meta__']
+meta_app = meta.__app__
+meta_version = meta.__version__
+meta_license = meta.__license__
 
 with open('README.rst') as f:
     meta_doc = f.read()
