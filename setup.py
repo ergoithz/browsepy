@@ -26,6 +26,7 @@ MIT (see LICENSE file).
 """
 
 import os
+import os.path
 import sys
 
 try:
@@ -33,22 +34,22 @@ try:
 except ImportError:
     from distutils.core import setup
 
-with open('browsepy/__meta__.py') as f:
-    data = {}
-    exec(compile(f.read(), f.name, 'exec'), data, data)
-    __app__ = data['__app__']
-    __version__ = data['__version__']
-    __license__ = data['__license__']
+sys_path = sys.path[:]
+sys.path[:] = (os.path.abspath('browsepy'),)
+__import__('__meta__')
+sys.path[:] = sys_path
+
+meta = sys.modules['__meta__']
+meta_app = meta.__app__
+meta_version = meta.__version__
+meta_license = meta.__license__
 
 with open('README.rst') as f:
-    __doc__ = f.read()
+    meta_doc = f.read()
 
 extra_requires = []
 
-opt = '--require-scandir'
-if not hasattr(os, 'scandir') or opt in sys.argv:
-    if opt in sys.argv:
-        sys.argv.remove(opt)
+if not hasattr(os, 'scandir') or 'bdist_wheel' in sys.argv:
     extra_requires.append('scandir')
 
 for debugger in ('ipdb', 'pudb', 'pdb'):
@@ -58,15 +59,15 @@ for debugger in ('ipdb', 'pudb', 'pdb'):
         sys.argv.remove(opt)
 
 setup(
-    name=__app__,
-    version=__version__,
+    name=meta_app,
+    version=meta_version,
     url='https://github.com/ergoithz/browsepy',
     download_url='https://github.com/ergoithz/browsepy/tarball/0.5.0',
-    license=__license__,
+    license=meta_license,
     author='Felipe A. Hernandez',
     author_email='ergoithz@gmail.com',
     description='Simple web file browser',
-    long_description=__doc__,
+    long_description=meta_doc,
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',

@@ -28,7 +28,7 @@ If you want to dive into their documentation, check out the following links:
 
 User's Guide
 ============
-Instructions for users, implementors and developers.
+Instructions for users, implementers and developers.
 
 .. toctree::
    :maxdepth: 2

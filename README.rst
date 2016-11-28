@@ -3,27 +3,23 @@ browsepy
 
 .. image:: http://img.shields.io/travis/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://travis-ci.org/ergoithz/browsepy
-  :alt: Build status
+  :alt: Travis-CI badge
 
 .. image:: http://img.shields.io/coveralls/ergoithz/browsepy/master.svg?style=flat-square
   :target: https://coveralls.io/r/ergoithz/browsepy
-  :alt: Test coverage
+  :alt: Coveralls badge
 
-.. image:: https://img.shields.io/scrutinizer/g/ergoithz/browsepy/master.svg?style=flat-square
-  :target: https://scrutinizer-ci.com/g/ergoithz/browsepy/
-  :alt: Code quality
+.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/master.svg?style=flat-square
+  :target: https://www.codacy.com/app/ergoithz/browsepy
+  :alt: Codacy badge
 
 .. image:: http://img.shields.io/pypi/l/browsepy.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
-  :alt: License
+  :alt: License: MIT
 
 .. image:: http://img.shields.io/pypi/v/browsepy.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
-  :alt: Latest Version
-
-.. image:: http://img.shields.io/pypi/dm/browsepy.svg?style=flat-square
-  :target: https://pypi.python.org/pypi/browsepy/
-  :alt: Downloads
+  :alt: Version: 0.5.1
 
 .. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.3%2B-FFC100.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
@@ -38,7 +34,7 @@ Head to http://ergoithz.github.io/browsepy/ for an online version of current
 *master* documentation,
 
 You can also build yourself from sphinx sources using the documentation
-Makefile at the docs folder.
+`Makefile` located at `docs` directory.
 
 Screenshots
 -----------
@@ -71,10 +67,10 @@ New in 0.5
   * A raw HTML widget for maximum flexibility.
 
 * Plugins can register command-line arguments now.
-* Player plugin is now able to load m3u and pls playlists, and optionally
+* Player plugin is now able to load `m3u` and `pls` playlists, and optionally
   play everything on a directory (adding a command-line argument).
-* Browsing now takes full advantage of scandir (already in Python 3.5 and an
-  external dependecy for older versions) providing faster directory listing.
+* Browsing now takes full advantage of `scandir` (already in Python 3.5 and an
+  external dependency for older versions) providing faster directory listing.
 * Custom file ordering while browsing directories.
 * Easy multi-file uploads.
 * Jinja2 template output minification, saving those precious bytes.
@@ -154,19 +150,22 @@ Using as library
 ----------------
 
 It's a python module, so you can import **browsepy**, mount **app**, and serve
-it (it's wsgi compliant) using your preferred server.
+it (it's `WSGI`_ compliant) using
+your preferred server.
 
-Browsepy is a Flask application, so it can be served along with any wsgi app
+Browsepy is a Flask application, so it can be served along with any `WSGI`_ app
 just setting **APPLICATION_ROOT** in **browsepy.app** config to browsepy prefix
 url, and mounting **browsepy.app** on the appropriate parent
 *url-resolver*/*router*.
 
-Browsepy app config (available at browsepy.app.config) uses the following
-configuration options.
+.. _WSGI: https://www.python.org/dev/peps/pep-0333/
+
+Browsepy app config (available at :attr:`browsepy.app.config`) uses the
+following configuration options.
 
 * **directory_base**: anything under this directory will be served,
   defaults to current path.
-* **directory_start**: directory will be served when accessing root url
+* **directory_start**: directory will be served when accessing root URL
 * **directory_remove**: file removing will be available under this path,
   defaults to **None**.
 * **directory_upload**: file upload will be available under this path,
@@ -186,7 +185,7 @@ After editing `plugin_modules` value, plugin manager (available at module
 plugin_manager and app.extensions['plugin_manager']) should be reloaded using
 the `reload` method.
 
-The other way of loading a plugin programatically is calling plugin manager's
+The other way of loading a plugin programmatically is calling plugin manager's
 `load_plugin` method.
 
 Extend via plugin API
@@ -195,9 +194,8 @@ Extend via plugin API
 Starting from version 0.4.0, browsepy is extensible via plugins. A functional
 'player' plugin is provided as example, and some more are planned.
 
-Plugins can add html content to browsepy's browsing view, using some
+Plugins can add HTML content to browsepy's browsing view, using some
 convenience abstraction for already used elements like external stylesheet and
 javascript tags, links, buttons and file upload.
 
-The plugin manager will look for two callables on your module
-`register_arguments` and `register_plugin`.
+More information at http://ergoithz.github.io/browsepy/plugins.html

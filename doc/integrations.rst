@@ -3,16 +3,16 @@
 Integrations
 ============
 
-Browsepy is a Flask application and python module, so it could be integrating
-anywhere python's wsgi protocol is compatible, while their API could be easily
-reused.
+Browsepy is a Flask application and python module, so it could be integrated
+anywhere python's `WSGI <https://www.python.org/dev/peps/pep-0333/>`_ protocol
+is supported. Also, browsepy's public API could be easily reused.
 
 Browsepy app config (available at :attr:`browsepy.app.config`) exposes the
 following configuration options.
 
 * **directory_base**: anything under this directory will be served,
   defaults to current path.
-* **directory_start**: directory will be served when accessing root url
+* **directory_start**: directory will be served when accessing root URL
 * **directory_remove**: file removing will be available under this path,
   defaults to **None**.
 * **directory_upload**: file upload will be available under this path,
@@ -29,11 +29,15 @@ following configuration options.
   where relative plugin_modules are searched.
 
 Please note: After editing `plugin_modules` value, plugin manager (available
-at module plugin_manager and app.extensions['plugin_manager']) should be
-reloaded using the `reload` method.
+at module :data:`browsepy.plugin_manager` and
+:data:`browsepy.app.extensions['plugin_manager']`) should be reloaded using
+the :meth:`browsepy.plugin_manager.reload` instance method of :meth:`browsepy.manager.PluginManager.reload` for browsepy's plugin
+manager.
 
-The other way of loading a plugin programatically is calling plugin manager's
-`load_plugin` method.
+The other way of loading a plugin programmatically is calling
+:meth:`browsepy.plugin_manager.load_plugin` instance method of
+:meth:`browsepy.manager.PluginManager.load_plugin` for browsepy's plugin
+manager.
 
 .. _integrations-cherrymusic:
 

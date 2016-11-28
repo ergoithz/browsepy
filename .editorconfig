@@ -17,5 +17,8 @@ indent_style = tab
 indent_style = space
 indent_size = 2
 
+[*.{py,js}]
+quote_type = single
+
 [*.md]
 trim_trailing_whitespace = false

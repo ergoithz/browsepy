@@ -19,16 +19,20 @@ class ManagerMock(object):
         self.actions = []
         self.widgets = []
 
-    def style_class(self, endpoint, **kwargs):
+    @staticmethod
+    def style_class(endpoint, **kwargs):
         return ('style', endpoint, kwargs)
 
-    def button_class(self, *args, **kwargs):
+    @staticmethod
+    def button_class(*args, **kwargs):
         return ('button', args, kwargs)
 
-    def javascript_class(self, endpoint, **kwargs):
+    @staticmethod
+    def javascript_class(endpoint, **kwargs):
         return ('javascript', endpoint, kwargs)
 
-    def link_class(self, *args, **kwargs):
+    @staticmethod
+    def link_class(*args, **kwargs):
         return ('link', args, kwargs)
 
     def register_blueprint(self, blueprint):
@@ -73,6 +77,7 @@ class TestPlugins(unittest.TestCase):
 
     def tearDown(self):
         self.app.config['plugin_namespaces'] = self.original_namespaces
+        self.manager.clear()
 
     def test_manager(self):
         self.manager.load_plugin(self.plugin_name)
@@ -265,7 +270,7 @@ class TestPlayable(TestIntegrationBase):
     module = player
 
     def setUp(self):
-        super(TestIntegrationBase, self).setUp()
+        super(TestPlayable, self).setUp()
         self.manager = self.manager_module.MimetypeActionPluginManager(
             self.app)
         self.manager.register_mimetype_function(
