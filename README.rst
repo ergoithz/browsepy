@@ -10,7 +10,7 @@ browsepy
   :alt: Coveralls badge
 
 .. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/master.svg?style=flat-square
-  :target: https://www.codacy.com/app/ergoithz/browsepy/
+  :target: https://www.codacy.com/app/ergoithz/browsepy
   :alt: Codacy badge
 
 .. image:: http://img.shields.io/pypi/l/browsepy.svg?style=flat-square
@@ -198,5 +198,4 @@ Plugins can add HTML content to browsepy's browsing view, using some
 convenience abstraction for already used elements like external stylesheet and
 javascript tags, links, buttons and file upload.
 
-The plugin manager will look for two functions at your module:
-`register_arguments` and `register_plugin`.
+More information at http://ergoithz.github.io/browsepy/plugins.html
