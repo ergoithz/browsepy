@@ -40,7 +40,9 @@ pep8:
 	find browsepy -type f -name "*.py" -exec pep8 --ignore=E123,E126,E121 {} +
 
 eslint:
-	eslint --ignore-pattern *.min.js browsepy
+	eslint \
+		--ignore-path .gitignore --ignore-pattern *.min.js \
+		${CURDIR}/browsepy
 
 flake8:
 	flake8 browsepy/

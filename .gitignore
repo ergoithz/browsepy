@@ -11,6 +11,7 @@ env2/*
 env3/*
 node_modules/*
 __pycache__/*
-*.egg/*
-*.egg-info/*
-*.pyc
+**.egg/*
+**.egg-info/*
+**.pyc
+**/node_modules/*
