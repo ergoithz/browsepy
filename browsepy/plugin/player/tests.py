@@ -270,6 +270,7 @@ class TestBlueprint(TestPlayerBase):
 
     def tearDown(self):
         shutil.rmtree(self.app.config['directory_base'])
+        test_utils.clear_flask_context()
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():
@@ -279,7 +280,6 @@ class TestBlueprint(TestPlayerBase):
         with self.app.test_client() as client:
             url = self.url_for(endpoint, **kwargs)
             response = client.get(url)
-        test_utils.clear_flask_context()
         return response
 
     def file(self, path, data=''):

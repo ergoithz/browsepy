@@ -73,6 +73,7 @@ class TestPlugins(unittest.TestCase):
 
     def tearDown(self):
         self.app.config['plugin_namespaces'] = self.original_namespaces
+        self.manager.clear()
 
     def test_manager(self):
         self.manager.load_plugin(self.plugin_name)
