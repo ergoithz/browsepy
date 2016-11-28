@@ -22,11 +22,11 @@ build-env:
 	build/env3/bin/pip install wheel
 
 build: clean build-env
-	build/env3/bin/python setup.py bdist_wheel --require-scandir
+	build/env3/bin/python setup.py bdist_wheel
 	build/env3/bin/python setup.py sdist
 
 upload: clean build-env
-	build/env3/bin/python setup.py bdist_wheel upload --require-scandir
+	build/env3/bin/python setup.py bdist_wheel upload
 	build/env3/bin/python setup.py sdist upload
 
 doc:

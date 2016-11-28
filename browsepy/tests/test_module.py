@@ -22,7 +22,7 @@ import browsepy.compat
 import browsepy.tests.utils as test_utils
 
 PY_LEGACY = browsepy.compat.PY_LEGACY
-range = browsepy.compat.range
+range = browsepy.compat.range  # noqa
 
 
 class FileMock(object):

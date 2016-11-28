@@ -212,7 +212,7 @@ def which(name,
 
 
 if PY_LEGACY:
-    FileNotFoundError = type('FileNotFoundError', (OSError,), {})
+    FileNotFoundError = type('FileNotFoundError', (OSError,), {})  # noqa
     range = xrange  # noqa
     filter = itertools.ifilter
     basestring = basestring  # noqa

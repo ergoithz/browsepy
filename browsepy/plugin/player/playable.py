@@ -4,7 +4,7 @@ import codecs
 import os.path
 import warnings
 
-from browsepy.compat import range, PY_LEGACY
+from browsepy.compat import range, PY_LEGACY  # noqa
 from browsepy.file import Node, File, Directory, \
                           underscore_replace, check_under_base
 

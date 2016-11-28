@@ -5,7 +5,7 @@ import re
 import subprocess
 import mimetypes
 
-from .compat import FileNotFoundError, which
+from .compat import FileNotFoundError, which  # noqa
 
 generic_mimetypes = frozenset(('application/octet-stream', None))
 re_mime_validate = re.compile('\w+/\w+(; \w+=[^;]+)*')

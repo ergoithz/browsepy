@@ -19,16 +19,20 @@ class ManagerMock(object):
         self.actions = []
         self.widgets = []
 
-    def style_class(self, endpoint, **kwargs):
+    @staticmethod
+    def style_class(endpoint, **kwargs):
         return ('style', endpoint, kwargs)
 
-    def button_class(self, *args, **kwargs):
+    @staticmethod
+    def button_class(*args, **kwargs):
         return ('button', args, kwargs)
 
-    def javascript_class(self, endpoint, **kwargs):
+    @staticmethod
+    def javascript_class(endpoint, **kwargs):
         return ('javascript', endpoint, kwargs)
 
-    def link_class(self, *args, **kwargs):
+    @staticmethod
+    def link_class(*args, **kwargs):
         return ('link', args, kwargs)
 
     def register_blueprint(self, blueprint):
