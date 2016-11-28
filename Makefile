@@ -42,6 +42,9 @@ pep8:
 eslint:
 	find browsepy -regextype posix-extended \
 		-regex "^[^.]+\.([^m]+\.|m[^i]\.?|mi[^n]\.?|min[^.])*js$$" \
+		-exec echo {} +
+	find browsepy -regextype posix-extended \
+		-regex "^[^.]+\.([^m]+\.|m[^i]\.?|mi[^n]\.?|min[^.])*js$$" \
 		-exec node_modules/.bin/eslint {} +
 
 flake8:
