@@ -41,7 +41,8 @@ pep8:
 
 eslint:
 	eslint \
-		--ignore-path .gitignore --ignore-pattern *.min.js \
+		--ignore-path .gitignore \
+		--ignore-pattern *.min.js \
 		${CURDIR}/browsepy
 
 flake8:

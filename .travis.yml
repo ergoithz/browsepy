@@ -7,18 +7,16 @@ addon:
 matrix:
   include:
   - python: "2.7"
-    env: eslint=no
   - python: "pypy"
-    env: eslint=no
   # pypy3 commented out until Flask 0.11.2 is out
   #- python: "pypy3"
-  #  env: PIP_PARAMS=""
   - python: "3.3"
-    env: eslint=no
   - python: "3.4"
-    env: eslint=no
   - python: "3.5"
-    env: eslint=yes PATH=$TRAVIS_BUILD_DIR/node_modules/.bin:$PATH
+    env: >
+      eslint=yes
+      TRAVIS_NODE_VERSION=6
+      PATH=$TRAVIS_BUILD_DIR/node_modules/.bin:$PATH
 
 before_install:
   - alias node=nodejs
