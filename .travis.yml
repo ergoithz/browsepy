@@ -18,7 +18,7 @@ matrix:
   - python: "3.4"
     env: eslint=no
   - python: "3.5"
-    env: eslint=yes PATH=$PATH:node_modules/.bin
+    env: eslint=yes PATH=$TRAVIS_BUILD_DIR/node_modules/.bin:$PATH
 
 before_install:
   - alias node=nodejs
