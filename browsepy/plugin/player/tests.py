@@ -265,7 +265,10 @@ class TestBlueprint(TestPlayerBase):
     def setUp(self):
         super(TestBlueprint, self).setUp()
         self.app = browsepy.app  # required for our url_for calls
-        self.app.config['directory_base'] = tempfile.mkdtemp()
+        self.app.config.update(
+            directory_base=tempfile.mkdtemp(),
+            SERVER_NAME='test'
+        )
         self.app.register_blueprint(self.module.player)
 
     def tearDown(self):
