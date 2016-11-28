@@ -40,12 +40,7 @@ pep8:
 	find browsepy -type f -name "*.py" -exec pep8 --ignore=E123,E126,E121 {} +
 
 eslint:
-	find browsepy -regextype posix-extended \
-		-regex "^[^.]+\.([^m]+\.|m[^i]\.?|mi[^n]\.?|min[^.])*js$$" \
-		-exec echo {} +
-	find browsepy -regextype posix-extended \
-		-regex "^[^.]+\.([^m]+\.|m[^i]\.?|mi[^n]\.?|min[^.])*js$$" \
-		-exec node_modules/.bin/eslint {} +
+	eslint --ignore-pattern *.min.js browsepy
 
 flake8:
 	flake8 browsepy/
