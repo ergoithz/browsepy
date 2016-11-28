@@ -132,7 +132,7 @@ class TestPlayable(TestIntegrationBase):
     module = player_playable
 
     def setUp(self):
-        super(TestIntegrationBase, self).setUp()
+        super(TestPlayable, self).setUp()
         self.manager = self.manager_module.MimetypePluginManager(
             self.app
             )

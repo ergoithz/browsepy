@@ -270,7 +270,7 @@ class TestPlayable(TestIntegrationBase):
     module = player
 
     def setUp(self):
-        super(TestIntegrationBase, self).setUp()
+        super(TestPlayable, self).setUp()
         self.manager = self.manager_module.MimetypeActionPluginManager(
             self.app)
         self.manager.register_mimetype_function(

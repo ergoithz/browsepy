@@ -14,6 +14,9 @@ import stat
 import mimetypes
 
 import flask
+
+from werkzeug.utils import cached_property
+
 import browsepy
 import browsepy.file
 import browsepy.manager
@@ -168,13 +171,16 @@ class TestCompat(unittest.TestCase):
             'stacklevel': stacklevel
             })
 
-    def assertWarnsRegex(self, expected_warning, expected_regex, fnc,
-                         *args, **kwargs):
+    @cached_property
+    def assertWarnsRegex(self):
         supa = super(TestCompat, self)
         if hasattr(supa, 'assertWarnsRegex'):
-            self.assertWarnsRegex = supa.assertWarnsRegex
-            return self.assertWarnsRegex(expected_warning, expected_regex,
-                                         fnc, *args, **kwargs)
+            return supa.assertWarnsRegex
+        return self.customAssertWarnsRegex
+
+    def customAssertWarnsRegex(self, expected_warning, expected_regex, fnc,
+                               *args, **kwargs):
+
         import warnings
         old_warn = warnings.warn
         warnings.warn = self._warn
