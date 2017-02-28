@@ -56,8 +56,12 @@ showcoverage: coverage
 	xdg-open file://${CURDIR}/htmlcov/index.html >> /dev/null
 
 travis-script: pep8 flake8 coverage
+
+travis-script-sphinx:
 	travis-sphinx --nowarn --source=doc build
 
 travis-success:
 	coveralls
+
+travis-success-sphinx:
 	travis-sphinx deploy

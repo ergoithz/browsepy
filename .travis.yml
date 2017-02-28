@@ -13,7 +13,9 @@ matrix:
   - python: "3.3"
   - python: "3.4"
   - python: "3.5"
-    env: eslint=yes
+    env:
+    - eslint=yes
+    - sphinx=yes
 
 install:
   - pip install --upgrade pip
@@ -31,9 +33,17 @@ script:
     if [ "$eslint" = "yes" ]; then
       make eslint
     fi
+  - |
+    if [ "$sphinx" = "yes" ]; then
+      make travis-script-sphinx
+    fi
 
 after_success:
   - make travis-success
+  - |
+    if [ "$sphinx" = "yes" ]; then
+      make travis-success-sphinx
+    fi
 
 notifications:
   email: false
