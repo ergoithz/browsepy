@@ -19,7 +19,7 @@ browsepy
 
 .. image:: http://img.shields.io/pypi/v/browsepy.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
-  :alt: Version: 0.5.1
+  :alt: Version: 0.5.2
 
 .. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.3%2B-FFC100.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/

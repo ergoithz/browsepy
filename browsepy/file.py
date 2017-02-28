@@ -599,18 +599,17 @@ class Directory(Node):
             new_filename = alternative_filename(filename)
         return new_filename
 
-    def _listdir(self):
+    def _listdir(self, precomputed_stats=os.name == 'nt'):
         '''
         Iter unsorted entries on this directory.
 
         :yields: Directory or File instance for each entry in directory
         :ytype: Node
         '''
-        precomputed_stats = os.name == 'nt'
         for entry in compat.scandir(self.path):
             kwargs = {'path': entry.path, 'app': self.app, 'parent': self}
             if precomputed_stats and not entry.is_symlink():
-                kwargs['stats'] = entry.stats()
+                kwargs['stats'] = entry.stat()
             if entry.is_dir(follow_symlinks=True):
                 yield self.directory_class(**kwargs)
                 continue

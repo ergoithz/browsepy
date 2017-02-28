@@ -62,7 +62,7 @@ setup(
     name=meta_app,
     version=meta_version,
     url='https://github.com/ergoithz/browsepy',
-    download_url='https://github.com/ergoithz/browsepy/archive/0.5.1.tar.gz',
+    download_url='https://github.com/ergoithz/browsepy/archive/0.5.2.tar.gz',
     license=meta_license,
     author='Felipe A. Hernandez',
     author_email='ergoithz@gmail.com',

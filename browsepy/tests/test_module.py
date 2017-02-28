@@ -675,6 +675,48 @@ class TestFile(unittest.TestCase):
         shutil.rmtree(self.workbench)
         test_utils.clear_flask_context()
 
+    def textfile(self, name, text):
+        tmp_txt = os.path.join(self.workbench, name)
+        with open(tmp_txt, 'w') as f:
+            f.write(text)
+        return tmp_txt
+
+    def test_iter_listdir(self):
+        directory = self.module.Directory(path=self.workbench, app=self.app)
+
+        tmp_txt = self.textfile('somefile.txt', 'a')
+
+        content = list(directory._listdir(precomputed_stats=True))
+        self.assertEqual(len(content), 1)
+        self.assertEqual(content[0].size, '1 B')
+        self.assertEqual(content[0].path, tmp_txt)
+
+        content = list(directory._listdir(precomputed_stats=False))
+        self.assertEqual(len(content), 1)
+        self.assertEqual(content[0].size, '1 B')
+        self.assertEqual(content[0].path, tmp_txt)
+
+    def test_check_forbidden_filename(self):
+        cff = self.module.check_forbidden_filename
+        self.assertFalse(cff('myfilename', destiny_os='posix'))
+        self.assertTrue(cff('.', destiny_os='posix'))
+        self.assertTrue(cff('..', destiny_os='posix'))
+        self.assertTrue(cff('::', destiny_os='posix'))
+        self.assertTrue(cff('/', destiny_os='posix'))
+        self.assertTrue(cff('com1', destiny_os='nt'))
+        self.assertTrue(cff('LPT2', destiny_os='nt'))
+        self.assertTrue(cff('nul', destiny_os='nt'))
+        self.assertFalse(cff('com1', destiny_os='posix'))
+
+    def test_secure_filename(self):
+        sf = self.module.secure_filename
+        self.assertEqual(sf('a/a'), 'a')
+        self.assertEqual(sf('//'), '')
+        self.assertEqual(sf('c:\\', destiny_os='nt'), '')
+        self.assertEqual(sf('c:\\COM1', destiny_os='nt'), '')
+        self.assertEqual(sf('COM1', destiny_os='nt'), '')
+        self.assertEqual(sf('COM1', destiny_os='posix'), 'COM1')
+
     def test_mime(self):
         f = self.module.File('non_working_path', app=self.app)
         self.assertEqual(f.mimetype, 'application/octet-stream')
@@ -682,9 +724,7 @@ class TestFile(unittest.TestCase):
         f = self.module.File('non_working_path_with_ext.txt', app=self.app)
         self.assertEqual(f.mimetype, 'text/plain')
 
-        tmp_txt = os.path.join(self.workbench, 'ascii_text_file')
-        with open(tmp_txt, 'w') as f:
-            f.write('ascii text')
+        tmp_txt = self.textfile('ascii_text_file', 'ascii text')
 
         # test file command
         f = self.module.File(tmp_txt, app=self.app)
