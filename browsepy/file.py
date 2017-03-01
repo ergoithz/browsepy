@@ -114,7 +114,7 @@ class Node(object):
         :rtype: bool
         '''
         dirbase = self.app.config["directory_remove"]
-        return dirbase and self.path.startswith(dirbase + os.sep)
+        return dirbase and check_under_base(self.path, dirbase)
 
     @cached_property
     def stats(self):
@@ -524,10 +524,7 @@ class Directory(Node):
         :rtype: bool
         '''
         dirbase = self.app.config["directory_upload"]
-        return dirbase and (
-            dirbase == self.path or
-            self.path.startswith(dirbase + os.sep)
-            )
+        return dirbase and check_base(self.path, dirbase) 
 
     @cached_property
     def is_empty(self):
@@ -813,7 +810,7 @@ def relativize_path(path, base, os_sep=os.sep):
     :rtype: str or unicode
     :raises OutsideDirectoryBase: if path is not below base
     '''
-    if not check_under_base(path, base, os_sep):
+    if not check_base(path, base, os_sep):
         raise OutsideDirectoryBase("%r is not under %r" % (path, base))
     prefix_len = len(base)
     if not base.endswith(os_sep):
@@ -902,6 +899,19 @@ def check_forbidden_filename(filename,
     return filename in restricted_names
 
 
+def check_base(path, base, os_sep=os.sep):
+    '''
+    Check if given absolute path is under or given base.
+
+    :param path: absolute path
+    :param base: absolute base path
+    :return: wether file is under given base or not
+    :rtype: bool
+    '''
+    base = base[:-len(os_sep)] if base.endswith(os_sep) else base
+    return path == base or check_under_base(path, base, os_sep)
+
+
 def check_under_base(path, base, os_sep=os.sep):
     '''
     Check if given absolute path is under given base.
@@ -912,7 +922,7 @@ def check_under_base(path, base, os_sep=os.sep):
     :rtype: bool
     '''
     prefix = base if base.endswith(os_sep) else base + os_sep
-    return path == base or path.startswith(prefix)
+    return path.startswith(prefix)
 
 
 def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
