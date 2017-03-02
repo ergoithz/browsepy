@@ -162,6 +162,8 @@ table.browser td:nth-child(3) {
 h1 {
   line-height: 1.15em;
   font-size: 3em;
+  white-space: normal;
+  word-wrap: normal;
   margin: 0;
   padding: 0 0 0.3em;
   display: block;
@@ -169,20 +171,20 @@ h1 {
   text-shadow: 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 0 0 white, -1px 0 0 white, 0 -1px 0 white, 0 1px 0 white, 2px 2px 0 black, -2px -2px 0 black, 2px -2px 0 black, -2px 2px 0 black, 2px 0 0 black, -2px 0 0 black, 0 2px 0 black, 0 -2px 0 black, 2px 1px 0 black, -2px 1px 0 black, 1px 2px 0 black, 1px -2px 0 black, 2px -1px 0 black, -2px -1px 0 black, -1px 2px 0 black, -1px -2px 0 black;
 }
 
-h1.path a,
-h1.path span {
-  padding-right: 0.25em;
+h1.path a:before,
+h1.path span:before {
+  content: ' ';
 }
 
 h1.path a:after {
-  content: '/';
-  padding-left: 0.25em;
+  content: ' /';
 }
 
+h1.path a:first-child:before,
+h1.path span:first-child:before,
 h1.path a:last-child:after,
 h1.path a.nosep:after {
   content: '';
-  padding-left: 0;
 }
 
 ul.navbar,
