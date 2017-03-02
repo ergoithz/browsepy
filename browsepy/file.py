@@ -436,6 +436,16 @@ class Directory(Node):
     encoding = 'default'
     generic = False
 
+    @property
+    def name(self):
+        '''
+        Get the basename portion of directory's path.
+
+        :returns: filename
+        :rtype: str
+        '''
+        return super(Directory, self).name or self.path
+
     @cached_property
     def widgets(self):
         '''
@@ -605,12 +615,15 @@ class Directory(Node):
         '''
         for entry in compat.scandir(self.path):
             kwargs = {'path': entry.path, 'app': self.app, 'parent': self}
-            if precomputed_stats and not entry.is_symlink():
-                kwargs['stats'] = entry.stat()
-            if entry.is_dir(follow_symlinks=True):
-                yield self.directory_class(**kwargs)
-                continue
-            yield self.file_class(**kwargs)
+            try:
+                if precomputed_stats and not entry.is_symlink():
+                    kwargs['stats'] = entry.stat()
+                if entry.is_dir(follow_symlinks=True):
+                    yield self.directory_class(**kwargs)
+                    continue
+                yield self.file_class(**kwargs)
+            except OSError as e:
+                logger.exception(e)
 
     def listdir(self, sortkey=None, reverse=False):
         '''
