@@ -8,11 +8,11 @@ matrix:
   include:
   - python: "2.7"
   - python: "pypy"
-  # pypy3 commented out until Flask 0.11.2 is out
-  #- python: "pypy3"
+  - python: "pypy3"
   - python: "3.3"
   - python: "3.4"
   - python: "3.5"
+  - python: "3.6"
     env:
     - eslint=yes
     - sphinx=yes
