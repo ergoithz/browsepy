@@ -162,8 +162,11 @@ class Node(object):
         :returns: iso9008-like date-time string (without timezone)
         :rtype: str
         '''
-        dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
-        return dt.strftime('%Y.%m.%d %H:%M:%S')
+        try:
+            dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
+            return dt.strftime('%Y.%m.%d %H:%M:%S')
+        except OSError:
+            return None
 
     @property
     def urlpath(self):
@@ -373,10 +376,13 @@ class File(Node):
         :returns: fuzzy size with unit
         :rtype: str
         '''
-        size, unit = fmt_size(
-            self.stats.st_size,
-            self.app.config["use_binary_multiples"]
-            )
+        try:
+            size, unit = fmt_size(
+                self.stats.st_size,
+                self.app.config["use_binary_multiples"]
+                )
+        except OSError:
+            return None
         if unit == binary_units[0]:
             return "%d %s" % (size, unit)
         return "%.2f %s" % (size, unit)
@@ -432,7 +438,7 @@ class Directory(Node):
     _listdir_cache = None
     mimetype = 'inode/directory'
     is_file = False
-    size = 0
+    size = None
     encoding = 'default'
     generic = False
 
