@@ -534,7 +534,7 @@ class Directory(Node):
         :rtype: bool
         '''
         dirbase = self.app.config["directory_upload"]
-        return dirbase and check_base(self.path, dirbase) 
+        return dirbase and check_base(self.path, dirbase)
 
     @cached_property
     def is_empty(self):

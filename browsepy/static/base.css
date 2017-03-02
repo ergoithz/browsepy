@@ -169,6 +169,22 @@ h1 {
   text-shadow: 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 0 0 white, -1px 0 0 white, 0 -1px 0 white, 0 1px 0 white, 2px 2px 0 black, -2px -2px 0 black, 2px -2px 0 black, -2px 2px 0 black, 2px 0 0 black, -2px 0 0 black, 0 2px 0 black, 0 -2px 0 black, 2px 1px 0 black, -2px 1px 0 black, 1px 2px 0 black, 1px -2px 0 black, 2px -1px 0 black, -2px -1px 0 black, -1px 2px 0 black, -1px -2px 0 black;
 }
 
+h1.path a,
+h1.path span {
+  padding-right: 0.25em;
+}
+
+h1.path a:after {
+  content: '/';
+  padding-left: 0.25em;
+}
+
+h1.path a:last-child:after,
+h1.path a.nosep:after {
+  content: '';
+  padding-left: 0;
+}
+
 ul.navbar,
 ul.footer {
   position: absolute;

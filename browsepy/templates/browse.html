@@ -75,19 +75,14 @@
 {% endblock %}
 
 {% block header %}
-<h1>
+<h1 class="path">
   {% for parent in file.ancestors[::-1] %}
-    {% if not loop.first %}
-      <span> / </span>
-    {% endif %}
-    <a href="{{ url_for('browse', path=parent.urlpath) }}">{{ parent.name }}</a>
+    <a
+      href="{{ url_for('browse', path=parent.urlpath) }}"
+      {% if parent.name.endswith('/') %}class="nosep"{% endif %}
+      >{{ parent.name }}</a>
   {% endfor %}
-  {% if file.name %}
-    {% if file.parent %}
-      <span> / </span>
-    {% endif %}
-    {{ file.name }}
-  {% endif %}
+  {% if file.name %}<span>{{ file.name }}</span>{% endif %}
 </h1>
 {% endblock %}
 
