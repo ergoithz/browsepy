@@ -8,7 +8,8 @@ matrix:
   include:
   - python: "2.7"
   - python: "pypy"
-  - python: "pypy3"
+  # pypy3 commented out until it get fixed
+  #- python: "pypy3"
   - python: "3.3"
   - python: "3.4"
   - python: "3.5"
