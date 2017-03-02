@@ -62,19 +62,21 @@ class Page(object):
         # Old 2.7 minors
         @classmethod
         def itertext(cls, element):
-            yield element.text or ''
+            if element.text:
+                yield element.text
             for child in element:
                 for text in cls.itertext(child):
                     yield text
-                yield child.tail or ''
+                if child.tail:
+                    yield child.tail
 
     def __init__(self, data, response=None):
         self.data = data
         self.response = response
 
     @classmethod
-    def innerText(cls, element):
-        return ''.join(cls.itertext(element))
+    def innerText(cls, element, sep=''):
+        return sep.join(cls.itertext(element))
 
     @classmethod
     def from_source(cls, source, response=None):
@@ -109,7 +111,7 @@ class ListPage(Page):
         return cls(
             cls.path_strip_re.sub(
                 '/',
-                cls.innerText(html.find('.//h1'))
+                cls.innerText(html.find('.//h1'), '/')
                 ).strip(),
             [url for isdir, url, removable in rows if isdir],
             [url for isdir, url, removable in rows if not isdir],
