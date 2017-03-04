@@ -57,6 +57,7 @@ class Node(object):
 
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     can_download = False
+    is_root = False
 
     @cached_property
     def plugin_manager(self):
@@ -518,6 +519,16 @@ class Directory(Node):
         :rtype: bool
         '''
         return os.path.isdir(self.path)
+
+    @cached_property
+    def is_root(self):
+        '''
+        Get if directory is filesystem's root
+
+        :returns: True if FS root, False otherwise
+        :rtype: bool
+        '''
+        return os.path.dirname(self.path) == self.path
 
     @cached_property
     def can_download(self):

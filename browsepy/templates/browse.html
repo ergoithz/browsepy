@@ -51,10 +51,10 @@
     {% set urlpath = file.urlpath or None %}
     {% set property_desc = '-{}'.format(property) %}
     {% set prop = property_desc if sort_property == property else property %}
-    {% set active = 'active' if sort_property in (property, property_desc) else '' %}
-    {% set desc = 'desc' if sort_property == property_desc else '' %}
+    {% set active = ' active' if sort_property in (property, property_desc) else '' %}
+    {% set desc = ' desc' if sort_property == property_desc else '' %}
     <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
-       class="{{type}} sorting {{active}} {{desc}}"
+       class="{{type}} sorting{{active}}{{desc}}"
        >{{ text }}</a>
 </th>
 {%- endmacro %}
@@ -75,14 +75,19 @@
 {% endblock %}
 
 {% block header %}
-<h1 class="path">
-  {% for parent in file.ancestors[::-1] %}
-    <a
-      href="{{ url_for('browse', path=parent.urlpath) }}"
-      {% if parent.name.endswith('/') %}class="nosep"{% endif %}
-      >{{ parent.name }}</a>
-  {% endfor %}
-  {% if file.name %}<span>{{ file.name }}</span>{% endif %}
+<h1>
+  <ol class="path">
+    {% for parent in file.ancestors[::-1] %}
+      <li>
+        <a href="{{ url_for('browse', path=parent.urlpath) }}"
+           {% if parent.is_root %}class="root"{% endif %}
+           >{{ parent.name }}</a>
+      </li>
+    {% endfor %}
+    {% if file.name %}
+      <li><span>{{ file.name }}</span></li>
+    {% endif %}
+  </ol>
 </h1>
 {% endblock %}
 
