@@ -48,8 +48,8 @@ with open('README.rst') as f:
     meta_doc = f.read()
 
 extra_requires = []
-
-if not hasattr(os, 'scandir') or 'bdist_wheel' in sys.argv:
+bdist = 'bdist' in sys.argv or any(a.startswith('bdist_') for a in sys.argv)
+if bdist or not hasattr(os, 'scandir'):
     extra_requires.append('scandir')
 
 for debugger in ('ipdb', 'pudb', 'pdb'):

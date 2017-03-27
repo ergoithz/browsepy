@@ -54,7 +54,8 @@ this list.
 ::
 
   usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
-                  [--upload PATH] [--plugin PLUGIN_LIST] [--debug]
+                  [--upload PATH] [--exclude PATTERN] [--plugin PLUGIN]
+                  [--debug]
                   [host] [port]
 
   positional arguments:
@@ -67,7 +68,8 @@ this list.
     --initial PATH        initial directory (default: same as --directory)
     --removable PATH      base directory for remove (default: none)
     --upload PATH         base directory for upload (default: none)
-    --plugin PLUGIN_LIST  comma-separated list of plugins
+    --exclude PATTERN     exclude paths by pattern (multiple allowed)
+    --plugin MODULE       load plugin module (multiple allowed)
     --debug               debug mode
 
 Showing help including player plugin arguments:
@@ -82,8 +84,8 @@ Please note the extra parameters below `player arguments`.
 ::
 
   usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
-                  [--upload PATH] [--plugin PLUGIN_LIST] [--debug]
-                  [--player-directory-play]
+                  [--upload PATH] [--exclude PATTERN] [--plugin PLUGIN]
+                  [--debug] [--player-directory-play]
                   [host] [port]
 
   positional arguments:
@@ -96,7 +98,8 @@ Please note the extra parameters below `player arguments`.
     --initial PATH        initial directory (default: same as --directory)
     --removable PATH      base directory for remove (default: none)
     --upload PATH         base directory for upload (default: none)
-    --plugin PLUGIN_LIST  comma-separated list of plugins
+    --exclude PATTERN     exclude paths by pattern (multiple allowed)
+    --plugin MODULE       load plugin module (multiple allowed)
     --debug               debug mode
 
   player arguments:

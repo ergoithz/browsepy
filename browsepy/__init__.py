@@ -42,6 +42,7 @@ app.config.update(
         'browsepy_',
         '',
         ),
+    exclude_fnc=None,
     )
 app.jinja_env.add_extension('browsepy.extensions.HTMLCompress')
 

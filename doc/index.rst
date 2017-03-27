@@ -47,6 +47,7 @@ Specific information about functions, class or methods.
 
    manager
    file
+   stream
    compat
    tests_utils
 
