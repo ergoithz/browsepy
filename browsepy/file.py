@@ -591,7 +591,7 @@ class Directory(Node):
                 relativize_exclude(
                     self.app.config['exclude_fnc'],
                     self.app.config['directory_base']
-                    )
+                    ) if self.app.config['exclude_fnc'] else None
                 ),
             mimetype="application/octet-stream"
             )

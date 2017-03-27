@@ -880,6 +880,16 @@ class TestFileFunctions(unittest.TestCase):
             self.module.relativize_path, '/other', '/parent'
         )
 
+    def test_relativize_exclude(self):
+        data = []
+        exclude = self.module.relativize_exclude(data.append, '/a', '/')
+        self.assertEqual(exclude('/a/b'), None)
+        self.assertListEqual(data, ['/b'])
+        self.assertRaises(
+            browsepy.OutsideDirectoryBase,
+            exclude, '/c'
+        )
+
     def test_under_base(self):
         self.assertTrue(
             self.module.check_under_base('C:\\as\\df\\gf', 'C:\\as\\df', '\\'))
@@ -909,6 +919,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, None)
         self.assertEqual(result.removable, None)
         self.assertEqual(result.upload, None)
+        self.assertEqual(result.exclude, [])
         self.assertEqual(result.plugin, [])
 
     def test_params(self):
@@ -920,7 +931,9 @@ class TestMain(unittest.TestCase):
             '--initial=%s' % self.base,
             '--removable=%s' % self.base,
             '--upload=%s' % self.base,
-            '--plugin=%s' % ','.join(plugins),
+            ] + [
+            '--plugin=%s' % plugin
+            for plugin in plugins
             ])
         self.assertEqual(result.host, '127.1.1.1')
         self.assertEqual(result.port, 5000)
@@ -929,6 +942,8 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.removable, self.base)
         self.assertEqual(result.upload, self.base)
         self.assertEqual(result.plugin, plugins)
+        
+        # TODO: test deprecated plugin
 
         result = self.parser.parse_args([
             '--directory=%s' % self.base,
