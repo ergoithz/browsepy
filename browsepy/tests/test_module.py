@@ -729,10 +729,11 @@ class TestFile(unittest.TestCase):
         tmp_txt = self.textfile('ascii_text_file', 'ascii text')
 
         # test file command
-        f = self.module.File(tmp_txt, app=self.app)
-        self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
-        self.assertEqual(f.type, 'text/plain')
-        self.assertEqual(f.encoding, 'us-ascii')
+        if browsepy.compat.which('file'):
+            f = self.module.File(tmp_txt, app=self.app)
+            self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
+            self.assertEqual(f.type, 'text/plain')
+            self.assertEqual(f.encoding, 'us-ascii')
 
         # test non-working file command
         bad_path = os.path.join(self.workbench, 'path')
@@ -905,7 +906,7 @@ class TestMain(unittest.TestCase):
 
     def setUp(self):
         self.app = browsepy.app
-        self.parser = self.module.ArgParse()
+        self.parser = self.module.ArgParse(sep=os.sep)
         self.base = tempfile.mkdtemp()
 
     def tearDown(self):
@@ -919,7 +920,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, None)
         self.assertEqual(result.removable, None)
         self.assertEqual(result.upload, None)
-        self.assertEqual(result.exclude, [])
+        self.assertEqual(result.exclude, None)
         self.assertEqual(result.plugin, [])
 
     def test_params(self):
@@ -942,8 +943,15 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.removable, self.base)
         self.assertEqual(result.upload, self.base)
         self.assertEqual(result.plugin, plugins)
-        
-        # TODO: test deprecated plugin
+
+        result = self.parser.parse_args([
+            '--directory', self.base,
+            '--plugin', ','.join(plugins),
+            '--exclude', '/.*'
+            ])
+        self.assertEqual(result.directory, self.base)
+        self.assertEqual(result.plugin, plugins)
+        self.assertTrue(callable(result.exclude))
 
         result = self.parser.parse_args([
             '--directory=%s' % self.base,
@@ -955,6 +963,7 @@ class TestMain(unittest.TestCase):
         self.assertIsNone(result.initial)
         self.assertIsNone(result.removable)
         self.assertIsNone(result.upload)
+        self.assertIsNone(result.exclude)
         self.assertListEqual(result.plugin, [])
 
         self.assertRaises(
@@ -962,6 +971,13 @@ class TestMain(unittest.TestCase):
             self.parser.parse_args,
             ['--directory=%s' % __file__]
         )
+        
+    def test_exclude(self):
+        result = self.parser.parse_args([
+            '--exclude', '/.*'
+            ])
+        self.assertTrue(result.exclude('/.a'))
+        self.assertFalse(result.exclude('/a/.a'))
 
     def test_main(self):
         params = {}

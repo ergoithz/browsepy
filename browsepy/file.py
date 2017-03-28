@@ -636,7 +636,7 @@ class Directory(Node):
         :ytype: Node
         '''
         entries = compat.scandir(self.path)
-        if self.app.config['exclude_fnc']:
+        if self.app and self.app.config.get('exclude_fnc'):
             exclude = relativize_exclude(
                 self.app.config['exclude_fnc'],
                 self.app.config['directory_base']

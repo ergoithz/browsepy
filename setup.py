@@ -100,7 +100,7 @@ setup(
             'templates/*',
             'static/*/*',
         ]},
-    install_requires=['flask'] + extra_requires,
+    install_requires=['flask', 'globre'] + extra_requires,
     test_suite='browsepy.tests',
     test_runner='browsepy.tests.runner:DebuggerTextTestRunner',
     zip_safe=False,
