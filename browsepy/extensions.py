@@ -4,8 +4,10 @@ import jinja2
 import jinja2.ext
 import jinja2.lexer
 
+from browsepy.transform import StateMachine
 
-class SGMLCompressContext(object):
+
+class SGMLCompressContext(StateMachine):
     re_whitespace = re.compile('[ \\t\\r\\n]+')
     token_class = jinja2.lexer.Token
     block_tokens = {
@@ -29,55 +31,46 @@ class SGMLCompressContext(object):
         'comment': {'-->': 'text'},
         'cdata': {']]>': 'text'}
         }
+    lineno = 0  # current token lineno
+    skip_until_token = None  # inside token until this is met
+    skip_until_text = None  # inside text until this is met
+    current = 'text'
 
-    def __init__(self):
-        self.start = ''  # character which started current stae
-        self.current = 'text'  # current state
-        self.pending = ''  # buffer of current state data
-        self.lineno = 0  # current token lineno
-        self.skip_until_token = None  # inside token until this is met
-        self.skip_until = None  # inside literal tag until this is met
-
-    def finalize(self):
-        if self.pending:
-            data = self._minify(self.pending, self.current, self.start, True)
-            yield self.token_class(self.lineno, 'data', data)
-        self.start = ''
-        self.pending = ''
-
-    def _minify(self, data, current, start, partial=False):
-        if current == 'tag':
-            tagstart = start == '<'
-            data = self.re_whitespace.sub(' ', data[1:] if tagstart else data)
-            if tagstart:
-                data = data.lstrip() if partial else data.strip()
-                tagname = data.split(' ', 1)[0]
-                self.skip_until = self.block_tags.get(tagname)
-                return '<' + data
-            elif partial:
-                return data.rstrip()
-            return start if data.strip() == start else data
-        elif current == 'text':
-            if not self.skip_until:
-                return start if data.strip() == start else data
-            elif not partial:
-                self.skip_until = None
-            return data
-        return data
-
-    def _options(self, value, current, start):
+    def look(self, value, current, start):
         offset = len(start)
-        if self.skip_until and current == 'text':
-            mark = self.skip_until
+        if self.skip_until_text and current == 'text':
+            mark = self.skip_until_text
             index = value.find(mark, offset)
             if -1 != index:
                 yield index, mark, current
         else:
-            for mark, next in self.jumps[current].items():
-                index = value.find(mark, offset)
-                if -1 != index:
-                    yield index, mark, next
-        yield len(value), '', None  # avoid value errors on empty min()
+            super_look = super(SGMLCompressContext, self).look
+            for result in super_look(value, current, start):
+                yield result
+        yield len(value), '', None
+
+    def finalize(self):
+        for data in super(SGMLCompressContext, self).finalize():
+            yield self.token_class(self.lineno, 'data', data)
+
+    def transform_tag(self, data, current, start, partial=False):
+        tagstart = start == '<'
+        data = self.re_whitespace.sub(' ', data[1:] if tagstart else data)
+        if tagstart:
+            data = data.lstrip() if partial else data.strip()
+            tagname = data.split(' ', 1)[0]
+            self.skip_until_text = self.block_tags.get(tagname)
+            return '<' + data
+        elif partial:
+            return data.rstrip()
+        return start if data.strip() == start else data
+
+    def transform_text(self, data, current, start, partial=False):
+        if not self.skip_until_text:
+            return start if data.strip() == start else data
+        elif not partial:
+            self.skip_until_text = None
+        return data
 
     def feed(self, token):
         if self.skip_until_token:
@@ -96,19 +89,11 @@ class SGMLCompressContext(object):
         size = len(token.value)
         lineno = token.lineno
         self.pending += token.value
-        while True:
-            index, mark, next = min(
-                self._options(self.pending, self.current, self.start),
-                key=lambda x: (x[0], -len(x[1]))
-                )
-            if next is None:
-                break
-            data = self._minify(self.pending[:index], self.current, self.start)
-            self.lineno = lineno if size > len(self.pending) else self.lineno
-            self.start = mark
-            self.current = next
-            self.pending = self.pending[index:]
+        pending_size = len(self.pending)
+        for data in self:
+            self.lineno = lineno if size > pending_size else self.lineno
             yield self.token_class(self.lineno, 'data', data)
+            pending_size = len(self.pending)
 
 
 class HTMLCompressContext(SGMLCompressContext):

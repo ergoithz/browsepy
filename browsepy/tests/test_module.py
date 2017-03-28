@@ -932,6 +932,7 @@ class TestMain(unittest.TestCase):
             '--initial=%s' % self.base,
             '--removable=%s' % self.base,
             '--upload=%s' % self.base,
+            '--exclude=a',
             ] + [
             '--plugin=%s' % plugin
             for plugin in plugins
@@ -942,6 +943,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, self.base)
         self.assertEqual(result.removable, self.base)
         self.assertEqual(result.upload, self.base)
+        self.assertEqual(result.exclude, 'a$')
         self.assertEqual(result.plugin, plugins)
 
         result = self.parser.parse_args([
@@ -951,7 +953,7 @@ class TestMain(unittest.TestCase):
             ])
         self.assertEqual(result.directory, self.base)
         self.assertEqual(result.plugin, plugins)
-        self.assertTrue(callable(result.exclude))
+        self.assertIsNotNone(result.exclude)
 
         result = self.parser.parse_args([
             '--directory=%s' % self.base,
@@ -971,13 +973,12 @@ class TestMain(unittest.TestCase):
             self.parser.parse_args,
             ['--directory=%s' % __file__]
         )
-        
+
     def test_exclude(self):
-        result = self.parser.parse_args([
-            '--exclude', '/.*'
-            ])
-        self.assertTrue(result.exclude('/.a'))
-        self.assertFalse(result.exclude('/a/.a'))
+        result = self.parser.parse_args(['--exclude', '/.*'])
+        match = re.compile(result.exclude).match
+        self.assertTrue(match('/.a'))
+        self.assertFalse(match('/a/.a'))
 
     def test_main(self):
         params = {}

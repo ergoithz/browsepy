@@ -4,11 +4,10 @@
 import sys
 import os
 import os.path
-import argparse
 import re
+import argparse
 import flask
 import warnings
-import collections
 
 import globre
 
@@ -23,14 +22,14 @@ class PluginAction(argparse.Action):
             setattr(namespace, warned, True)
             warnings.warn(
                 'Comma-separated --plugin value is deprecated, '
-                'use multiple --plugin instead.'
+                'use multiple --plugin options instead.'
                 )
         values = value.split(',')
         prev = getattr(namespace, self.dest, None)
         if isinstance(prev, list):
             values = prev + values
         setattr(namespace, self.dest, values)
-        
+
 
 class ExcludeAction(argparse.Action):
     def __init__(self, *args, **kwargs):
@@ -38,16 +37,15 @@ class ExcludeAction(argparse.Action):
         super(ExcludeAction, self).__init__(*args, **kwargs)
 
     def __call__(self, parser, namespace, value, option_string=None):
-        rule = globre.compile(
-            value, 
+        pattern = globre.compile(
+            value,
             sep=self.sep,
-            flags=globre.EXACT if value.startswith(self.sep) else 0)
+            flags=globre.EXACT if value.startswith(self.sep) else 0
+            ).pattern
         prev = getattr(namespace, self.dest, None)
-        if callable(prev):
-            value = lambda path: rule.match(path) or prev(path)
-        else:
-            value = rule.match
-        setattr(namespace, self.dest, value)
+        if isinstance(prev, str):
+            pattern = '%s|%s' % (prev, pattern)
+        setattr(namespace, self.dest, pattern)
 
 
 class ArgParse(argparse.ArgumentParser):
@@ -119,7 +117,7 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         directory_remove=args.removable,
         directory_upload=args.upload,
         plugin_modules=args.plugin,
-        exclude_fnc=args.exclude
+        exclude_fnc=re.compile(args.exclude).match if args.exclude else None
         )
     plugin_manager.reload()
     run_fnc(
