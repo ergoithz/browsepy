@@ -4,15 +4,15 @@
 import sys
 import os
 import os.path
-import re
 import argparse
-import flask
 import warnings
 
-import globre
+import flask
+import regex
 
 from . import app, compat
 from .compat import PY_LEGACY
+from .glob import translate
 
 
 class PluginAction(argparse.Action):
@@ -37,11 +37,7 @@ class ExcludeAction(argparse.Action):
         super(ExcludeAction, self).__init__(*args, **kwargs)
 
     def __call__(self, parser, namespace, value, option_string=None):
-        pattern = globre.compile(
-            value,
-            sep=self.sep,
-            flags=globre.EXACT if value.startswith(self.sep) else 0
-            ).pattern
+        pattern = translate(value, sep=self.sep)
         prev = getattr(namespace, self.dest, None)
         if isinstance(prev, str):
             pattern = '%s|%s' % (prev, pattern)
@@ -110,6 +106,7 @@ class ArgParse(argparse.ArgumentParser):
 def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     plugin_manager = app.extensions['plugin_manager']
     args = plugin_manager.load_arguments(argv, parser())
+    exclude_fnc = regex.compile(args.exclude).match if args.exclude else None
     os.environ['DEBUG'] = 'true' if args.debug else ''
     app.config.update(
         directory_base=args.directory,
@@ -117,7 +114,7 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         directory_remove=args.removable,
         directory_upload=args.upload,
         plugin_modules=args.plugin,
-        exclude_fnc=re.compile(args.exclude).match if args.exclude else None
+        exclude_fnc=exclude_fnc
         )
     plugin_manager.reload()
     run_fnc(

@@ -217,9 +217,11 @@ if PY_LEGACY:
     filter = itertools.ifilter
     basestring = basestring  # noqa
     unicode = unicode  # noqa
+    chr = unichr  # noqa
 else:
     FileNotFoundError = FileNotFoundError
     range = range
     filter = filter
     basestring = str
     unicode = str
+    chr = chr

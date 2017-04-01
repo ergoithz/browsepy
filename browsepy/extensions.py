@@ -4,16 +4,11 @@ import jinja2
 import jinja2.ext
 import jinja2.lexer
 
-from browsepy.transform import StateMachine
+from browsepy.transform import StreamStateMachine
 
 
-class SGMLCompressContext(StateMachine):
+class SGMLCompressContext(StreamStateMachine):
     re_whitespace = re.compile('[ \\t\\r\\n]+')
-    token_class = jinja2.lexer.Token
-    block_tokens = {
-        'variable_begin': 'variable_end',
-        'block_begin': 'block_end'
-        }
     block_tags = {}  # block content will be treated as literal text
     jumps = {  # state machine jumps
         'text': {
@@ -49,51 +44,24 @@ class SGMLCompressContext(StateMachine):
                 yield result
         yield len(value), '', None
 
-    def finalize(self):
-        for data in super(SGMLCompressContext, self).finalize():
-            yield self.token_class(self.lineno, 'data', data)
-
-    def transform_tag(self, data, current, start, partial=False):
-        tagstart = start == '<'
+    def transform_tag(self, data, mark, next):
+        tagstart = self.start == '<'
         data = self.re_whitespace.sub(' ', data[1:] if tagstart else data)
         if tagstart:
-            data = data.lstrip() if partial else data.strip()
+            data = data.lstrip() if next is self.end else data.strip()
             tagname = data.split(' ', 1)[0]
             self.skip_until_text = self.block_tags.get(tagname)
             return '<' + data
-        elif partial:
+        elif next is self.end:
             return data.rstrip()
-        return start if data.strip() == start else data
+        return self.start if data.strip() == self.start else data
 
-    def transform_text(self, data, current, start, partial=False):
+    def transform_text(self, data, mark, next):
         if not self.skip_until_text:
-            return start if data.strip() == start else data
-        elif not partial:
+            return self.start if data.strip() == self.start else data
+        elif next is not self.end:
             self.skip_until_text = None
         return data
-
-    def feed(self, token):
-        if self.skip_until_token:
-            yield token
-            if token.type == self.skip_until_token:
-                self.skip_until_token = None
-            return
-
-        if token.type in self.block_tokens:
-            for data in self.finalize():
-                yield data
-            yield token
-            self.skip_until_token = self.block_tokens[token.type]
-            return
-
-        size = len(token.value)
-        lineno = token.lineno
-        self.pending += token.value
-        pending_size = len(self.pending)
-        for data in self:
-            self.lineno = lineno if size > pending_size else self.lineno
-            yield self.token_class(self.lineno, 'data', data)
-            pending_size = len(self.pending)
 
 
 class HTMLCompressContext(SGMLCompressContext):
@@ -107,11 +75,36 @@ class HTMLCompressContext(SGMLCompressContext):
 
 class HTMLCompress(jinja2.ext.Extension):
     context_class = HTMLCompressContext
+    token_class = jinja2.lexer.Token
+    block_tokens = {
+        'variable_begin': 'variable_end',
+        'block_begin': 'block_end'
+        }
 
     def filter_stream(self, stream):
-        feed = self.context_class()
+        transform = self.context_class()
+        lineno = 0
+        skip_until_token = None
         for token in stream:
-            for data in feed.feed(token):
-                yield data
-        for data in feed.finalize():
-            yield data
+            if skip_until_token:
+                yield token
+                if token.type == skip_until_token:
+                    skip_until_token = None
+                continue
+
+            if token.type != 'data':
+                for data in transform.finish():
+                    yield self.token_class(lineno, 'data', data)
+                yield token
+                skip_until_token = self.block_tokens.get(token.type)
+                continue
+
+            if not transform.pending:
+                lineno = token.lineno
+
+            for data in transform.feed(token.value):
+                yield self.token_class(lineno, 'data', data)
+                lineno = token.lineno
+
+        for data in transform.finish():
+            yield self.token_class(lineno, 'data', data)

@@ -943,7 +943,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, self.base)
         self.assertEqual(result.removable, self.base)
         self.assertEqual(result.upload, self.base)
-        self.assertEqual(result.exclude, 'a$')
+        self.assertIsNotNone(result.exclude)
         self.assertEqual(result.plugin, plugins)
 
         result = self.parser.parse_args([

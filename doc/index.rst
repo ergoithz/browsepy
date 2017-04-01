@@ -7,7 +7,8 @@ Welcome to browsepy's documentation!
 ====================================
 
 Welcome to browsepy's documentation. It's recommended to start reading
-installation and Quickstart. More detailed tutorials about integrating :mod:`browsepy` as module or plugin development are available too.
+installation and Quickstart. More detailed tutorials about integrating
+:mod:`browsepy` as module or plugin development are available too.
 
 Browsepy has few dependencies: `Flask`_ and `Scandir`_. `Flask`_ is an awesome
 web microframework while `Scandir`_ is a directory listing library which `was
@@ -23,8 +24,12 @@ If you want to dive into their documentation, check out the following links:
 * `Scandir Python Documentation
   <https://docs.python.org/3.5/library/os.html#os.scandir>`_
 
+`Regex`_ is also required as python's standard :mod:`re` has a very weak
+unicode regular expression support.
+
 .. _Flask: http://jinja.pocoo.org/
 .. _Scandir: http://werkzeug.pocoo.org/
+.. _Regex: https://pypi.python.org/pypi/regex/
 
 User's Guide
 ============
