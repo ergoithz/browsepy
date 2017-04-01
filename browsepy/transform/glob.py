@@ -4,15 +4,15 @@ import warnings
 
 import regex
 
-from browsepy.transform import StateMachine
+from . import StateMachine
 
 
-class BlobTransform(StateMachine):
+class GlobTransform(StateMachine):
     jumps = {
         'start': {
             '': 'text',
             },
-        'text': dict(**{
+        'text': {
             '*': 'wildcard',
             '**': 'wildcard',
             '?': 'wildcard',
@@ -20,9 +20,7 @@ class BlobTransform(StateMachine):
             '[!': 'range',
             '[]': 'range',
             '{': 'group',
-            }, **{
-            '\\%s' % c: 'text_literal' for c in '\\*?[{'
-            }),
+            },
         'text_literal': {
             '': 'text',
             },
@@ -57,15 +55,16 @@ class BlobTransform(StateMachine):
             '': 'text',
             }
         }
+    jumps['text'].update(('\\%s' % c, 'text_literal') for c in '\\*?[{')
     current = 'start'
 
     def __init__(self, data, sep=os.sep):
         self.sep = sep
         self.jumps['start'][sep] = self.jumps['start']['']
-        super(BlobTransform, self).__init__(data)
+        super(GlobTransform, self).__init__(data)
 
     def flush(self):
-        return '%s$' % super(BlobTransform, self).flush()
+        return '%s$' % super(GlobTransform, self).flush()
 
     def transform_posix_collating_class(self, data, mark, next):
         warnings.warn(
@@ -112,5 +111,5 @@ class BlobTransform(StateMachine):
 
 
 def translate(data, sep=os.sep):
-    self = BlobTransform(data)
+    self = GlobTransform(data)
     return ''.join(self)

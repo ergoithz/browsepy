@@ -12,7 +12,7 @@ import regex
 
 from . import app, compat
 from .compat import PY_LEGACY
-from .glob import translate
+from .transform.glob import translate
 
 
 class PluginAction(argparse.Action):

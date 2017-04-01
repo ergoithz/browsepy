@@ -82,6 +82,7 @@ setup(
         'browsepy.tests',
         'browsepy.tests.deprecated',
         'browsepy.tests.deprecated.plugin',
+        'browsepy.transform',
         'browsepy.plugin',
         'browsepy.plugin.player',
         ],

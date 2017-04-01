@@ -4,7 +4,7 @@ import jinja2
 import jinja2.ext
 import jinja2.lexer
 
-from browsepy.transform import StreamStateMachine
+from . import StreamStateMachine
 
 
 class SGMLCompressContext(StreamStateMachine):

@@ -1,11 +1,11 @@
 
 import unittest
 
-import browsepy.glob
+import browsepy.transform.glob
 
 
 class TestGlob(unittest.TestCase):
-    module = browsepy.glob
+    module = browsepy.transform.glob
     translate = staticmethod(module.translate)
 
     def test_glob(self):

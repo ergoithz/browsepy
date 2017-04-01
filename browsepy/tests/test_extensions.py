@@ -2,11 +2,11 @@
 import unittest
 import jinja2
 
-import browsepy.extensions
+import browsepy.transform.htmlcompress
 
 
 class TestHTMLCompress(unittest.TestCase):
-    extension = browsepy.extensions.HTMLCompress
+    extension = browsepy.transform.htmlcompress.HTMLCompress
 
     def setUp(self):
         self.env = jinja2.Environment(
