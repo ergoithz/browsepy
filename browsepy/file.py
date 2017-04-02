@@ -10,8 +10,6 @@ import string
 import random
 import datetime
 import logging
-import functools
-import itertools
 
 from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
@@ -588,10 +586,7 @@ class Directory(Node):
             TarFileStream(
                 self.path,
                 self.app.config['directory_tar_buffsize'],
-                relativize_exclude(
-                    self.app.config['exclude_fnc'],
-                    self.app.config['directory_base']
-                    ) if self.app.config['exclude_fnc'] else None
+                create_exclude(self.app),
                 ),
             mimetype="application/octet-stream"
             )
@@ -628,24 +623,14 @@ class Directory(Node):
             new_filename = alternative_filename(filename)
         return new_filename
 
-    def _listdir(self, precomputed_stats=os.name == 'nt'):
+    def _listdir(self, precomputed_stats=(os.name == 'nt')):
         '''
         Iter unsorted entries on this directory.
 
         :yields: Directory or File instance for each entry in directory
         :ytype: Node
         '''
-        entries = compat.scandir(self.path)
-        if self.app and self.app.config.get('exclude_fnc'):
-            exclude = relativize_exclude(
-                self.app.config['exclude_fnc'],
-                self.app.config['directory_base']
-                )
-            entries = itertools.filterfalse(
-                lambda entry: exclude(entry.path),
-                entries
-                )
-        for entry in entries:
+        for entry in scandir(self.path, self.app):
             kwargs = {'path': entry.path, 'app': self.app, 'parent': self}
             try:
                 if precomputed_stats and not entry.is_symlink():
@@ -735,21 +720,6 @@ def relativize_path(path, base, os_sep=os.sep):
     if not base.endswith(os_sep):
         prefix_len += len(os_sep)
     return path[prefix_len:]
-
-
-def relativize_exclude(exclude, base, os_sep=os.sep):
-    '''
-    Relativize exclusion function.
-
-    :param exclude: file path exclusion function
-    :type exclude: callable
-    :param base: base path
-    :type base: str
-    :param os_sep: path component separator, defaults to current OS separator
-    :type os_sep: str
-    '''
-    fmt = functools.partial('{}{}'.format, os_sep)
-    return lambda path: exclude(fmt(relativize_path(path, base, os_sep)))
 
 
 def abspath_to_urlpath(path, base, os_sep=os.sep):
@@ -914,3 +884,52 @@ def alternative_filename(filename, attempt=None):
     else:
         extra = u' (%d)' % attempt
     return u'%s%s%s' % (name, extra, ext)
+
+
+def create_exclude(app, os_sep=os.sep):
+    '''
+    Generates an exclude function from given app which relativizes path
+    to base directory (prefixing sep) before forwarding it to
+    :attr:`app.config` ``exclude_fnc`` value.
+
+    This function returns None if exclude_fnc is either None or not defined.
+
+    :param app: flask application
+    :type app: flask.Flask or None
+    :param os_sep: path component separator, defaults to current OS separator
+    :type os_sep: str
+    :returns: relative exclude function or None depending on app.config.
+    :rtype: callable or None
+    '''
+    exclude = app.config.get('exclude_fnc') if app else None
+    if exclude:
+        def exclude_fnc(path):
+            return exclude(fmt(rel(path, base, os_sep)))
+        base = app.config.get('directory_base', '')
+        rel = relativize_path
+        fmt = '{}{{}}'.format(os_sep).format
+        return exclude_fnc
+    return None
+
+
+def scandir(path, app, os_sep=os.sep):
+    '''
+    Config-aware scandir. Currently, only aware of ``exclude_fnc``.
+
+    :param path: absolute path
+    :type path: str
+    :param app: flask application
+    :type app: flask.Flask or None
+    :param os_sep: path component separator, defaults to current OS separator
+    :type os_sep: str
+    :returns: filtered scandir entries
+    :rtype: iterator
+    '''
+    exclude = create_exclude(app, os_sep)
+    if exclude:
+        return (
+            item
+            for item in compat.scandir(path)
+            if not exclude(item.path)
+            )
+    return compat.scandir(path)

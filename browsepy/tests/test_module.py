@@ -881,9 +881,14 @@ class TestFileFunctions(unittest.TestCase):
             self.module.relativize_path, '/other', '/parent'
         )
 
-    def test_relativize_exclude(self):
+    def test_create_exclude(self):
         data = []
-        exclude = self.module.relativize_exclude(data.append, '/a', '/')
+        app = flask.Flask('test')
+        app.config.update(
+            directory_base='/a',
+            exclude_fnc=data.append
+            )
+        exclude = self.module.create_exclude(app)
         self.assertEqual(exclude('/a/b'), None)
         self.assertListEqual(data, ['/b'])
         self.assertRaises(
