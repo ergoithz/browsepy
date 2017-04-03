@@ -299,21 +299,25 @@ class TestApp(unittest.TestCase):
         self.start = os.path.join(self.base, 'start')
         self.remove = os.path.join(self.base, 'remove')
         self.upload = os.path.join(self.base, 'upload')
+        self.exclude = os.path.join(self.base, 'exclude')
 
         os.mkdir(self.start)
         os.mkdir(self.remove)
         os.mkdir(self.upload)
+        os.mkdir(self.exclude)
 
         open(os.path.join(self.start, 'testfile.txt'), 'w').close()
         open(os.path.join(self.remove, 'testfile.txt'), 'w').close()
+        open(os.path.join(self.exclude, 'testfile.txt'), 'w').close()
 
         self.app.config.update(
             directory_base=self.base,
             directory_start=self.start,
             directory_remove=self.remove,
             directory_upload=self.upload,
+            exclude_fnc=lambda p: p.startswith('/exclude'),
             SERVER_NAME='test',
-        )
+            )
 
         self.base_directories = [
             self.url_for('browse', path='remove'),
@@ -431,6 +435,16 @@ class TestApp(unittest.TestCase):
             self.get, 'browse', path='..'
         )
 
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'browse', path='start/testfile.txt'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'browse', path='exclude'
+        )
+
     def test_open(self):
         content = b'hello world'
         with open(os.path.join(self.start, 'testfile3.txt'), 'wb') as f:
@@ -485,6 +499,11 @@ class TestApp(unittest.TestCase):
             self.get, 'remove', path='../shall_not_pass.txt'
         )
 
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'remove', path='exclude/testfile.txt'
+        )
+
     def test_download_file(self):
         binfile = os.path.join(self.base, 'testfile.bin')
         bindata = bytes(range(256))
@@ -499,6 +518,16 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'download_file', path='../shall_not_pass.txt'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'download_file', path='start'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'download_file', path='exclude/testfile.txt'
         )
 
     def test_download_directory(self):
@@ -524,6 +553,11 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'download_directory', path='../../shall_not_pass'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'download_directory', path='exclude'
         )
 
     def test_upload(self):
@@ -684,7 +718,7 @@ class TestFile(unittest.TestCase):
         return tmp_txt
 
     def test_iter_listdir(self):
-        directory = self.module.Directory(path=self.workbench, app=self.app)
+        directory = self.module.Directory(path=self.workbench)
 
         tmp_txt = self.textfile('somefile.txt', 'a')
 

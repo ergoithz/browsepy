@@ -59,6 +59,12 @@ class Node(object):
     is_root = False
 
     @cached_property
+    def is_excluded(self):
+        exclude = create_exclude(self.app)
+        components = [self.path] + [a.path for a in self.ancestors]
+        return exclude and any(map(exclude, components))
+
+    @cached_property
     def plugin_manager(self):
         '''
         Get current app's plugin manager.
@@ -379,7 +385,7 @@ class File(Node):
         try:
             size, unit = fmt_size(
                 self.stats.st_size,
-                self.app.config["use_binary_multiples"]
+                self.app.config['use_binary_multiples'] if self.app else False
                 )
         except OSError:
             return None
@@ -551,6 +557,17 @@ class Directory(Node):
         '''
         dirbase = self.app.config["directory_upload"]
         return dirbase and check_base(self.path, dirbase)
+
+    @cached_property
+    def can_remove(self):
+        '''
+        Get if current node can be removed based on app config's
+        directory_remove.
+
+        :returns: True if current node can be removed, False otherwise.
+        :rtype: bool
+        '''
+        return self.parent and super(Directory, self).can_remove
 
     @cached_property
     def is_empty(self):
