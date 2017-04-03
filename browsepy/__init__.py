@@ -52,15 +52,15 @@ if "BROWSEPY_SETTINGS" in os.environ:
 plugin_manager = PluginManager(app)
 
 
-def iter_cookie_browse_sorting():
+def iter_cookie_browse_sorting(cookies):
     '''
-    Get sorting-cookie data of current request.
+    Get sorting-cookie from cookies dictionary.
 
     :yields: tuple of path and sorting property
     :ytype: 2-tuple of strings
     '''
     try:
-        data = request.cookies.get('browse-sorting', 'e30=').encode('ascii')
+        data = cookies.get('browse-sorting', 'e30=').encode('ascii')
         for path, prop in json.loads(base64.b64decode(data).decode('utf-8')):
             yield path, prop
     except (ValueError, TypeError, KeyError) as e:
@@ -74,9 +74,10 @@ def get_cookie_browse_sorting(path, default):
     :returns: sorting property
     :rtype: string
     '''
-    for cpath, cprop in iter_cookie_browse_sorting():
-        if path == cpath:
-            return cprop
+    if request:
+        for cpath, cprop in iter_cookie_browse_sorting(request.cookies):
+            if path == cpath:
+                return cprop
     return default
 
 
@@ -159,7 +160,7 @@ def sort(property, path):
 
     data = [
         (cpath, cprop)
-        for cpath, cprop in iter_cookie_browse_sorting()
+        for cpath, cprop in iter_cookie_browse_sorting(request.cookies)
         if cpath != path
         ]
     data.append((path, property))

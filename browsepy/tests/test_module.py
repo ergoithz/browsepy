@@ -16,6 +16,7 @@ import mimetypes
 import flask
 
 from werkzeug.utils import cached_property
+from werkzeug.exceptions import NotFound
 
 import browsepy
 import browsepy.file
@@ -395,7 +396,8 @@ class TestApp(unittest.TestCase):
         page = self.get('index')
         self.assertEqual(page.path, '%s/start' % os.path.basename(self.base))
 
-        self.app.config['directory_start'] = os.path.join(self.base, '..')
+        start = os.path.abspath(os.path.join(self.base, '..'))
+        self.app.config['directory_start'] = start
 
         self.assertRaises(
             Page404Exception,
@@ -584,6 +586,13 @@ class TestApp(unittest.TestCase):
         self.assertEqual(sorted(output.files), expected_links)
         self.clear(self.upload)
 
+        self.assertRaises(
+            Page404Exception,
+            self.post, 'upload', path='start', data={
+                'file': (genbytesio(127, 'ascii'), 'testfile.txt')
+                }
+            )
+
     def test_upload_duplicate(self):
         c = unichr if PY_LEGACY else chr  # noqa
 
@@ -617,6 +626,12 @@ class TestApp(unittest.TestCase):
         self.clear(self.upload)
 
     def test_sort(self):
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'sort', property='text', path='exclude'
+        )
+
         files = {
             'a.txt': 'aaa',
             'b.png': 'aa',
@@ -698,6 +713,45 @@ class TestApp(unittest.TestCase):
             for cookie in page.response.headers.getlist('set-cookie'):
                 if cookie.startswith('browse-sorting='):
                     self.assertLessEqual(len(cookie), 4000)
+
+    def test_endpoints(self):
+        # test endpoint function for the librare use-case
+        # likely not to happen when serving due flask's routing protections
+        with self.app.app_context():
+            self.assertIsInstance(
+                self.module.sort(property='name', path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.browse(path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.open_file(path='../something'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.download_file(path='../something'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.download_directory(path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.remove(path='../something'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.upload(path='..'),
+                NotFound
+            )
 
 
 class TestFile(unittest.TestCase):
