@@ -435,14 +435,14 @@ class TestApp(unittest.TestCase):
         self.app.config['exclude_fnc'] = None
 
         self.assertEqual(
-            tarball_files('start'), 
+            tarball_files('start'),
             ['testfile.%s' % x for x in ('bin', 'exc', 'txt')]
         )
 
         self.app.config['exclude_fnc'] = lambda p: p.endswith('.exc')
 
         self.assertEqual(
-            tarball_files('start'), 
+            tarball_files('start'),
             ['testfile.%s' % x for x in ('bin', 'txt')]
         )
 
