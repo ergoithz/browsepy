@@ -3,9 +3,11 @@ import os
 import os.path
 import unittest
 import shutil
+import tempfile
 
 import flask
-import tempfile
+
+from werkzeug.exceptions import NotFound
 
 import browsepy
 import browsepy.file as browsepy_file
@@ -322,3 +324,20 @@ class TestBlueprint(TestPlayerBase):
         self.file('directory/test.mp3')
         result = self.get('player.directory', path=name)
         self.assertEqual(result.status_code, 200)
+
+    def test_endpoints(self):
+        with self.app.app_context():
+            self.assertIsInstance(
+                self.module.audio(path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.playlist(path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.directory(path='..'),
+                NotFound
+            )

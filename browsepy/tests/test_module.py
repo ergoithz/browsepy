@@ -15,7 +15,6 @@ import mimetypes
 
 import flask
 
-from werkzeug.utils import cached_property
 from werkzeug.exceptions import NotFound
 
 import browsepy
@@ -160,127 +159,6 @@ class Page404Exception(PageException):
 
 class Page302Exception(PageException):
     pass
-
-
-class TestCompat(unittest.TestCase):
-    module = browsepy.compat
-
-    def _warn(self, message, category=None, stacklevel=None):
-        if not hasattr(self, '_warnings'):
-            self._warnings = []
-        self._warnings.append({
-            'message': message,
-            'category': category,
-            'stacklevel': stacklevel
-            })
-
-    @cached_property
-    def assertWarnsRegex(self):
-        supa = super(TestCompat, self)
-        if hasattr(supa, 'assertWarnsRegex'):
-            return supa.assertWarnsRegex
-        return self.customAssertWarnsRegex
-
-    def customAssertWarnsRegex(self, expected_warning, expected_regex, fnc,
-                               *args, **kwargs):
-
-        import warnings
-        old_warn = warnings.warn
-        warnings.warn = self._warn
-        try:
-            fnc(*args, **kwargs)
-        finally:
-            warnings.warn = old_warn
-        warnings = ()
-        if hasattr(self, '_warnings'):
-            warnings = self._warnings
-            del self._warnings
-        regex = re.compile(expected_regex)
-        self.assertTrue(any(
-            warn['category'] == expected_warning and
-            regex.match(warn['message'])
-            for warn in warnings
-        ))
-
-    def test_which(self):
-        self.assertTrue(self.module.which('python'))
-        self.assertIsNone(self.module.which('lets-put-a-wrong-executable'))
-
-    def test_fsdecode(self):
-        path = b'/a/\xc3\xb1'
-        self.assertEqual(
-            self.module.fsdecode(path, os_name='posix', fs_encoding='utf-8'),
-            path.decode('utf-8')
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsdecode(path, os_name='nt', fs_encoding='latin-1'),
-            path.decode('latin-1')
-            )
-        path = b'/a/\xf1'
-        self.assertRaises(
-            UnicodeDecodeError,
-            self.module.fsdecode,
-            path,
-            fs_encoding='utf-8',
-            errors='strict'
-        )
-
-    def test_fsencode(self):
-        path = b'/a/\xc3\xb1'
-        self.assertEqual(
-            self.module.fsencode(
-                path.decode('utf-8'),
-                fs_encoding='utf-8'
-                ),
-            path
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsencode(
-                path.decode('latin-1'),
-                fs_encoding='latin-1'
-                ),
-            path
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsencode(path, fs_encoding='utf-8'),
-            path
-            )
-
-    def test_getcwd(self):
-        self.assertIsInstance(self.module.getcwd(), self.module.unicode)
-        self.assertIsInstance(
-            self.module.getcwd(
-                fs_encoding='latin-1',
-                cwd_fnc=lambda: b'\xf1'
-                ),
-            self.module.unicode
-            )
-        self.assertIsInstance(
-            self.module.getcwd(
-                fs_encoding='utf-8',
-                cwd_fnc=lambda: b'\xc3\xb1'
-                ),
-            self.module.unicode
-            )
-
-    def test_getdebug(self):
-        enabled = ('TRUE', 'true', 'True', '1', 'yes', 'enabled')
-        for case in enabled:
-            self.assertTrue(self.module.getdebug({'DEBUG': case}))
-        disabled = ('FALSE', 'false', 'False', '', '0', 'no', 'disabled')
-        for case in disabled:
-            self.assertFalse(self.module.getdebug({'DEBUG': case}))
-
-    def test_deprecated(self):
-        environ = {'DEBUG': 'true'}
-        self.assertWarnsRegex(
-            DeprecationWarning,
-            'DEPRECATED',
-            self.module.deprecated('DEPRECATED', environ)(lambda: None)
-            )
 
 
 class TestApp(unittest.TestCase):
@@ -534,23 +412,41 @@ class TestApp(unittest.TestCase):
 
     def test_download_directory(self):
         binfile = os.path.join(self.start, 'testfile.bin')
+        excfile = os.path.join(self.start, 'testfile.exc')
         bindata = bytes(range(256))
+        exclude = self.app.config['exclude_fnc']
 
-        with open(binfile, 'wb') as f:
-            f.write(bindata)
-        page = self.get('download_directory', path='start')
-        os.remove(binfile)
+        def tarball_files(path):
+            page = self.get('download_directory', path=path)
+            iodata = io.BytesIO(page.data)
+            with tarfile.open('p.tgz', mode="r:gz", fileobj=iodata) as tgz:
+                tgz_files = [
+                    member.name
+                    for member in tgz.getmembers()
+                    if member.name
+                    ]
+            tgz_files.sort()
+            return tgz_files
 
-        iodata = io.BytesIO(page.data)
-        with tarfile.open('start.tgz', mode="r:gz", fileobj=iodata) as tgz:
-            tgz_files = [
-                member.name
-                for member in tgz.getmembers()
-                if member.name
-                ]
-        tgz_files.sort()
+        for path in (binfile, excfile):
+            with open(path, 'wb') as f:
+                f.write(bindata)
 
-        self.assertEqual(tgz_files, ['testfile.bin', 'testfile.txt'])
+        self.app.config['exclude_fnc'] = None
+
+        self.assertEqual(
+            tarball_files('start'), 
+            ['testfile.%s' % x for x in ('bin', 'exc', 'txt')]
+        )
+
+        self.app.config['exclude_fnc'] = lambda p: p.endswith('.exc')
+
+        self.assertEqual(
+            tarball_files('start'), 
+            ['testfile.%s' % x for x in ('bin', 'txt')]
+        )
+
+        self.app.config['exclude_fnc'] = exclude
 
         self.assertRaises(
             Page404Exception,
@@ -715,7 +611,7 @@ class TestApp(unittest.TestCase):
                     self.assertLessEqual(len(cookie), 4000)
 
     def test_endpoints(self):
-        # test endpoint function for the librare use-case
+        # test endpoint function for the library use-case
         # likely not to happen when serving due flask's routing protections
         with self.app.app_context():
             self.assertIsInstance(
