@@ -4,7 +4,7 @@ import warnings
 
 from unicategories import categories as unicat, RangeGroup as ranges
 
-from ..compat import re_escape
+from ..compat import re_escape, chr
 from . import StateMachine
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
 import sys
 import os
 import os.path
@@ -8,7 +9,6 @@ import argparse
 import warnings
 
 import flask
-import regex
 
 from . import app, compat
 from .compat import PY_LEGACY
@@ -106,7 +106,7 @@ class ArgParse(argparse.ArgumentParser):
 def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     plugin_manager = app.extensions['plugin_manager']
     args = plugin_manager.load_arguments(argv, parser())
-    exclude_fnc = regex.compile(args.exclude).match if args.exclude else None
+    exclude_fnc = re.compile(args.exclude).match if args.exclude else None
     os.environ['DEBUG'] = 'true' if args.debug else ''
     app.config.update(
         directory_base=args.directory,

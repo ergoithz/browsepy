@@ -5,7 +5,15 @@ import re
 import unittest
 import warnings
 
+from browsepy.compat import unicode
+
 import browsepy.transform.glob
+
+
+def fu(c):
+    if isinstance(c, unicode):
+        return c
+    return c.decode('utf-8')
 
 
 class TestGlob(unittest.TestCase):
@@ -53,9 +61,9 @@ class TestGlob(unittest.TestCase):
         for pattern, matching, nonmatching in tests:
             pattern = re.compile(self.translate(pattern))
             for test in matching:
-                self.assertTrue(pattern.match(test))
+                self.assertTrue(pattern.match(fu(test)))
             for test in nonmatching:
-                self.assertFalse(pattern.match(test))
+                self.assertFalse(pattern.match(fu(test)))
 
     def test_unsupported(self):
         translations = [
