@@ -70,6 +70,7 @@ class TestGlob(unittest.TestCase):
             ('[[.a-acute.]]a', '/.a$'),
             ('/[[=a=]]a', '^/.a$'),
             ('/[[=a=]\d]a', '^/.a$'),
+            ('[[:non-existent-class:]]a', '/.a$'),
             ]
         for source, result in translations:
             with warnings.catch_warnings(record=True) as w:

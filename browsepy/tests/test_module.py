@@ -54,21 +54,18 @@ class AppMock(object):
 
 
 class Page(object):
-    if hasattr(ET.Element, 'itertext'):
-        @classmethod
-        def itertext(cls, element):
-            return element.itertext()
-    else:
-        # Old 2.7 minors
-        @classmethod
-        def itertext(cls, element):
-            if element.text:
-                yield element.text
-            for child in element:
-                for text in cls.itertext(child):
-                    yield text
-                if child.tail:
-                    yield child.tail
+    @classmethod
+    def itertext(cls, element):
+        '''
+        Compatible element.itertext()
+        '''
+        if element.text:
+            yield element.text
+        for child in element:
+            for text in cls.itertext(child):
+                yield text
+            if child.tail:
+                yield child.tail
 
     def __init__(self, data, response=None):
         self.data = data
