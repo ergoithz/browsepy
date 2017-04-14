@@ -33,22 +33,6 @@ class FileMock(object):
         self.__dict__.update(kwargs)
 
 
-class PluginMock(object):
-    registered_arguments_manager = None
-    registered_arguments = False
-    registered_plugin_manager = None
-    registered_plugin = False
-
-    def register_arguments(self, manager):
-        self.registered_arguments_manager = manager
-        self.registered_arguments = True
-        manager.register_argument('--pluginmock', action='store_true')
-
-    def register_plugin(self, manager):
-        self.registered_plugin_manager = manager
-        self.registered_plugin = True
-
-
 class AppMock(object):
     config = browsepy.app.config.copy()
 
@@ -1106,7 +1090,3 @@ def register_plugin(manager):
         view_func=lambda: 'test_plugin_root')
 
     manager.register_blueprint(test_plugin_blueprint)
-
-
-if __name__ == '__main__':
-    unittest.main()
