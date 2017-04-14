@@ -147,7 +147,6 @@ class GlobTransform(StateMachine):
 
     def transform_posix_character_class(self, data, mark, next):
         name = data[len(self.start):]
-        print(name)
         if name not in self.character_classes:
             warnings.warn(
                 'Posix character class %s is not supported.'

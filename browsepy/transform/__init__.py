@@ -25,9 +25,11 @@ class StateMachine(object):
     def look(self, value, current, start):
         offset = len(start)
         try:
+            end = len(value)
             for mark, next in self.jumps[current].items():
-                index = value.find(mark, offset)
+                index = value.find(mark, offset, end + len(mark))
                 if -1 != index:
+                    end = min(end, index)
                     yield index, mark, next
         except KeyError:
             raise KeyError(

@@ -24,12 +24,8 @@ If you want to dive into their documentation, check out the following links:
 * `Scandir Python Documentation
   <https://docs.python.org/3.5/library/os.html#os.scandir>`_
 
-`Regex`_ is also required as python's standard :mod:`re` has a very weak
-unicode regular expression support.
-
 .. _Flask: http://jinja.pocoo.org/
 .. _Scandir: http://werkzeug.pocoo.org/
-.. _Regex: https://pypi.python.org/pypi/regex/
 
 User's Guide
 ============
