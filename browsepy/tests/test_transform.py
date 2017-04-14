@@ -1,4 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+import re
 import unittest
 import warnings
 
@@ -24,13 +27,35 @@ class TestGlob(unittest.TestCase):
             ('/a[!b]', r'^/a[^b]$'),
             ('/a[]]', r'^/a[\]]$'),
             ('/a\\*', r'^/a\*$'),
-            ('/[[:alpha:][:num:]]', '^/[[:alpha:][:num:]]$'),
-            ('/[[:alpha:]0-5]', '^/[[:alpha:]0-5]$')
             ]
         self.assertListEqual(
             [self.translate(g) for g, r in translations],
             [r for g, r in translations]
             )
+
+    def test_unicode(self):
+        tests = [
+            ('/[[:alpha:][:digit:]]', (
+                '/a',
+                '/ñ',
+                '/1',
+                ), (
+                '/_',
+                )),
+            ('/[[:alpha:]0-5]', (
+                '/a',
+                '/á',
+                ), (
+                '/6',
+                '/_',
+                )),
+            ]
+        for pattern, matching, nonmatching in tests:
+            pattern = re.compile(self.translate(pattern))
+            for test in matching:
+                self.assertTrue(pattern.match(test))
+            for test in nonmatching:
+                self.assertFalse(pattern.match(test))
 
     def test_unsupported(self):
         translations = [

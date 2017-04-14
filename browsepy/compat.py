@@ -211,6 +211,24 @@ def which(name,
     return None
 
 
+def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
+    '''
+    Escape all special regex characters in pattern.
+    Logic taken from regex module.
+
+    :param pattern: regex pattern to escape
+    :type patterm: str
+    :returns: escaped pattern
+    :rtype: str
+    '''
+    escape = '\\{}'.format
+    return ''.join(
+        escape(c) if c in chars or c.isspace() else
+        '\\000' if c == '\x00' else c
+        for c in pattern
+        )
+
+
 if PY_LEGACY:
     FileNotFoundError = type('FileNotFoundError', (OSError,), {})  # noqa
     range = xrange  # noqa
@@ -218,6 +236,7 @@ if PY_LEGACY:
     basestring = basestring  # noqa
     unicode = unicode  # noqa
     chr = unichr  # noqa
+    bytes = str  # noqa
 else:
     FileNotFoundError = FileNotFoundError
     range = range
@@ -225,3 +244,4 @@ else:
     basestring = str
     unicode = str
     chr = chr
+    bytes = bytes
