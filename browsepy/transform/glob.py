@@ -118,8 +118,9 @@ class GlobTransform(StateMachine):
     current = 'start'
     deferred = False
 
-    def __init__(self, data, sep=os.sep):
+    def __init__(self, data, sep=os.sep, base=None):
         self.sep = sep
+        self.base = base or ''
         self.deferred_data = []
         self.jumps = dict(self.jumps)
         self.jumps['start'] = dict(self.jumps['start'])
@@ -167,7 +168,7 @@ class GlobTransform(StateMachine):
 
     def transform_start(self, data, mark, next):
         if mark == self.sep:
-            return '^'
+            return '^%s' % self.base
         return self.transform_text(self.sep, mark, next)
 
     def transform_wildcard(self, data, mark, next):
@@ -208,6 +209,6 @@ class GlobTransform(StateMachine):
         return ')'
 
 
-def translate(data, sep=os.sep):
-    self = GlobTransform(data)
+def translate(data, sep=os.sep, base=None):
+    self = GlobTransform(data, sep, base)
     return ''.join(self)

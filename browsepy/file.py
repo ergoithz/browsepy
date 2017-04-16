@@ -918,15 +918,7 @@ def create_exclude(app, os_sep=os.sep):
     :returns: relative exclude function or None depending on app.config.
     :rtype: callable or None
     '''
-    exclude = app.config.get('exclude_fnc') if app else None
-    if exclude:
-        def exclude_fnc(path):
-            return exclude(fmt(rel(path, base, os_sep)))
-        base = app.config.get('directory_base', '')
-        rel = relativize_path
-        fmt = '{}{{}}'.format(os_sep).format
-        return exclude_fnc
-    return None
+    return app.config.get('exclude_fnc') if app else None
 
 
 def scandir(path, app, os_sep=os.sep):

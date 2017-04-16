@@ -170,12 +170,16 @@ class TestApp(unittest.TestCase):
         open(os.path.join(self.remove, 'testfile.txt'), 'w').close()
         open(os.path.join(self.exclude, 'testfile.txt'), 'w').close()
 
+        def exclude_fnc(path):
+            return path == self.exclude \
+                or path.startswith(self.exclude + os.sep)
+
         self.app.config.update(
             directory_base=self.base,
             directory_start=self.start,
             directory_remove=self.remove,
             directory_upload=self.upload,
-            exclude_fnc=lambda p: p.startswith('/exclude'),
+            exclude_fnc=exclude_fnc,
             SERVER_NAME='test',
             )
 
@@ -849,17 +853,10 @@ class TestFileFunctions(unittest.TestCase):
     def test_create_exclude(self):
         data = []
         app = flask.Flask('test')
-        app.config.update(
-            directory_base='/a',
-            exclude_fnc=data.append
-            )
+        app.config.update(exclude_fnc=data.append)
         exclude = self.module.create_exclude(app)
         self.assertEqual(exclude('/a/b'), None)
-        self.assertListEqual(data, ['/b'])
-        self.assertRaises(
-            browsepy.OutsideDirectoryBase,
-            exclude, '/c'
-        )
+        self.assertListEqual(data, ['/a/b'])
 
     def test_under_base(self):
         self.assertTrue(
@@ -890,7 +887,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, None)
         self.assertEqual(result.removable, None)
         self.assertEqual(result.upload, None)
-        self.assertEqual(result.exclude, None)
+        self.assertEqual(result.exclude, [])
         self.assertEqual(result.plugin, [])
 
     def test_params(self):
@@ -935,7 +932,7 @@ class TestMain(unittest.TestCase):
         self.assertIsNone(result.initial)
         self.assertIsNone(result.removable)
         self.assertIsNone(result.upload)
-        self.assertIsNone(result.exclude)
+        self.assertListEqual(result.exclude, [])
         self.assertListEqual(result.plugin, [])
 
         self.assertRaises(
@@ -946,9 +943,9 @@ class TestMain(unittest.TestCase):
 
     def test_exclude(self):
         result = self.parser.parse_args(['--exclude', '/.*'])
-        match = re.compile(result.exclude).match
-        self.assertTrue(match('/.a'))
-        self.assertFalse(match('/a/.a'))
+        match = self.module.create_exclude_fnc(result.exclude, '/b')
+        self.assertTrue(match('/b/.a'))
+        self.assertFalse(match('/b/a/.a'))
 
     def test_main(self):
         params = {}
