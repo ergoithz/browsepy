@@ -168,7 +168,7 @@ class GlobTransform(StateMachine):
 
     def transform_start(self, data, mark, next):
         if mark == self.sep:
-            return '^%s' % self.base
+            return '^%s' % self.transform_text(self.base, mark, next)
         return self.transform_text(self.sep, mark, next)
 
     def transform_wildcard(self, data, mark, next):

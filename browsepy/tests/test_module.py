@@ -714,12 +714,13 @@ class TestFile(unittest.TestCase):
         os.chmod(bad_file, os.stat(bad_file).st_mode | stat.S_IEXEC)
 
         old_path = os.environ['PATH']
-        os.environ['PATH'] = bad_path + os.pathsep + old_path
+        os.environ['PATH'] = bad_path
 
-        f = self.module.File(tmp_txt, app=self.app)
-        self.assertEqual(f.mimetype, 'application/octet-stream')
-
-        os.environ['PATH'] = old_path
+        try:
+            f = self.module.File(tmp_txt, app=self.app)
+            self.assertEqual(f.mimetype, 'application/octet-stream')
+        finally:
+            os.environ['PATH'] = old_path
 
     def test_size(self):
         test_file = os.path.join(self.workbench, 'test.csv')
@@ -849,14 +850,6 @@ class TestFileFunctions(unittest.TestCase):
             browsepy.OutsideDirectoryBase,
             self.module.relativize_path, '/other', '/parent'
         )
-
-    def test_create_exclude(self):
-        data = []
-        app = flask.Flask('test')
-        app.config.update(exclude_fnc=data.append)
-        exclude = self.module.create_exclude(app)
-        self.assertEqual(exclude('/a/b'), None)
-        self.assertListEqual(data, ['/a/b'])
 
     def test_under_base(self):
         self.assertTrue(

@@ -60,7 +60,7 @@ class Node(object):
 
     @cached_property
     def is_excluded(self):
-        exclude = create_exclude(self.app)
+        exclude = self.app and self.app.config['exclude_fnc']
         components = [self.path] + [a.path for a in self.ancestors]
         return exclude and any(map(exclude, components))
 
@@ -603,7 +603,7 @@ class Directory(Node):
             TarFileStream(
                 self.path,
                 self.app.config['directory_tar_buffsize'],
-                create_exclude(self.app),
+                self.app.config['exclude_fnc'],
                 ),
             mimetype="application/octet-stream"
             )
@@ -903,25 +903,7 @@ def alternative_filename(filename, attempt=None):
     return u'%s%s%s' % (name, extra, ext)
 
 
-def create_exclude(app, os_sep=os.sep):
-    '''
-    Generates an exclude function from given app which relativizes path
-    to base directory (prefixing sep) before forwarding it to
-    :attr:`app.config` ``exclude_fnc`` value.
-
-    This function returns None if exclude_fnc is either None or not defined.
-
-    :param app: flask application
-    :type app: flask.Flask or None
-    :param os_sep: path component separator, defaults to current OS separator
-    :type os_sep: str
-    :returns: relative exclude function or None depending on app.config.
-    :rtype: callable or None
-    '''
-    return app.config.get('exclude_fnc') if app else None
-
-
-def scandir(path, app, os_sep=os.sep):
+def scandir(path, app=None):
     '''
     Config-aware scandir. Currently, only aware of ``exclude_fnc``.
 
@@ -929,12 +911,10 @@ def scandir(path, app, os_sep=os.sep):
     :type path: str
     :param app: flask application
     :type app: flask.Flask or None
-    :param os_sep: path component separator, defaults to current OS separator
-    :type os_sep: str
     :returns: filtered scandir entries
     :rtype: iterator
     '''
-    exclude = create_exclude(app, os_sep)
+    exclude = app and app.config.get('exclude_fnc')
     if exclude:
         return (
             item
