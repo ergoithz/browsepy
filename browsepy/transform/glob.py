@@ -128,7 +128,10 @@ class GlobTransform(StateMachine):
         super(GlobTransform, self).__init__(data)
 
     def flush(self):
-        return '%s$' % super(GlobTransform, self).flush()
+        return '%s(%s|$)' % (
+            super(GlobTransform, self).flush(),
+            re_escape(self.sep),
+            )
 
     def transform(self, data, mark, next):
         data = super(GlobTransform, self).transform(data, mark, next)
@@ -168,8 +171,8 @@ class GlobTransform(StateMachine):
 
     def transform_start(self, data, mark, next):
         if mark == self.sep:
-            return '^%s' % self.transform_text(self.base, mark, next)
-        return self.transform_text(self.sep, mark, next)
+            return '^%s' % re_escape(self.base)
+        return re_escape(self.sep)
 
     def transform_wildcard(self, data, mark, next):
         if self.start == '**':

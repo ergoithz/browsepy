@@ -55,7 +55,8 @@ class ArgParse(argparse.ArgumentParser):
             default=self.default_directory,
             help='base serving directory (default: current path)')
         self.add_argument(
-            '--initial', metavar='PATH', type=self._directory,
+            '--initial', metavar='PATH',
+            type=lambda x: self._directory(x) if x else None,
             help='initial directory (default: same as --directory)')
         self.add_argument(
             '--removable', metavar='PATH', type=self._directory,
@@ -69,7 +70,12 @@ class ArgParse(argparse.ArgumentParser):
             '--exclude', metavar='PATTERN',
             action='append',
             default=[],
-            help='exclude paths by pattern (multiple allowed)')
+            help='exclude paths by pattern (multiple)')
+        self.add_argument(
+            '--exclude-from', metavar='PATH', type=self._file,
+            action='append',
+            default=[],
+            help='exclude path by pattern file (multiple)')
         self.add_argument(
             '--plugin', metavar='MODULE',
             action=self.plugin_action_class,
@@ -77,14 +83,22 @@ class ArgParse(argparse.ArgumentParser):
             help='load plugin module (multiple allowed)')
         self.add_argument('--debug', action='store_true', help='debug mode')
 
-    def _directory(self, arg):
-        if not arg:
-            return None
+    def _path(self, arg):
         if PY_LEGACY and hasattr(sys.stdin, 'encoding'):
             encoding = sys.stdin.encoding or sys.getdefaultencoding()
             arg = arg.decode(encoding)
-        if os.path.isdir(arg):
-            return os.path.abspath(arg)
+        return os.path.abspath(arg)
+
+    def _file(self, arg):
+        path = self._path(arg)
+        if os.path.isfile(path):
+            return path
+        self.error('%s is not a valid file' % arg)
+
+    def _directory(self, arg):
+        path = self._path(arg)
+        if os.path.isdir(path):
+            return path
         self.error('%s is not a valid directory' % arg)
 
 
@@ -94,14 +108,25 @@ def create_exclude_fnc(patterns, base):
             translate(pattern, base=base)
             for pattern in patterns
             )
-        print(patterns, regex)
-        return re.compile(regex).match
+        return re.compile(regex).search
     return None
+
+
+def collect_exclude_patterns(paths):
+    patterns = []
+    for path in paths:
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.split('#')[0].strip()
+                if line:
+                    patterns.append(line)
+    return patterns
 
 
 def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     plugin_manager = app.extensions['plugin_manager']
     args = plugin_manager.load_arguments(argv, parser())
+    patterns = args.exclude + collect_exclude_patterns(args.exclude_from)
     if args.debug:
         os.environ['DEBUG'] = 'true'
     app.config.update(
@@ -110,7 +135,7 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         directory_remove=args.removable,
         directory_upload=args.upload,
         plugin_modules=args.plugin,
-        exclude_fnc=create_exclude_fnc(args.exclude, args.directory)
+        exclude_fnc=create_exclude_fnc(patterns, args.directory)
         )
     plugin_manager.reload()
     run_fnc(

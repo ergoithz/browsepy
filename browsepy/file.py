@@ -61,8 +61,7 @@ class Node(object):
     @cached_property
     def is_excluded(self):
         exclude = self.app and self.app.config['exclude_fnc']
-        components = [self.path] + [a.path for a in self.ancestors]
-        return exclude and any(map(exclude, components))
+        return exclude and exclude(self.path)
 
     @cached_property
     def plugin_manager(self):
@@ -648,14 +647,19 @@ class Directory(Node):
         :ytype: Node
         '''
         for entry in scandir(self.path, self.app):
-            kwargs = {'path': entry.path, 'app': self.app, 'parent': self}
+            kwargs = {
+                'path': entry.path,
+                'app': self.app,
+                'parent': self,
+                'is_excluded': False
+                }
             try:
                 if precomputed_stats and not entry.is_symlink():
                     kwargs['stats'] = entry.stat()
                 if entry.is_dir(follow_symlinks=True):
                     yield self.directory_class(**kwargs)
-                    continue
-                yield self.file_class(**kwargs)
+                else:
+                    yield self.file_class(**kwargs)
             except OSError as e:
                 logger.exception(e)
 

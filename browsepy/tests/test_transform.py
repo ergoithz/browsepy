@@ -25,19 +25,19 @@ class TestGlob(unittest.TestCase):
 
     def test_glob(self):
         translations = [
-            ('/a', r'^/a$'),
-            ('a', r'/a$'),
-            ('/a*', r'^/a[^/]*$'),
-            ('/a**', r'^/a.*$'),
-            ('a?', r'/a.$'),
-            ('/a{b,c}', r'^/a(b|c)$'),
-            ('/a[a,b]', r'^/a[a,b]$'),
-            ('/a[!b]', r'^/a[^b]$'),
-            ('/a[]]', r'^/a[\]]$'),
-            ('/a\\*', r'^/a\*$'),
+            ('/a', r'^/a(/|$)'),
+            ('a', r'/a(/|$)'),
+            ('/a*', r'^/a[^/]*(/|$)'),
+            ('/a**', r'^/a.*(/|$)'),
+            ('a?', r'/a.(/|$)'),
+            ('/a{b,c}', r'^/a(b|c)(/|$)'),
+            ('/a[a,b]', r'^/a[a,b](/|$)'),
+            ('/a[!b]', r'^/a[^b](/|$)'),
+            ('/a[]]', r'^/a[\]](/|$)'),
+            ('/a\\*', r'^/a\*(/|$)'),
             ]
         self.assertListEqual(
-            [self.translate(g) for g, r in translations],
+            [self.translate(g, sep='/') for g, r in translations],
             [r for g, r in translations]
             )
 
@@ -67,13 +67,13 @@ class TestGlob(unittest.TestCase):
 
     def test_unsupported(self):
         translations = [
-            ('[[.a-acute.]]a', '/.a$'),
-            ('/[[=a=]]a', '^/.a$'),
-            ('/[[=a=]\d]a', '^/.a$'),
-            ('[[:non-existent-class:]]a', '/.a$'),
+            ('[[.a-acute.]]a', '/.a(/|$)'),
+            ('/[[=a=]]a', '^/.a(/|$)'),
+            ('/[[=a=]\d]a', '^/.a(/|$)'),
+            ('[[:non-existent-class:]]a', '/.a(/|$)'),
             ]
         for source, result in translations:
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
-                self.assertEqual(self.translate(source), result)
+                self.assertEqual(self.translate(source, sep='/'), result)
                 self.assertSubclass(w[-1].category, Warning)

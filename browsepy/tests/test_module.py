@@ -868,6 +868,9 @@ class TestMain(unittest.TestCase):
         self.app = browsepy.app
         self.parser = self.module.ArgParse(sep=os.sep)
         self.base = tempfile.mkdtemp()
+        self.exclude_file = os.path.join(self.base, '.ignore')
+        with open(self.exclude_file, 'w') as f:
+            f.write('.ignore\n')
 
     def tearDown(self):
         shutil.rmtree(self.base)
@@ -880,7 +883,8 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, None)
         self.assertEqual(result.removable, None)
         self.assertEqual(result.upload, None)
-        self.assertEqual(result.exclude, [])
+        self.assertListEqual(result.exclude, [])
+        self.assertListEqual(result.exclude_from, [])
         self.assertEqual(result.plugin, [])
 
     def test_params(self):
@@ -893,6 +897,7 @@ class TestMain(unittest.TestCase):
             '--removable=%s' % self.base,
             '--upload=%s' % self.base,
             '--exclude=a',
+            '--exclude-from=%s' % self.exclude_file,
             ] + [
             '--plugin=%s' % plugin
             for plugin in plugins
@@ -903,7 +908,8 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, self.base)
         self.assertEqual(result.removable, self.base)
         self.assertEqual(result.upload, self.base)
-        self.assertIsNotNone(result.exclude)
+        self.assertListEqual(result.exclude, ['a'])
+        self.assertListEqual(result.exclude_from, [self.exclude_file])
         self.assertEqual(result.plugin, plugins)
 
         result = self.parser.parse_args([
@@ -913,7 +919,7 @@ class TestMain(unittest.TestCase):
             ])
         self.assertEqual(result.directory, self.base)
         self.assertEqual(result.plugin, plugins)
-        self.assertIsNotNone(result.exclude)
+        self.assertListEqual(result.exclude, ['/.*'])
 
         result = self.parser.parse_args([
             '--directory=%s' % self.base,
@@ -926,6 +932,7 @@ class TestMain(unittest.TestCase):
         self.assertIsNone(result.removable)
         self.assertIsNone(result.upload)
         self.assertListEqual(result.exclude, [])
+        self.assertListEqual(result.exclude_from, [])
         self.assertListEqual(result.plugin, [])
 
         self.assertRaises(
@@ -934,11 +941,25 @@ class TestMain(unittest.TestCase):
             ['--directory=%s' % __file__]
         )
 
+        self.assertRaises(
+            SystemExit,
+            self.parser.parse_args,
+            ['--exclude-from=non-existing']
+        )
+
     def test_exclude(self):
-        result = self.parser.parse_args(['--exclude', '/.*'])
-        match = self.module.create_exclude_fnc(result.exclude, '/b')
+        result = self.parser.parse_args([
+            '--exclude', '/.*',
+            '--exclude-from', self.exclude_file,
+        ])
+        extra = self.module.collect_exclude_patterns(result.exclude_from)
+        self.assertListEqual(extra, ['.ignore'])
+        match = self.module.create_exclude_fnc(
+            result.exclude + extra, '/b')
         self.assertTrue(match('/b/.a'))
+        self.assertTrue(match('/b/.a/b'))
         self.assertFalse(match('/b/a/.a'))
+        self.assertTrue(match('/b/a/.ignore'))
 
     def test_main(self):
         params = {}
