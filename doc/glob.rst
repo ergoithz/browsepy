@@ -7,6 +7,9 @@ Starting from version **0.5.3**, browsepy accepts the **--exclude** command
 line argument which expects a linux filename expansion string, also known as
 glob.
 
+Argument **--exclude-from**, receiving a path to a file with glob lines
+was also introduced by **0.5.3** version.
+
 Please note that both collating symbols (like [.a-acute.]) and
 equivalence class expressions (like [=a=]) are currently unsupported.
 

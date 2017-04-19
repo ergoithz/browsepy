@@ -72,3 +72,4 @@ Utility functions
 .. autofunction:: check_under_base
 .. autofunction:: secure_filename
 .. autofunction:: alternative_filename
+.. autofunction:: scandir

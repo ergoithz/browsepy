@@ -60,6 +60,12 @@ class Node(object):
 
     @cached_property
     def is_excluded(self):
+        '''
+        Get if current node shouldn't be shown, using :attt:`app` config's 
+        exclude_fnc.
+
+        :returns: True if excluded, False otherwise
+        '''
         exclude = self.app and self.app.config['exclude_fnc']
         return exclude and exclude(self.path)
 

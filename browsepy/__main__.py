@@ -53,19 +53,19 @@ class ArgParse(argparse.ArgumentParser):
         self.add_argument(
             '--directory', metavar='PATH', type=self._directory,
             default=self.default_directory,
-            help='base serving directory (default: current path)')
+            help='serving directory (default: current path)')
         self.add_argument(
             '--initial', metavar='PATH',
             type=lambda x: self._directory(x) if x else None,
-            help='initial directory (default: same as --directory)')
+            help='default directory (default: same as --directory)')
         self.add_argument(
             '--removable', metavar='PATH', type=self._directory,
             default=None,
-            help='base directory for remove (default: none)')
+            help='base directory allowing remove (default: none)')
         self.add_argument(
             '--upload', metavar='PATH', type=self._directory,
             default=None,
-            help='base directory for upload (default: none)')
+            help='base directory allowing upload (default: none)')
         self.add_argument(
             '--exclude', metavar='PATTERN',
             action='append',
@@ -75,13 +75,15 @@ class ArgParse(argparse.ArgumentParser):
             '--exclude-from', metavar='PATH', type=self._file,
             action='append',
             default=[],
-            help='exclude path by pattern file (multiple)')
+            help='exclude paths by pattern file (multiple)')
         self.add_argument(
             '--plugin', metavar='MODULE',
             action=self.plugin_action_class,
             default=[],
-            help='load plugin module (multiple allowed)')
-        self.add_argument('--debug', action='store_true', help='debug mode')
+            help='load plugin module (multiple)')
+        self.add_argument(
+            '--debug', action='store_true',
+            help=argparse.SUPPRESS)
 
     def _path(self, arg):
         if PY_LEGACY and hasattr(sys.stdin, 'encoding'):

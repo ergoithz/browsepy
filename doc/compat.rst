@@ -59,14 +59,30 @@ Compat Module
 
   Convenience python type reference.
 
+.. attribute:: scandir
+  :annotation: = scandir.scandir or os.walk
+
+  New scandir, either from scandir module or Python3.6+ os module.
+
+.. attribute:: walk
+  :annotation: = scandir.walk or os.walk
+
+  New walk, either from scandir module or Python3.6+ os module.
+
+.. autofunction:: isexec(path)
+
 .. autofunction:: which(name, env_path=ENV_PATH, is_executable_fnc=isexec, path_join_fnc=os.path.join)
 
 .. autofunction:: getdebug(environ=os.environ, true_values=TRUE_VALUES)
 
 .. autofunction:: deprecated(func_or_text, environ=os.environ)
 
+.. autofunction:: usedoc(other)
+
 .. autofunction:: fsdecode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None)
 
 .. autofunction:: fsencode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None)
 
 .. autofunction:: getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd)
+
+.. autofunction:: re_escape(pattern, chars="()[]{}?*+|^$\\.-#")
