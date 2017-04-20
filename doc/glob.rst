@@ -13,7 +13,12 @@ was also introduced by **0.5.3** version.
 Please note that both collating symbols (like [.a-acute.]) and
 equivalence class expressions (like [=a=]) are currently unsupported.
 
+Glob patterns
+-------------
 
+Glob patterns are common on UNIX enviroments, as they're expanded by most shells while being widely supported among very popular applications.
+
+They allow matching filemames using wildcards, being the most common `*` (matching any string, even empty) and `?` (matching a single character).
 
 .. _glob-manpage:
 

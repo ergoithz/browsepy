@@ -57,8 +57,8 @@ this list.
 ::
 
   usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
-                  [--upload PATH] [--exclude PATTERN] [--plugin PLUGIN]
-                  [--debug]
+                  [--upload PATH] [--exclude PATTERN] [--exclude-from PATH]
+                  [--plugin MODULE]
                   [host] [port]
 
   positional arguments:
@@ -67,28 +67,29 @@ this list.
 
   optional arguments:
     -h, --help            show this help message and exit
-    --directory PATH      base serving directory (default: current path)
-    --initial PATH        initial directory (default: same as --directory)
-    --removable PATH      base directory for remove (default: none)
-    --upload PATH         base directory for upload (default: none)
-    --exclude PATTERN     exclude paths by pattern (multiple allowed)
-    --plugin MODULE       load plugin module (multiple allowed)
-    --debug               debug mode
+    --directory PATH      serving directory (default: current path)
+    --initial PATH        default directory (default: same as --directory)
+    --removable PATH      base directory allowing remove (default: none)
+    --upload PATH         base directory allowing upload (default: none)
+    --exclude PATTERN     exclude paths by pattern (multiple)
+    --exclude-from PATH   exclude paths by pattern file (multiple)
+    --plugin MODULE       load plugin module (multiple)
+
 
 Showing help including player plugin arguments:
 
 .. code-block:: bash
 
-  browsepy --plugin=player --help
+  browsepy --plugin player --help
 
-And this is what is printed when you run `browsepy --plugin=player --help`.
+And this is what is printed when you run `browsepy --plugin player --help`.
 Please note the extra parameters below `player arguments`.
 
 ::
 
   usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
-                  [--upload PATH] [--exclude PATTERN] [--plugin PLUGIN]
-                  [--debug] [--player-directory-play]
+                  [--upload PATH] [--exclude PATTERN] [--exclude-from PATH]
+                  [--plugin MODULE]
                   [host] [port]
 
   positional arguments:
@@ -97,13 +98,13 @@ Please note the extra parameters below `player arguments`.
 
   optional arguments:
     -h, --help            show this help message and exit
-    --directory PATH      base serving directory (default: current path)
-    --initial PATH        initial directory (default: same as --directory)
-    --removable PATH      base directory for remove (default: none)
-    --upload PATH         base directory for upload (default: none)
-    --exclude PATTERN     exclude paths by pattern (multiple allowed)
-    --plugin MODULE       load plugin module (multiple allowed)
-    --debug               debug mode
+    --directory PATH      serving directory (default: current path)
+    --initial PATH        default directory (default: same as --directory)
+    --removable PATH      base directory allowing remove (default: none)
+    --upload PATH         base directory allowing upload (default: none)
+    --exclude PATTERN     exclude paths by pattern (multiple)
+    --exclude-from PATH   exclude paths by pattern file (multiple)
+    --plugin MODULE       load plugin module (multiple)
 
   player arguments:
     --player-directory-play

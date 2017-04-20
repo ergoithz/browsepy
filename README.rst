@@ -129,22 +129,25 @@ plugins (loaded with `plugin` argument) could add extra arguments to this list.
 
 ::
 
-    usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
-                    [--upload PATH] [--plugin PLUGIN_LIST] [--debug]
-                    [host] [port]
+  usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
+                  [--upload PATH] [--exclude PATTERN] [--exclude-from PATH]
+                  [--plugin MODULE]
+                  [host] [port]
 
-    positional arguments:
-      host                  address to listen (default: 127.0.0.1)
-      port                  port to listen (default: 8080)
+  positional arguments:
+    host                  address to listen (default: 127.0.0.1)
+    port                  port to listen (default: 8080)
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      --directory PATH      base serving directory (default: current path)
-      --initial PATH        initial directory (default: same as --directory)
-      --removable PATH      base directory for remove (default: none)
-      --upload PATH         base directory for upload (default: none)
-      --plugin PLUGIN_LIST  comma-separated list of plugins
-      --debug               debug mode
+  optional arguments:
+    -h, --help            show this help message and exit
+    --directory PATH      serving directory (default: current path)
+    --initial PATH        default directory (default: same as --directory)
+    --removable PATH      base directory allowing remove (default: none)
+    --upload PATH         base directory allowing upload (default: none)
+    --exclude PATTERN     exclude paths by pattern (multiple)
+    --exclude-from PATH   exclude paths by pattern file (multiple)
+    --plugin MODULE       load plugin module (multiple)
+
 
 Using as library
 ----------------
@@ -180,6 +183,7 @@ following configuration options.
   plugin_namespaces) will be loaded.
 * **plugin_namespaces** prefixes for module names listed at plugin_modules
   where relative plugin_modules are searched.
+* **exclude_fnc** function will be used to exclude files from listing and directory tarballs. Can be either None or function receiving an absolute path and returning a boolean.
 
 After editing `plugin_modules` value, plugin manager (available at module
 plugin_manager and app.extensions['plugin_manager']) should be reloaded using
