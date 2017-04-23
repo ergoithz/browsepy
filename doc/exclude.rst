@@ -1,11 +1,13 @@
-.. _excluding:
+.. _excluding-paths:
 
 Excluding paths
 ===============
 
-Starting from version **0.5.3**, browsepy accepts the **--exclude** command
-line argument which expects a linux filename expansion string, also known as
-glob.
+Starting from version **0.5.3**, browsepy accepts **--exclude** command
+line arguments expecting linux filename expansion strings, also known as
+globs.
+
+They allow matching filemames using wildcards, being the most common `*` (matching any string, even empty) and `?` (matching a single character). See :doc:`glob-manpage` for further info.
 
 Please note that both collating symbols (like [.a-acute.]) and
 equivalence class expressions (like [=a=]) are currently unsupported.
@@ -20,8 +22,8 @@ as follows:
 
   browsepy --exclude=.*
 
-The above example will hide all files prefixed with ``.``, which are considered
-hidden on POSIX systems.
+The above example will exclude all files prefixed with ``.``, which are considered
+hidden on POSIX systems. In other words, it will match `.myfile` and not `my.file`.
 
 The following example will hide all files ending with ``.ini``, but only on the
 base directory.
@@ -31,8 +33,13 @@ base directory.
   browsepy --exclude=/*.ini
 
 You will find this syntax very similar to definitions found in **.gitignore**,
-**.dockerignore** and others exclusion definition files. It is, indeed, the
-same.
+**.dockerignore** and others ignore definition files. As browsepy uses
+same format, you can pass them to browsepy using **--exclude-from**
+options.
+
+.. code-block:: bash
+
+  browsepy --exclude-from=.gitignore
 
 .. _glob-manpage:
 

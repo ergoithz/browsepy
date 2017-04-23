@@ -35,6 +35,7 @@ Instructions for users, implementers and developers.
    :maxdepth: 2
 
    quickstart
+   exclude
    builtin_plugins
    plugins
    integrations
