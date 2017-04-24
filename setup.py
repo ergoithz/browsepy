@@ -28,6 +28,7 @@ MIT (see LICENSE file).
 import os
 import os.path
 import sys
+import shutil
 
 try:
     from setuptools import setup
@@ -51,6 +52,9 @@ extra_requires = []
 bdist = 'bdist' in sys.argv or any(a.startswith('bdist_') for a in sys.argv)
 if bdist or not hasattr(os, 'scandir'):
     extra_requires.append('scandir')
+
+if bdist or not hasattr(shutil, 'get_terminal_size'):
+    extra_requires.append('backports.shutil_get_terminal_size')
 
 for debugger in ('ipdb', 'pudb', 'pdb'):
     opt = '--debug=%s' % debugger

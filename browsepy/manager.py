@@ -435,6 +435,23 @@ class ArgumentPluginManager(PluginManagerBase):
     _argparse_kwargs = {'add_help': False}
     _argparse_arguments = argparse.Namespace()
 
+    def extract_plugin_arguments(self, plugin):
+        '''
+        Given a plugin name, extracts its registered_arguments as an
+        iterable of (args, kwargs) tuples.
+
+        :param plugin: plugin name
+        :type plugin: str
+        :returns: iterable if (args, kwargs) tuples.
+        :rtype: iterable
+        '''
+        module = self.import_plugin(plugin)
+        if hasattr(module, 'register_arguments'):
+            manager = ArgumentPluginManager()
+            module.register_arguments(manager)
+            return manager._argparse_argkwargs
+        return ()
+
     def load_arguments(self, argv, base=None):
         '''
         Process given argument list based on registered arguments and given
@@ -455,22 +472,23 @@ class ArgumentPluginManager(PluginManagerBase):
         :rtype: argparse.Namespace
         '''
         plugin_parser = argparse.ArgumentParser(add_help=False)
-        plugin_parser.add_argument(
-            '--plugin',
-            type=lambda x: x.split(',') if x else [],
-            default=[]
-            )
+        plugin_parser.add_argument('--plugin', action='append', default=[])
+        parent = base or plugin_parser
         parser = argparse.ArgumentParser(
-            parents=(base or plugin_parser,),
-            add_help=False
+            parents=(parent,),
+            add_help=False,
+            **getattr(parent, 'defaults', {})
             )
-        for plugin in plugin_parser.parse_known_args(argv)[0].plugin:
-            module = self.import_plugin(plugin)
-            if hasattr(module, 'register_arguments'):
-                manager = ArgumentPluginManager()
-                module.register_arguments(manager)
+        plugins = [
+            plugin
+            for plugins in plugin_parser.parse_known_args(argv)[0].plugin
+            for plugin in plugins.split(',')
+            ]
+        for plugin in sorted(set(plugins), key=plugins.index):
+            arguments = self.extract_plugin_arguments(plugin)
+            if arguments:
                 group = parser.add_argument_group('%s arguments' % plugin)
-                for argargs, argkwargs in manager._argparse_argkwargs:
+                for argargs, argkwargs in arguments:
                     group.add_argument(*argargs, **argkwargs)
         self._argparse_arguments = parser.parse_args(argv)
         return self._argparse_arguments

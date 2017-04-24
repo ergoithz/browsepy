@@ -14,12 +14,14 @@ PY_LEGACY = sys.version_info < (3, )
 TRUE_VALUES = frozenset(('true', 'yes', '1', 'enable', 'enabled', True, 1))
 
 try:
-    from scandir import scandir, walk
+    from os import scandir, walk
 except ImportError:
-    if not hasattr(os, 'scandir'):
-        raise
-    scandir = os.scandir
-    walk = os.walk
+    from scandir import scandir, walk  # noqa
+
+try:
+    from shutil import get_terminal_size
+except ImportError:
+    from backports.shutil_get_terminal_size import get_terminal_size  # noqa
 
 
 def isexec(path):

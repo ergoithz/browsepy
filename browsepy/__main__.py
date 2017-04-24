@@ -11,8 +11,18 @@ import warnings
 import flask
 
 from . import app, compat
-from .compat import PY_LEGACY, getdebug
+from .__meta__ import __app__ as app_name
+from .compat import PY_LEGACY, getdebug, get_terminal_size
 from .transform.glob import translate
+
+
+class HelpFormatter(argparse.RawTextHelpFormatter):
+    def __init__(self, prog, indent_increment=2, max_help_position=24,
+                 width=None):
+        if width is None:
+            width = get_terminal_size().columns - 2
+        super(HelpFormatter, self).__init__(
+            prog, indent_increment, max_help_position, width)
 
 
 class PluginAction(argparse.Action):
@@ -27,7 +37,7 @@ class PluginAction(argparse.Action):
         values = value.split(',')
         prev = getattr(namespace, self.dest, None)
         if isinstance(prev, list):
-            values = prev + values
+            values = prev + [p for p in values if p not in prev]
         setattr(namespace, self.dest, values)
 
 
@@ -37,11 +47,14 @@ class ArgParse(argparse.ArgumentParser):
     default_port = os.getenv('BROWSEPY_PORT', '8080')
     plugin_action_class = PluginAction
 
-    description = 'extendable web file browser'
+    defaults = {
+        'prog': app_name,
+        'formatter_class': HelpFormatter,
+        'description': 'description: starts a %s web file browser' % app_name
+        }
 
     def __init__(self, sep=os.sep):
-        super(ArgParse, self).__init__(description=self.description)
-
+        super(ArgParse, self).__init__(**self.defaults)
         self.add_argument(
             'host', nargs='?',
             default=self.default_host,
