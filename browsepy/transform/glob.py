@@ -8,11 +8,8 @@ from ..compat import re_escape, chr
 from . import StateMachine
 
 
-class GlobTransform(StateMachine):
+class GlobTransformBase(StateMachine):
     jumps = {
-        'start': {
-            '': 'text',  # edit on __init__
-            },
         'text': {
             '*': 'wildcard',
             '**': 'wildcard',
@@ -22,6 +19,10 @@ class GlobTransform(StateMachine):
             '[]': 'range',
             '{': 'group',
             '\\': 'literal',
+            '/': 'sep',
+            },
+        'sep': {
+            '': 'text',
             },
         'literal': {
             c: 'text' for c in '\\*?[{'
@@ -30,10 +31,14 @@ class GlobTransform(StateMachine):
             '': 'text',
             },
         'range': {
+            '/': 'range_sep',
             ']': 'range_close',
             '[.': 'posix_collating_symbol',
             '[:': 'posix_character_class',
             '[=': 'posix_equivalence_class',
+            },
+        'range_sep': {
+            '': 'range',
             },
         'range_ignore': {
             '': 'range',
@@ -115,7 +120,7 @@ class GlobTransform(StateMachine):
             ranges(((48, 58), (65, 71), (97, 103)))
             ),
         }
-    current = 'start'
+    current = 'text'
     deferred = False
 
     def __init__(self, data, sep=os.sep, base=None):
@@ -123,18 +128,10 @@ class GlobTransform(StateMachine):
         self.base = base or ''
         self.deferred_data = []
         self.jumps = dict(self.jumps)
-        self.jumps['start'] = dict(self.jumps['start'])
-        self.jumps['start'][sep] = 'text'
-        super(GlobTransform, self).__init__(data)
-
-    def flush(self):
-        return '%s(%s|$)' % (
-            super(GlobTransform, self).flush(),
-            re_escape(self.sep),
-            )
+        super(GlobTransformBase, self).__init__(data)
 
     def transform(self, data, mark, next):
-        data = super(GlobTransform, self).transform(data, mark, next)
+        data = super(GlobTransformBase, self).transform(data, mark, next)
         if self.deferred:
             self.deferred_data.append(data)
             data = ''
@@ -169,20 +166,18 @@ class GlobTransform(StateMachine):
             % (data, mark))
         return None
 
-    def transform_start(self, data, mark, next):
-        if mark == self.sep:
-            return '^%s' % re_escape(self.base)
-        return re_escape(self.sep)
-
     def transform_wildcard(self, data, mark, next):
         if self.start == '**':
             return '.*'
         if self.start == '*':
-            return '[^%s]*' % self.sep
+            return '[^%s]*' % re_escape(self.sep)
         return '.'
 
     def transform_text(self, data, mark, next):
         return re_escape(data)
+
+    def transform_sep(self, data, mark, next):
+        return re_escape(self.sep)
 
     def transform_literal(self, data, mark, next):
         return data[len(self.start):]
@@ -194,6 +189,9 @@ class GlobTransform(StateMachine):
         if self.start == '[]':
             return '[\\]%s' % data[2:]
         return data
+
+    def transform_range_sep(self, data, mark, next):
+        return re_escape(self.sep)
 
     def transform_range_close(self, data, mark, next):
         self.deferred = False
@@ -210,6 +208,28 @@ class GlobTransform(StateMachine):
 
     def transform_group_close(self, data, mark, next):
         return ')'
+
+
+class GlobTransform(GlobTransformBase):
+    jumps = GlobTransformBase.jumps.copy()
+    jumps.update({
+        'start': {
+            '': 'text',
+            '/': 'sep',
+            },
+        })
+    current = 'start'
+
+    def transform_start(self, data, mark, next):
+        if mark == '/':
+            return '^%s' % re_escape(self.base)
+        return re_escape(self.sep)
+
+    def flush(self):
+        return '%s(%s|$)' % (
+            super(GlobTransformBase, self).flush(),
+            re_escape(self.sep),
+            )
 
 
 def translate(data, sep=os.sep, base=None):
