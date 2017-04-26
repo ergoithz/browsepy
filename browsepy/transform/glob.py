@@ -8,8 +8,12 @@ from ..compat import re_escape, chr
 from . import StateMachine
 
 
-class GlobTransformBase(StateMachine):
+class GlobTransform(StateMachine):
     jumps = {
+        'start': {
+            '': 'text',
+            '/': 'sep',
+            },
         'text': {
             '*': 'wildcard',
             '**': 'wildcard',
@@ -27,7 +31,7 @@ class GlobTransformBase(StateMachine):
             '': 'text',
             },
         'literal': {
-            c: 'text' for c in '\\*?[{'
+            c: 'text' for c in ('\\', '*', '?', '[', '{', '}', ',', '/', '')
             },
         'wildcard': {
             '': 'text',
@@ -119,7 +123,7 @@ class GlobTransformBase(StateMachine):
             ranges(((48, 58), (65, 71), (97, 103)))
             ),
         }
-    current = 'text'
+    current = 'start'
     deferred = False
 
     def __init__(self, data, sep=os.sep, base=None):
@@ -127,10 +131,10 @@ class GlobTransformBase(StateMachine):
         self.base = base or ''
         self.deferred_data = []
         self.deep = 0
-        super(GlobTransformBase, self).__init__(data)
+        super(GlobTransform, self).__init__(data)
 
     def transform(self, data, mark, next):
-        data = super(GlobTransformBase, self).transform(data, mark, next)
+        data = super(GlobTransform, self).transform(data, mark, next)
         if self.deferred:
             self.deferred_data.append(data)
             data = ''
@@ -213,17 +217,6 @@ class GlobTransformBase(StateMachine):
             return ')'
         return data
 
-
-class GlobTransform(GlobTransformBase):
-    jumps = GlobTransformBase.jumps.copy()
-    jumps.update({
-        'start': {
-            '': 'text',
-            '/': 'sep',
-            },
-        })
-    current = 'start'
-
     def transform_start(self, data, mark, next):
         if mark == '/':
             return '^%s' % re_escape(self.base)
@@ -231,7 +224,7 @@ class GlobTransform(GlobTransformBase):
 
     def flush(self):
         return '%s(%s|$)' % (
-            super(GlobTransformBase, self).flush(),
+            super(GlobTransform, self).flush(),
             re_escape(self.sep),
             )
 
