@@ -18,6 +18,8 @@ class GlobTransformBase(StateMachine):
             '[!': 'range',
             '[]': 'range',
             '{': 'group',
+            ',': 'group',
+            '}': 'group',
             '\\': 'literal',
             '/': 'sep',
             },
@@ -56,11 +58,8 @@ class GlobTransformBase(StateMachine):
             '=]': 'range_ignore',
             },
         'group': {
-            '}': 'group_close',
-            },
-        'group_close': {
             '': 'text',
-            }
+            },
         }
     character_classes = {
         'alnum': (
@@ -127,7 +126,7 @@ class GlobTransformBase(StateMachine):
         self.sep = sep
         self.base = base or ''
         self.deferred_data = []
-        self.jumps = dict(self.jumps)
+        self.deep = 0
         super(GlobTransformBase, self).__init__(data)
 
     def transform(self, data, mark, next):
@@ -204,10 +203,15 @@ class GlobTransformBase(StateMachine):
         return ''
 
     def transform_group(self, data, mark, next):
-        return '(%s' % ('|'.join(data[len(self.start):].split(',')))
-
-    def transform_group_close(self, data, mark, next):
-        return ')'
+        if self.start == '{':
+            self.deep += 1
+            return '('
+        if self.start == ',' and self.deep:
+            return '|'
+        if self.start == '}' and self.deep:
+            self.deep -= 1
+            return ')'
+        return data
 
 
 class GlobTransform(GlobTransformBase):
