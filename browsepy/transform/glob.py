@@ -222,13 +222,7 @@ class GlobTransform(StateMachine):
             return '^%s' % re_escape(self.base)
         return re_escape(self.sep)
 
-    def flush(self):
-        return '%s(%s|$)' % (
-            super(GlobTransform, self).flush(),
-            re_escape(self.sep),
-            )
-
 
 def translate(data, sep=os.sep, base=None):
     self = GlobTransform(data, sep, base)
-    return ''.join(self)
+    return '%s(%s|$)' % (''.join(self), re_escape(sep))

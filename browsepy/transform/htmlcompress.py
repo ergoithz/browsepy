@@ -4,10 +4,10 @@ import jinja2
 import jinja2.ext
 import jinja2.lexer
 
-from . import StreamStateMachine
+from . import StateMachine
 
 
-class SGMLCompressContext(StreamStateMachine):
+class SGMLCompressContext(StateMachine):
     re_whitespace = re.compile('[ \\t\\r\\n]+')
     block_tags = {}  # block content will be treated as literal text
     jumps = {  # state machine jumps
@@ -32,34 +32,31 @@ class SGMLCompressContext(StreamStateMachine):
     current = 'text'
 
     def look(self, value, current, start):
-        offset = len(start)
         if self.skip_until_text and current == 'text':
             mark = self.skip_until_text
-            index = value.find(mark, offset)
+            index = value.find(mark, len(self.start))
             if -1 != index:
-                yield index, mark, current
-        else:
-            super_look = super(SGMLCompressContext, self).look
-            for result in super_look(value, current, start):
-                yield result
-        yield len(value), '', None
+                return index, mark, current
+            return len(value), '', None
+        return super(SGMLCompressContext, self).look(
+            value, current, start)
 
     def transform_tag(self, data, mark, next):
         tagstart = self.start == '<'
         data = self.re_whitespace.sub(' ', data[1:] if tagstart else data)
         if tagstart:
-            data = data.lstrip() if next is self.end else data.strip()
+            data = data.lstrip() if next is None else data.strip()
             tagname = data.split(' ', 1)[0]
             self.skip_until_text = self.block_tags.get(tagname)
             return '<' + data
-        elif next is self.end:
+        elif next is None:
             return data.rstrip()
         return self.start if data.strip() == self.start else data
 
     def transform_text(self, data, mark, next):
         if not self.skip_until_text:
             return self.start if data.strip() == self.start else data
-        elif next is not self.end:
+        elif next is not None:
             self.skip_until_text = None
         return data
 

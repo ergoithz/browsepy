@@ -9,11 +9,11 @@ class StateMachine(object):
     Important: when implementing this class, you must set the :attr:`current`
     attribute to a key defined in :attr:`jumps` dict.
     '''
-    end = type('EndType', (object,), {})
     jumps = {}  # state machine jumps
     start = ''  # character which started current state
     current = ''  # initial and current state
     pending = ''  # buffer of current state data
+    streaming = False  # stream mode toggle
 
     def __init__(self, data=''):
         self.pending = data
@@ -25,35 +25,43 @@ class StateMachine(object):
     def look(self, value, current, start):
         offset = len(start)
         try:
-            end = len(value)
-            for mark, next in self.jumps[current].items():
-                index = value.find(mark, offset, end + len(mark))
-                if -1 != index:
-                    end = min(end, index)
-                    yield index, mark, next
+            index = len(value)
+            if self.streaming:
+                index -= max(map(len, self.jumps))
+            size = 0
+            mark = ''
+            next = None
+            for amark, anext in self.jumps[current].items():
+                asize = len(amark)
+                aindex = value.find(amark, offset, index + asize)
+                if (
+                  aindex == -1 or
+                  aindex > index or
+                  aindex == index and asize < size):
+                    continue
+                index = aindex
+                size = asize
+                mark = amark
+                next = anext
         except KeyError:
             raise KeyError(
                 'Current state %r not defined in %s.jumps.'
                 % (current, self.__class__)
                 )
-        yield len(value), '', None  # failing is also an option
-
-    def flush(self):
-        result = (
-            self.transform(self.pending, '', self.end)
-            if self.pending else
-            ''
-            )
-        self.pending = ''
-        self.start = ''
-        return result
+        return index, mark, next
 
     def __iter__(self):
+        '''
+        Iterate over tramsformation result chunks.
+
+        On non-streaming mode, flush and yield it on completion.
+
+        :yields: transformation result chunka
+        :ytype: str
+        '''
         while True:
-            index, mark, next = min(
-                self.look(self.pending, self.current, self.start),
-                key=lambda x: (x[0], -len(x[1]))
-                )
+            index, mark, next = self.look(
+                self.pending, self.current, self.start)
             if next is None:
                 break
             data = self.transform(self.pending[:index], mark, next)
@@ -62,24 +70,21 @@ class StateMachine(object):
             self.pending = self.pending[index:]
             if data:
                 yield data
-        data = self.flush()
-        if data:
+        if not self.streaming:
+            data = (
+                self.transform(self.pending, '', None)
+                if self.pending else
+                ''
+                )
+            self.pending = ''
+            self.start = ''
             yield data
-
-
-class StreamStateMachine(StateMachine):
-    streaming = False
 
     def feed(self, data=''):
         self.streaming = True
         self.pending += data
         for i in self:
             yield i
-
-    def flush(self):
-        if self.streaming:
-            return ''
-        return super(StreamStateMachine, self).flush()
 
     def finish(self, data=''):
         self.pending += data
