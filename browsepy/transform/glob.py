@@ -76,7 +76,7 @@ class GlobTransform(StateMachine):
             ),
         'ascii': (
             # [\x00-\x7F]
-            ranges(((0, 0x7F),))
+            ranges(((0, 0x80),))
             ),
         'blank': (
             # [\p{Zs}\t]
@@ -107,7 +107,7 @@ class GlobTransform(StateMachine):
             unicat['P']
             ),
         'space': (
-            # [\p{Z}\t\r\n\v\f]
+            # [\p{Z}\t\n\v\f\r]
             unicat['Z'] + ranges(((9, 14),))
             ),
         'upper': (
@@ -174,7 +174,7 @@ class GlobTransform(StateMachine):
             return '.*'
         if self.start == '*':
             return '[^%s]*' % re_escape(self.sep)
-        return '.'
+        return '[^%s]' % re_escape(self.sep)
 
     def transform_text(self, data, mark, next):
         return re_escape(data)
