@@ -31,15 +31,15 @@ class SGMLCompressContext(StateMachine):
     skip_until_text = None  # inside text until this is met
     current = 'text'
 
-    def look(self, value, current, start):
-        if self.skip_until_text and current == 'text':
+    @property
+    def nearest(self):
+        if self.skip_until_text and self.current == 'text':
             mark = self.skip_until_text
-            index = value.find(mark, len(self.start))
+            index = self.pending.find(mark, len(self.start))
             if -1 != index:
-                return index, mark, current
-            return len(value), '', None
-        return super(SGMLCompressContext, self).look(
-            value, current, start)
+                return index, mark, self.current
+            return len(self.pending), '', None
+        return super(SGMLCompressContext, self).nearest
 
     def transform_tag(self, data, mark, next):
         tagstart = self.start == '<'

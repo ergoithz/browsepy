@@ -15,40 +15,34 @@ class StateMachine(object):
     pending = ''  # buffer of current state data
     streaming = False  # stream mode toggle
 
-    def __init__(self, data=''):
-        self.pending = data
-
-    def transform(self, data, mark, next):
-        method = getattr(self, 'transform_%s' % self.current, None)
-        return method(data, mark, next) if method else data
-
-    def look(self, value, current, start):
-        offset = len(start)
+    @property
+    def nearest(self):
         try:
-            index = len(value)
-            if self.streaming:
-                index -= max(map(len, self.jumps))
-            size = 0
-            mark = ''
-            next = None
-            for amark, anext in self.jumps[current].items():
-                asize = len(amark)
-                aindex = value.find(amark, offset, index + asize)
-                if (
-                  aindex == -1 or
-                  aindex > index or
-                  aindex == index and asize < size):
-                    continue
-                index = aindex
-                size = asize
-                mark = amark
-                next = anext
+            options = self.jumps[self.current]
         except KeyError:
             raise KeyError(
                 'Current state %r not defined in %s.jumps.'
-                % (current, self.__class__)
+                % (self.current, self.__class__)
                 )
-        return index, mark, next
+        offset = len(self.start)
+        index = len(self.pending)
+        if self.streaming:
+            index -= max(map(len, options))
+        key = (index, 1)
+        result = (index, '', None)
+        for amark, anext in options.items():
+            asize = len(amark)
+            aindex = self.pending.find(amark, offset, index + asize)
+            if aindex > -1:
+                index = aindex
+                akey = (aindex, -asize)
+                if akey < key:
+                    key = akey
+                    result = (aindex, amark, anext)
+        return result
+
+    def __init__(self, data=''):
+        self.pending = data
 
     def __iter__(self):
         '''
@@ -59,26 +53,25 @@ class StateMachine(object):
         :yields: transformation result chunka
         :ytype: str
         '''
-        while True:
-            index, mark, next = self.look(
-                self.pending, self.current, self.start)
-            if next is None:
-                break
+        index, mark, next = self.nearest
+        while next is not None:
             data = self.transform(self.pending[:index], mark, next)
             self.start = mark
             self.current = next
             self.pending = self.pending[index:]
             if data:
                 yield data
+            index, mark, next = self.nearest
         if not self.streaming:
-            data = (
-                self.transform(self.pending, '', None)
-                if self.pending else
-                ''
-                )
-            self.pending = ''
+            data = self.transform(self.pending, mark, next)
             self.start = ''
-            yield data
+            self.pending = ''
+            if data:
+                yield data
+
+    def transform(self, data, mark, next):
+        method = getattr(self, 'transform_%s' % self.current, None)
+        return method(data, mark, next) if method else data
 
     def feed(self, data=''):
         self.streaming = True

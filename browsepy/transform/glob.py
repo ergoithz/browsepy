@@ -177,6 +177,8 @@ class GlobTransform(StateMachine):
         return '[^%s]' % re_escape(self.sep)
 
     def transform_text(self, data, mark, next):
+        if next is None:
+            return '%s(%s|$)' % (re_escape(data), re_escape(self.sep))
         return re_escape(data)
 
     def transform_sep(self, data, mark, next):
@@ -225,4 +227,4 @@ class GlobTransform(StateMachine):
 
 def translate(data, sep=os.sep, base=None):
     self = GlobTransform(data, sep, base)
-    return '%s(%s|$)' % (''.join(self), re_escape(sep))
+    return ''.join(self)
