@@ -26,8 +26,6 @@ class SGMLCompressContext(StateMachine):
         'comment': {'-->': 'text'},
         'cdata': {']]>': 'text'}
         }
-    lineno = 0  # current token lineno
-    skip_until_token = None  # inside token until this is met
     skip_until_text = None  # inside text until this is met
     current = 'text'
 
@@ -36,9 +34,9 @@ class SGMLCompressContext(StateMachine):
         if self.skip_until_text and self.current == 'text':
             mark = self.skip_until_text
             index = self.pending.find(mark, len(self.start))
-            if -1 != index:
-                return index, mark, self.current
-            return len(self.pending), '', None
+            if index == -1:
+                return len(self.pending), '', None
+            return index, mark, self.current
         return super(SGMLCompressContext, self).nearest
 
     def transform_tag(self, data, mark, next):

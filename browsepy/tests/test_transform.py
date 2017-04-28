@@ -37,6 +37,7 @@ class TestGlob(unittest.TestCase):
             ('/a[]]', r'^/a[\]](/|$)'),
             ('/a\\*', r'^/a\*(/|$)'),
             ('a{,.{txt,py[!od]}}', r'/a(|\.(txt|py[^od]))(/|$)'),
+            ('a,a', r'/a,a(/|$)'),
             ]
         self.assertListEqual(
             [self.translate(g, sep='/') for g, r in translations],
