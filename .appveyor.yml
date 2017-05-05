@@ -93,4 +93,5 @@ install:
   - "%PYTHON%/Scripts/pip.exe install -e ."
 
 test_script:
+  - ps: "pwd"
   - "%CMD_IN_ENV% python setup.py test"
