@@ -87,5 +87,7 @@ install:
   # target Python version and architecture
   # - "%CMD_IN_ENV% pip install -r dev-requirements.txt"
 
+build: off
+
 test_script:
   - "%CMD_IN_ENV% python setup.py test"
