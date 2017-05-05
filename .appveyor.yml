@@ -48,6 +48,8 @@ environment:
       PYTHON_VERSION: "3.6.1"
       PYTHON_ARCH: "64"
 
+build: off
+
 install:
   # If there is a newer build queued for the same PR, cancel this one.
   # The AppVeyor 'rollout builds' option is supposed to serve the same
@@ -79,7 +81,7 @@ install:
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  - "pip install --disable-pip-version-check --user --upgrade pip"
+  - "pip install --disable-pip-version-check --user --upgrade pip setuptools"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
@@ -87,7 +89,8 @@ install:
   # target Python version and architecture
   # - "%CMD_IN_ENV% pip install -r dev-requirements.txt"
 
-build: off
+  # Install module
+  - "%PYTHON%/Scripts/pip.exe install -e ."
 
 test_script:
   - "%CMD_IN_ENV% python setup.py test"
