@@ -61,7 +61,7 @@ install:
   - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
   - "%PYTHON%\\python --version"
   - "%PYTHON%\\python -c \"import struct; print(struct.calcsize('P') * 8)\""
-  - "%PYTHON%\\pip install --disable-pip-version-check --user --upgrade pip setuptools"
+  - "%PYTHON%\\Scripts\\pip install --disable-pip-version-check --user --upgrade pip setuptools"
 
 test_script:
   - "build.cmd %PYTHON%\\python.exe setup.py test"
