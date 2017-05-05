@@ -94,4 +94,6 @@ install:
 
 test_script:
   - ps: "pwd"
+  - ps: "ls"
+  - ps: "ls %PYTHON%"
   - "%CMD_IN_ENV% python setup.py test"
