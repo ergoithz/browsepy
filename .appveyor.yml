@@ -44,6 +44,9 @@ environment:
 
 build: off
 
+init:
+  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
+
 install:
   # If there is a newer build queued for the same PR, cancel this one.
   # The AppVeyor 'rollout builds' option is supposed to serve the same
@@ -59,9 +62,10 @@ install:
   - ECHO "Installed SDKs:"
   - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
   - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
-  - "%PYTHON%\\python --version"
-  - "%PYTHON%\\python -c \"import struct; print(struct.calcsize('P') * 8)\""
-  - "%PYTHON%\\Scripts\\pip install --disable-pip-version-check --user --upgrade pip setuptools"
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - "pip install --disable-pip-version-check --user --upgrade pip setuptools"
 
 test_script:
-  - "build.cmd %PYTHON%\\python.exe setup.py test"
+  - "python setup.py test"
