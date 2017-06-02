@@ -128,10 +128,13 @@ class PlayListFile(PlayableBase):
     def normalize_playable_path(self, path):
         if '://' in path:
             return path
+        path = os.path.normpath(path)
         if not os.path.isabs(path):
-            return os.path.normpath(os.path.join(self.parent.path, path))
+            return os.path.join(self.parent.path, path)
+        if self.drive and not os.path.splitdrive(path)[0]:
+            path = self.drive + path
         if check_under_base(path, self.app.config['directory_base']):
-            return os.path.normpath(path)
+            return path
         return None
 
     def _entries(self):
@@ -192,7 +195,7 @@ class M3UFile(PlayListFile):
             if f.read(len(prefix)) != prefix:
                 f.seek(0)
             for line in f:
-                line = line.rstrip('\n')
+                line = line.rstrip()
                 if line:
                     yield line
 

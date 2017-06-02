@@ -59,6 +59,16 @@ class Node(object):
     is_root = False
 
     @cached_property
+    def drive(self):
+        '''
+        Get defice name of node path.
+
+        :returns: device name or empty str
+        :rtype: str
+        '''
+        return os.path.splitdrive(self.path)[0]
+
+    @cached_property
     def is_excluded(self):
         '''
         Get if current node shouldn't be shown, using :attt:`app` config's

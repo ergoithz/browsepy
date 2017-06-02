@@ -8,6 +8,7 @@ import tempfile
 import flask
 
 from werkzeug.exceptions import NotFound
+from os.path import join as p
 
 import browsepy
 import browsepy.file as browsepy_file
@@ -45,8 +46,9 @@ class TestPlayerBase(unittest.TestCase):
     module = player
 
     def setUp(self):
+        self.base = 'C:\\base' if os.name == 'nt' else '/base'
         self.app = flask.Flask(self.__class__.__name__)
-        self.app.config['directory_base'] = '/base'
+        self.app.config['directory_base'] = self.base
         self.manager = ManagerMock()
 
 
@@ -143,7 +145,10 @@ class TestPlayable(TestIntegrationBase):
             )
 
     def test_normalize_playable_path(self):
-        playable = self.module.PlayListFile(path='/base/a.m3u', app=self.app)
+        playable = self.module.PlayListFile(
+            path=p(self.base, 'a.m3u'),
+            app=self.app
+            )
         self.assertEqual(
             playable.normalize_playable_path('http://asdf/asdf.mp3'),
             'http://asdf/asdf.mp3'
@@ -154,11 +159,11 @@ class TestPlayable(TestIntegrationBase):
             )
         self.assertEqual(
             playable.normalize_playable_path('asdf.mp3'),
-            '/base/asdf.mp3'
+            p(self.base, 'asdf.mp3')
             )
         self.assertEqual(
-            playable.normalize_playable_path('/base/other/../asdf.mp3'),
-            '/base/asdf.mp3'
+            playable.normalize_playable_path(self.base + '/other/../asdf.mp3'),
+            p(self.base, 'asdf.mp3')
             )
         self.assertEqual(
             playable.normalize_playable_path('/other/asdf.mp3'),
@@ -215,7 +220,7 @@ class TestPlayable(TestIntegrationBase):
             playlist = self.module.M3UFile(path=file, app=self.app)
             self.assertListEqual(
                 [a.path for a in playlist.entries()],
-                ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
+                [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
         finally:
             shutil.rmtree(tmpdir)
@@ -236,7 +241,7 @@ class TestPlayable(TestIntegrationBase):
             playlist = self.module.PLSFile(path=file, app=self.app)
             self.assertListEqual(
                 [a.path for a in playlist.entries()],
-                ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
+                [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
         finally:
             shutil.rmtree(tmpdir)
@@ -250,6 +255,7 @@ class TestPlayable(TestIntegrationBase):
             'NumberOfEntries=4'
             )
         tmpdir = tempfile.mkdtemp()
+        pjoin = os.path.join
         try:
             file = os.path.join(tmpdir, 'playable.pls')
             with open(file, 'w') as f:
@@ -257,7 +263,7 @@ class TestPlayable(TestIntegrationBase):
             playlist = self.module.PLSFile(path=file, app=self.app)
             self.assertListEqual(
                 [a.path for a in playlist.entries()],
-                ['/base/valid.mp3', '%s/relative.ogg' % tmpdir]
+                [pjoin(self.base, 'valid.mp3'), pjoin(tmpdir, 'relative.ogg')]
                 )
         finally:
             shutil.rmtree(tmpdir)
