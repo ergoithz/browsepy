@@ -738,8 +738,6 @@ class TestFile(unittest.TestCase):
 
         self.app.config['use_binary_multiples'] = default
 
-        self.assertEqual(f.encoding, 'default')
-
     def test_properties(self):
         empty_file = os.path.join(self.workbench, 'empty.txt')
         open(empty_file, 'w').close()

@@ -20,7 +20,10 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
     def __init__(self, prog, indent_increment=2, max_help_position=24,
                  width=None):
         if width is None:
-            width = get_terminal_size().columns - 2
+            try:
+                width = get_terminal_size().columns - 2
+            except ValueError:  # https://bugs.python.org/issue24966
+                pass
         super(HelpFormatter, self).__init__(
             prog, indent_increment, max_help_position, width)
 
