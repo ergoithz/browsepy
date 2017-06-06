@@ -1,5 +1,4 @@
 
-import os
 import warnings
 
 from unicategories import categories as unicat, RangeGroup as ranges
@@ -126,7 +125,7 @@ class GlobTransform(StateMachine):
     current = 'start'
     deferred = False
 
-    def __init__(self, data, sep=os.sep, base=None):
+    def __init__(self, data, sep='/', base=None):
         self.sep = sep
         self.base = base or ''
         self.deferred_data = []
@@ -225,6 +224,6 @@ class GlobTransform(StateMachine):
         return re_escape(self.sep)
 
 
-def translate(data, sep=os.sep, base=None):
+def translate(data, sep='/', base=None):
     self = GlobTransform(data, sep, base)
     return ''.join(self)

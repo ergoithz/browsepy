@@ -29,7 +29,7 @@ binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
 standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 common_path_separators = '\\/'
 restricted_chars = '\\/\0'
-restricted_names = ('.', '..', '::', os.sep)
+restricted_names = ('.', '..', '::', '/', '\\')
 nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
                    'LPT2', 'LPT3', 'PRN', 'NUL')
 fs_safe_characters = string.ascii_uppercase + string.digits

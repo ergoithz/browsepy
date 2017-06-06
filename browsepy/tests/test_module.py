@@ -724,8 +724,8 @@ class TestFile(unittest.TestCase):
 
     def test_size(self):
         test_file = os.path.join(self.workbench, 'test.csv')
-        with open(test_file, 'w') as f:
-            f.write(',\n' * 512)
+        with open(test_file, 'wb') as f:
+            f.write(b',\n' * 512)
         f = self.module.File(test_file, app=self.app)
 
         default = self.app.config['use_binary_multiples']
@@ -836,19 +836,26 @@ class TestFileFunctions(unittest.TestCase):
 
     def test_relativize_path(self):
         self.assertEqual(
-            self.module.relativize_path('/parent/child', '/parent'),
+            self.module.relativize_path(
+                '/parent/child',
+                '/parent',
+                '/'),
             'child')
         self.assertEqual(
             self.module.relativize_path(
                 '/grandpa/parent/child',
-                '/grandpa/parent'),
+                '/grandpa/parent',
+                '/'),
             'child')
         self.assertEqual(
-            self.module.relativize_path('/grandpa/parent/child', '/grandpa'),
+            self.module.relativize_path(
+                '/grandpa/parent/child',
+                '/grandpa',
+                '/'),
             'parent/child')
         self.assertRaises(
             browsepy.OutsideDirectoryBase,
-            self.module.relativize_path, '/other', '/parent'
+            self.module.relativize_path, '/other', '/parent', '/'
         )
 
     def test_under_base(self):

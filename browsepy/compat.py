@@ -178,19 +178,49 @@ def usedoc(other):
     return inner
 
 
-ENV_PATH = tuple(
-  fsdecode(path.strip('"').replace('<SCAPED-PATHSEP>', os.pathsep))
-  for path in os
-    .environ['PATH']  # noqa
-    .replace('\\%s' % os.pathsep, '<SCAPED-PATHSEP>')
-    .split(os.pathsep)
-  )
+def parsepath(
+  value=os.getenv('PATH', ''), sep=os.pathsep, os_sep=os.sep,
+  fsdecode=fsdecode
+  ):
+    '''
+    Get enviroment PATH directories as list.
+
+    This function cares about spliting, escapes and normalization of paths
+    across OSes.
+
+    :yields: every path
+    :ytype: str
+    '''
+    escapes = []
+    normalize = os.path.normpath
+    if '\\' not in (os_sep, sep):
+        escapes.extend((
+            ('\\\\', '<ESCAPE-ESCAPE>'),
+            ('\\"', '<ESCAPE-DQUOTE>'),
+            ('\\\'', '<ESCAPE-SQUOTE>'),
+            ('\\%s' % sep, '<ESCAPE-PATHSEP>'),
+            ))
+    for original, escape in escapes:
+        value = value.replace(original, escape)
+    for part in value.split(sep):
+        if part[:0] == part[-1:] == '"' or part[:0] == part[-1:] == '\'':
+            part = part[1:-1]
+        if part[-1:] == os_sep:
+            part = part[:-1]
+        for original, escape in escapes:
+            part = part.replace(escape, original)
+        if part:
+            yield normalize(fsdecode(part))
+
+
+ENV_PATH = tuple(parsepath())
 
 
 def which(name,
           env_path=ENV_PATH,
           is_executable_fnc=isexec,
-          path_join_fnc=os.path.join):
+          path_join_fnc=os.path.join,
+          os_name=os.name):
     '''
     Get command absolute path.
 
@@ -203,13 +233,17 @@ def which(name,
     :type is_executable_fnc: Callable
     :param path_join_fnc: callable will be used to join path components
     :type path_join_fnc: Callable
+    :param os_name: os name, defaults to os.name
+    :type os_name: str
     :return: absolute path
     :rtype: str or None
     '''
-    for path in env_path:
-        exe_file = path_join_fnc(path, name)
-        if is_executable_fnc(exe_file):
-            return exe_file
+    suffixes = ('', '.exe', '.bat', '.com') if os_name == 'nt' else ('',)
+    for suffix in suffixes:
+        for path in env_path:
+            exe_file = path_join_fnc(path, name)
+            if is_executable_fnc(exe_file + suffix):
+                return exe_file
     return None
 
 
