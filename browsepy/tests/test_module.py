@@ -581,7 +581,7 @@ class TestApp(unittest.TestCase):
                         follow_redirects=True)
 
     def test_sort_cookie_size(self):
-        files = [chr(i) * 255 for i in range(97, 123)]
+        files = [chr(i) * 150 for i in range(97, 123)]
         for name in files:
             path = os.path.join(self.base, name)
             os.mkdir(path)
