@@ -209,15 +209,16 @@ def parsepath(
             part = part[:-1]
         for original, escape in escapes:
             part = part.replace(escape, original)
-        if part:
-            yield normalize(fsdecode(part))
+        yield normalize(fsdecode(part))
 
 
 ENV_PATH = tuple(parsepath())
+ENV_PATHEXT = tuple(parsepath(value=os.getenv('PATHEXT', '')))
 
 
 def which(name,
           env_path=ENV_PATH,
+          env_path_ext=ENV_PATHEXT,
           is_executable_fnc=isexec,
           path_join_fnc=os.path.join,
           os_name=os.name):
@@ -238,9 +239,8 @@ def which(name,
     :return: absolute path
     :rtype: str or None
     '''
-    suffixes = ('', '.exe', '.bat', '.com') if os_name == 'nt' else ('',)
-    for suffix in suffixes:
-        for path in env_path:
+    for path in env_path:
+        for suffix in env_path_ext:
             exe_file = path_join_fnc(path, name)
             if is_executable_fnc(exe_file + suffix):
                 return exe_file

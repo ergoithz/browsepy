@@ -149,7 +149,7 @@ class PlayListFile(PlayableBase):
 
 class PLSFile(PlayListFile):
     ini_parser_class = PLSFileParser
-    maxsize = getattr(sys, 'maxsize', None) or getattr(sys, 'maxint', None)
+    maxsize = getattr(sys, 'maxint', 0) or getattr(sys, 'maxsize', 0) or 2**32
     mimetype = 'audio/x-scpls'
     extensions = PlayableBase.extensions_from_mimetypes([mimetype])
 

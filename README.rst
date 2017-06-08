@@ -1,16 +1,20 @@
 browsepy
 ========
 
-.. image:: http://img.shields.io/travis/ergoithz/browsepy/master.svg?style=flat-square
+.. image:: http://img.shields.io/travis/ergoithz/browsepy/0.5.3.svg?style=flat-square
   :target: https://travis-ci.org/ergoithz/browsepy
   :alt: Travis-CI badge
 
-.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/master.svg?style=flat-square
-  :target: https://coveralls.io/r/ergoithz/browsepy
+.. image:: https://img.shields.io/appveyor/ci/ergoithz/browsepy/0.5.3.svg?style=flat-square
+  :target: https://ci.appveyor.com/project/ergoithz/browsepy/branch/0.5.3
+  :alt: AppVeyor badge
+
+.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/0.5.3.svg?style=flat-square
+  :target: https://coveralls.io/r/ergoithz/browsepy?branch=0.5.3
   :alt: Coveralls badge
 
-.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/master.svg?style=flat-square
-  :target: https://www.codacy.com/app/ergoithz/browsepy
+.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/0.5.3.svg?style=flat-square
+  :target: https://www.codacy.com/app/ergoithz/browsepy/dashboard?bid=4246124
   :alt: Codacy badge
 
 .. image:: http://img.shields.io/pypi/l/browsepy.svg?style=flat-square

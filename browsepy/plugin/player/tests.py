@@ -8,9 +8,9 @@ import tempfile
 import flask
 
 from werkzeug.exceptions import NotFound
-from os.path import join as p
 
 import browsepy
+import browsepy.compat as compat
 import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
@@ -46,7 +46,7 @@ class TestPlayerBase(unittest.TestCase):
     module = player
 
     def setUp(self):
-        self.base = 'C:\\base' if os.name == 'nt' else '/base'
+        self.base = 'c:\\base' if os.name == 'nt' else '/base'
         self.app = flask.Flask(self.__class__.__name__)
         self.app.config['directory_base'] = self.base
         self.manager = ManagerMock()
@@ -183,7 +183,7 @@ class TestPlayable(TestIntegrationBase):
     def test_playabledirectory(self):
         tmpdir = tempfile.mkdtemp()
         try:
-            file = os.path.join(tmpdir, 'playable.mp3')
+            file = p(tmpdir, 'playable.mp3')
             open(file, 'w').close()
             node = browsepy_file.Directory(tmpdir)
             self.assertTrue(self.module.PlayableDirectory.detect(node))
@@ -214,7 +214,7 @@ class TestPlayable(TestIntegrationBase):
         data = '/base/valid.mp3\n/outside.ogg\n/base/invalid.bin\nrelative.ogg'
         tmpdir = tempfile.mkdtemp()
         try:
-            file = os.path.join(tmpdir, 'playable.m3u')
+            file = p(tmpdir, 'playable.m3u')
             with open(file, 'w') as f:
                 f.write(data)
             playlist = self.module.M3UFile(path=file, app=self.app)
@@ -235,7 +235,7 @@ class TestPlayable(TestIntegrationBase):
             )
         tmpdir = tempfile.mkdtemp()
         try:
-            file = os.path.join(tmpdir, 'playable.pls')
+            file = p(tmpdir, 'playable.pls')
             with open(file, 'w') as f:
                 f.write(data)
             playlist = self.module.PLSFile(path=file, app=self.app)
@@ -255,15 +255,14 @@ class TestPlayable(TestIntegrationBase):
             'NumberOfEntries=4'
             )
         tmpdir = tempfile.mkdtemp()
-        pjoin = os.path.join
         try:
-            file = os.path.join(tmpdir, 'playable.pls')
+            file = p(tmpdir, 'playable.pls')
             with open(file, 'w') as f:
                 f.write(data)
             playlist = self.module.PLSFile(path=file, app=self.app)
             self.assertListEqual(
                 [a.path for a in playlist.entries()],
-                [pjoin(self.base, 'valid.mp3'), pjoin(tmpdir, 'relative.ogg')]
+                [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
         finally:
             shutil.rmtree(tmpdir)
@@ -294,13 +293,13 @@ class TestBlueprint(TestPlayerBase):
         return response
 
     def file(self, path, data=''):
-        apath = os.path.join(self.app.config['directory_base'], path)
+        apath = p(self.app.config['directory_base'], path)
         with open(apath, 'w') as f:
             f.write(data)
         return apath
 
     def directory(self, path):
-        apath = os.path.join(self.app.config['directory_base'], path)
+        apath = p(self.app.config['directory_base'], path)
         os.mkdir(apath)
         return apath
 
@@ -347,3 +346,11 @@ class TestBlueprint(TestPlayerBase):
                 self.module.directory(path='..'),
                 NotFound
             )
+
+
+def p(*args):
+    args = [
+        arg if isinstance(arg, compat.unicode) else arg.decode('utf-8')
+        for arg in args
+        ]
+    return os.path.join(*args)
