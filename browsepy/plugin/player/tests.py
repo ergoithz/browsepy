@@ -45,6 +45,18 @@ class ManagerMock(object):
 class TestPlayerBase(unittest.TestCase):
     module = player
 
+    def assertPathEqual(self, a, b):
+        return self.assertEqual(
+            os.path.normcase(a),
+            os.path.normcase(b)
+            )
+
+    def assertPathListEqual(self, a, b):
+        return self.assertListEqual(
+            list(map(os.path.normcase, a)),
+            list(map(os.path.normcase, b))
+        )
+
     def setUp(self):
         self.base = 'c:\\base' if os.name == 'nt' else '/base'
         self.app = flask.Flask(self.__class__.__name__)
@@ -157,13 +169,13 @@ class TestPlayable(TestIntegrationBase):
             playable.normalize_playable_path('ftp://asdf/asdf.mp3'),
             'ftp://asdf/asdf.mp3'
             )
-        self.assertEqual(
+        self.assertPathEqual(
             playable.normalize_playable_path('asdf.mp3'),
-            p(self.base, 'asdf.mp3')
+            self.base + '/asdf.mp3'
             )
-        self.assertEqual(
+        self.assertPathEqual(
             playable.normalize_playable_path(self.base + '/other/../asdf.mp3'),
-            p(self.base, 'asdf.mp3')
+            self.base + '/asdf.mp3'
             )
         self.assertEqual(
             playable.normalize_playable_path('/other/asdf.mp3'),
@@ -218,7 +230,7 @@ class TestPlayable(TestIntegrationBase):
             with open(file, 'w') as f:
                 f.write(data)
             playlist = self.module.M3UFile(path=file, app=self.app)
-            self.assertListEqual(
+            self.assertPathListEqual(
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
@@ -239,7 +251,7 @@ class TestPlayable(TestIntegrationBase):
             with open(file, 'w') as f:
                 f.write(data)
             playlist = self.module.PLSFile(path=file, app=self.app)
-            self.assertListEqual(
+            self.assertPathListEqual(
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
@@ -260,7 +272,7 @@ class TestPlayable(TestIntegrationBase):
             with open(file, 'w') as f:
                 f.write(data)
             playlist = self.module.PLSFile(path=file, app=self.app)
-            self.assertListEqual(
+            self.assertPathListEqual(
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )

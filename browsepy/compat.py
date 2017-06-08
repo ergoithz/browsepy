@@ -90,9 +90,7 @@ def getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd):
     :return: path
     :rtype: str
     '''
-    path = cwd_fnc()
-    if isinstance(path, bytes):
-        path = fsdecode(path, fs_encoding=fs_encoding)
+    path = fsdecode(cwd_fnc(), fs_encoding=fs_encoding)
     return os.path.abspath(path)
 
 
@@ -180,7 +178,7 @@ def usedoc(other):
 
 def parsepath(
   value=os.getenv('PATH', ''), sep=os.pathsep, os_sep=os.sep,
-  fsdecode=fsdecode
+  normalize=lambda path: os.path.normpath(fsdecode(path))
   ):
     '''
     Get enviroment PATH directories as list.
@@ -192,7 +190,6 @@ def parsepath(
     :ytype: str
     '''
     escapes = []
-    normalize = os.path.normpath
     if '\\' not in (os_sep, sep):
         escapes.extend((
             ('\\\\', '<ESCAPE-ESCAPE>'),
@@ -209,11 +206,14 @@ def parsepath(
             part = part[:-1]
         for original, escape in escapes:
             part = part.replace(escape, original)
-        yield normalize(fsdecode(part))
+        yield normalize(part) if normalize else part
 
 
 ENV_PATH = tuple(parsepath())
-ENV_PATHEXT = tuple(parsepath(value=os.getenv('PATHEXT', '')))
+ENV_PATHEXT = tuple(parsepath(
+    value=os.getenv('PATHEXT', ''),
+    normalize=None
+    ))
 
 
 def which(name,
@@ -241,8 +241,8 @@ def which(name,
     '''
     for path in env_path:
         for suffix in env_path_ext:
-            exe_file = path_join_fnc(path, name)
-            if is_executable_fnc(exe_file + suffix):
+            exe_file = path_join_fnc(path, name) + suffix
+            if is_executable_fnc(exe_file):
                 return exe_file
     return None
 

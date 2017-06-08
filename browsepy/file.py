@@ -155,7 +155,7 @@ class Node(object):
         :returns: parent object if available
         :rtype: Node instance or None
         '''
-        if self.path == self.app.config['directory_base']:
+        if check_path(self.path, self.app.config['directory_base']):
             return None
         parent = os.path.dirname(self.path) if self.path else None
         return self.directory_class(parent, self.app) if parent else None
@@ -548,7 +548,7 @@ class Directory(Node):
         :returns: True if FS root, False otherwise
         :rtype: bool
         '''
-        return os.path.dirname(self.path) == self.path
+        return check_path(os.path.dirname(self.path), self.path)
 
     @cached_property
     def can_download(self):
@@ -786,7 +786,7 @@ def urlpath_to_abspath(path, base, os_sep=os.sep):
     '''
     prefix = base if base.endswith(os_sep) else base + os_sep
     realpath = os.path.abspath(prefix + path.replace('/', os_sep))
-    if base == realpath or realpath.startswith(prefix):
+    if check_path(base, realpath) or check_under_base(realpath, base):
         return realpath
     raise OutsideDirectoryBase("%r is not under %r" % (realpath, base))
 
@@ -840,17 +840,39 @@ def check_forbidden_filename(filename,
     return filename in restricted_names
 
 
+def check_path(path, base, os_sep=os.sep):
+    '''
+    Check if both given paths are equal.
+
+    :param path: absolute path
+    :type path: str
+    :param base: absolute base path
+    :type base: str
+    :param os_sep: path separator, defaults to os.sep
+    :type base: str
+    :return: wether two path are equal or not
+    :rtype: bool
+    '''
+    base = base[:-len(os_sep)] if base.endswith(os_sep) else base
+    return os.path.normcase(path) == os.path.normcase(base)
+
+
 def check_base(path, base, os_sep=os.sep):
     '''
     Check if given absolute path is under or given base.
 
     :param path: absolute path
+    :type path: str
     :param base: absolute base path
-    :return: wether file is under given base or not
+    :type base: str
+    :param os_sep: path separator, defaults to os.sep
+    :return: wether path is under given base or not
     :rtype: bool
     '''
-    base = base[:-len(os_sep)] if base.endswith(os_sep) else base
-    return path == base or check_under_base(path, base, os_sep)
+    return (
+        check_path(path, base, os_sep)
+        or check_under_base(path, base, os_sep)
+        )
 
 
 def check_under_base(path, base, os_sep=os.sep):
@@ -858,12 +880,15 @@ def check_under_base(path, base, os_sep=os.sep):
     Check if given absolute path is under given base.
 
     :param path: absolute path
+    :type path: str
     :param base: absolute base path
+    :type base: str
+    :param os_sep: path separator, defaults to os.sep
     :return: wether file is under given base or not
     :rtype: bool
     '''
     prefix = base if base.endswith(os_sep) else base + os_sep
-    return path.startswith(prefix)
+    return os.path.normcase(path).startswith(os.path.normcase(prefix))
 
 
 def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
