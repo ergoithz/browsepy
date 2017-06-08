@@ -80,7 +80,7 @@ class TestGlob(unittest.TestCase):
                 )),
             ]
         for pattern, matching, nonmatching in tests:
-            pattern = re.compile(self.translate(pattern))
+            pattern = re.compile(self.translate(pattern, sep='/'))
             for test in matching:
                 self.assertTrue(pattern.match(fu(test)))
             for test in nonmatching:

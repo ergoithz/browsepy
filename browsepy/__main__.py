@@ -120,12 +120,9 @@ class ArgParse(argparse.ArgumentParser):
         self.error('%s is not a valid directory' % arg)
 
 
-def create_exclude_fnc(patterns, base):
+def create_exclude_fnc(patterns, base, sep=os.sep):
     if patterns:
-        regex = '|'.join(
-            translate(pattern, base=base)
-            for pattern in patterns
-            )
+        regex = '|'.join(translate(pattern, sep, base) for pattern in patterns)
         return re.compile(regex).search
     return None
 

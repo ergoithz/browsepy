@@ -960,11 +960,18 @@ class TestMain(unittest.TestCase):
         extra = self.module.collect_exclude_patterns(result.exclude_from)
         self.assertListEqual(extra, ['.ignore'])
         match = self.module.create_exclude_fnc(
-            result.exclude + extra, '/b')
+            result.exclude + extra, '/b', '/')
         self.assertTrue(match('/b/.a'))
         self.assertTrue(match('/b/.a/b'))
         self.assertFalse(match('/b/a/.a'))
         self.assertTrue(match('/b/a/.ignore'))
+
+        match = self.module.create_exclude_fnc(
+            result.exclude + extra, 'C:\\b', '\\')
+        self.assertTrue(match('C:\\b\\.a'))
+        self.assertTrue(match('C:\\b\\.a\\b'))
+        self.assertFalse(match('C:\\b\\a\\.a'))
+        self.assertTrue(match('C:\\b\\a\\.ignore'))
 
     def test_main(self):
         params = {}
