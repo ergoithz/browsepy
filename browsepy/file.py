@@ -59,16 +59,6 @@ class Node(object):
     is_root = False
 
     @cached_property
-    def drive(self):
-        '''
-        Get defice name of node path.
-
-        :returns: device name or empty str
-        :rtype: str
-        '''
-        return os.path.splitdrive(self.path)[0]
-
-    @cached_property
     def is_excluded(self):
         '''
         Get if current node shouldn't be shown, using :attt:`app` config's
@@ -684,17 +674,16 @@ class Directory(Node):
         Get sorted list (by given sortkey and reverse params) of File objects.
 
         :return: sorted list of File instances
-        :rtype: list of File
+        :rtype: list of File instances
         '''
         if self._listdir_cache is None:
-            if sortkey:
-                data = sorted(self._listdir(), key=sortkey, reverse=reverse)
-            elif reverse:
-                data = list(reversed(self._listdir()))
-            else:
-                data = list(self._listdir())
-            self._listdir_cache = data
-        return self._listdir_cache
+            self._listdir_cache = tuple(self._listdir())
+        if sortkey:
+            return sorted(self._listdir_cache, key=sortkey, reverse=reverse)
+        data = list(self._listdir_cache)
+        if reverse:
+            data.reverse()
+        return data
 
 
 class OutsideDirectoryBase(Exception):

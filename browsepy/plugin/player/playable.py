@@ -4,6 +4,8 @@ import codecs
 import os.path
 import warnings
 
+from werkzeug.utils import cached_property
+
 from browsepy.compat import range, PY_LEGACY  # noqa
 from browsepy.file import Node, File, Directory, \
                           underscore_replace, check_under_base
@@ -131,8 +133,9 @@ class PlayListFile(PlayableBase):
         path = os.path.normpath(path)
         if not os.path.isabs(path):
             return os.path.join(self.parent.path, path)
-        if self.drive and not os.path.splitdrive(path)[0]:
-            path = self.drive + path
+        drive = os.path.splitdrive(self.path)[0]
+        if drive and not os.path.splitdrive(path)[0]:
+            path = drive + path
         if check_under_base(path, self.app.config['directory_base']):
             return path
         return None

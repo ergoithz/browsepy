@@ -6,9 +6,10 @@
 Welcome to browsepy's documentation!
 ====================================
 
-Welcome to browsepy's documentation. It's recommended to start reading
-installation and Quickstart. More detailed tutorials about integrating
-:mod:`browsepy` as module or plugin development are available too.
+Welcome to browsepy's documentation. It's recommended to start reading both
+:ref:`quickstart` and, specifically :ref:`quickstart-installation`, while more
+detailed tutorials about integrating :mod:`browsepy` as module or plugin
+development are also available.
 
 Browsepy has few dependencies: `Flask`_ and `Scandir`_. `Flask`_ is an awesome
 web microframework while `Scandir`_ is a directory listing library which `was

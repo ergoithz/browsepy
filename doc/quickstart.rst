@@ -38,7 +38,7 @@ Usage
 These examples assume python's `bin` directory is in `PATH`, if not,
 replace `browsepy` with `python -m browsepy`.
 
-Serving `$HOME/shared` to all addresses:
+Serving ``$HOME/shared`` to all addresses:
 
 .. code-block:: bash
 

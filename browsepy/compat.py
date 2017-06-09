@@ -176,16 +176,38 @@ def usedoc(other):
     return inner
 
 
-def parsepath(
-  value=os.getenv('PATH', ''), sep=os.pathsep, os_sep=os.sep,
-  normalize=lambda path: os.path.normpath(fsdecode(path))
-  ):
+def pathsplit(value, sep=os.pathsep):
+    '''
+    Get enviroment PATH elements as list.
+
+    This function only cares about spliting across OSes.
+
+    :param value: path string, as given by os.environ['PATH']
+    :type value: str
+    :param sep: PATH separator, defaults to os.pathsep
+    :type sep: str
+    :yields: every path
+    :ytype: str
+    '''
+    for part in value.split(sep):
+        if part[:0] == part[-1:] == '"' or part[:0] == part[-1:] == '\'':
+            part = part[1:-1]
+        yield part
+
+
+def pathparse(value, sep=os.pathsep, os_sep=os.sep):
     '''
     Get enviroment PATH directories as list.
 
     This function cares about spliting, escapes and normalization of paths
     across OSes.
 
+    :param value: path string, as given by os.environ['PATH']
+    :type value: str
+    :param sep: PATH separator, defaults to os.pathsep
+    :type sep: str
+    :param os_sep: OS filesystem path separator, defaults to os.sep
+    :type os_sep: str
     :yields: every path
     :ytype: str
     '''
@@ -199,21 +221,16 @@ def parsepath(
             ))
     for original, escape in escapes:
         value = value.replace(original, escape)
-    for part in value.split(sep):
-        if part[:0] == part[-1:] == '"' or part[:0] == part[-1:] == '\'':
-            part = part[1:-1]
+    for part in pathsplit(value, sep=sep):
         if part[-1:] == os_sep:
             part = part[:-1]
         for original, escape in escapes:
             part = part.replace(escape, original)
-        yield normalize(part) if normalize else part
+        yield os.path.normpath(fsdecode(part))
 
 
-ENV_PATH = tuple(parsepath())
-ENV_PATHEXT = tuple(parsepath(
-    value=os.getenv('PATHEXT', ''),
-    normalize=None
-    ))
+ENV_PATH = tuple(pathparse(os.getenv('PATH', '')))
+ENV_PATHEXT = tuple(pathsplit(os.getenv('PATHEXT', '')))
 
 
 def which(name,

@@ -6,7 +6,7 @@ Stream Module
 .. currentmodule:: browsepy.stream
 
 This module provides a class for streaming directory tarballs. This is used
-by :method:browsepy.files.Directory.download method.
+by :meth:`browsepy.file.Directory.download` method.
 
 .. _tarfilestream-node:
 

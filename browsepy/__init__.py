@@ -12,12 +12,16 @@ from flask import Flask, Response, request, render_template, redirect, \
                   make_response
 from werkzeug.exceptions import NotFound
 
-from .__meta__ import __app__, __version__, __license__, __author__  # noqa
 from .manager import PluginManager
 from .file import Node, OutsideRemovableBase, OutsideDirectoryBase, \
                   secure_filename
 from . import compat
+from . import __meta__ as meta
 
+__app__ = meta.app  # noqa
+__version__ = meta.version  # noqa
+__license__ = meta.license  # noqa
+__author__ = meta.author  # noqa
 __basedir__ = os.path.abspath(os.path.dirname(compat.fsdecode(__file__)))
 
 logger = logging.getLogger(__name__)

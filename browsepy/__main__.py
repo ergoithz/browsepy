@@ -11,7 +11,7 @@ import warnings
 import flask
 
 from . import app, compat
-from .__meta__ import __app__ as app_name
+from . import __meta__ as meta
 from .compat import PY_LEGACY, getdebug, get_terminal_size
 from .transform.glob import translate
 
@@ -51,9 +51,9 @@ class ArgParse(argparse.ArgumentParser):
     plugin_action_class = PluginAction
 
     defaults = {
-        'prog': app_name,
+        'prog': meta.app,
         'formatter_class': HelpFormatter,
-        'description': 'description: starts a %s web file browser' % app_name
+        'description': 'description: starts a %s web file browser' % meta.app
         }
 
     def __init__(self, sep=os.sep):

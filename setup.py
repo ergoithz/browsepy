@@ -38,12 +38,8 @@ except ImportError:
 sys_path = sys.path[:]
 sys.path[:] = (os.path.abspath('browsepy'),)
 __import__('__meta__')
-sys.path[:] = sys_path
-
 meta = sys.modules['__meta__']
-meta_app = meta.__app__
-meta_version = meta.__version__
-meta_license = meta.__license__
+sys.path[:] = sys_path
 
 with open('README.rst') as f:
     meta_doc = f.read()
@@ -63,15 +59,14 @@ for debugger in ('ipdb', 'pudb', 'pdb'):
         sys.argv.remove(opt)
 
 setup(
-    name=meta_app,
-    version=meta_version,
-    url='https://github.com/ergoithz/browsepy',
-    download_url='https://github.com/ergoithz/browsepy/archive/%s.tar.gz'
-        % meta_version,
-    license=meta_license,
-    author='Felipe A. Hernandez',
-    author_email='ergoithz@gmail.com',
-    description='Simple web file browser',
+    name=meta.app,
+    version=meta.version,
+    url=meta.url,
+    download_url=meta.tarball,
+    license=meta.license,
+    author=meta.author_name,
+    author_email=meta.author_mail,
+    description=meta.description,
     long_description=meta_doc,
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -79,7 +74,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-    ],
+        ],
     keywords=['web', 'file', 'browser'],
     packages=[
         'browsepy',
@@ -93,8 +88,8 @@ setup(
     entry_points={
         'console_scripts': (
             'browsepy=browsepy.__main__:main'
-        )
-    },
+            )
+        },
     package_data={  # ignored by sdist (see MANIFEST.in), used by bdist_wheel
         'browsepy': [
             'templates/*',

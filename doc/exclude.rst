@@ -6,6 +6,10 @@ Excluding paths
 Starting from version **0.5.3**, browsepy accepts **--exclude** command line
 arguments expecting linux filename expansion strings, also known as globs.
 
+**Note (windows):** on nt platforms, the accepted glob syntax will be the same
+(``/`` for filepath separator and ``\`` used for character escapes),
+browsepy will transform them appropriately.
+
 They allow matching filemames using wildcards, being the most common `*`
 (matching any string, even empty) and `?` (matching a single character). See
 :ref:`glob-manpage` for further info.
@@ -26,6 +30,13 @@ as follows:
 The above example will exclude all files prefixed with ``.``, which are
 considered hidden on POSIX systems. In other words, it will match ``.myfile``
 and not ``my.file``.
+
+You can, alternatively, restrict the above exclusion to only top-level filenames:
+
+.. code-block:: bash
+
+  browsepy --exclude=/.*
+
 
 The following example will hide all files ending with ``.ini``, but only on the
 base directory.

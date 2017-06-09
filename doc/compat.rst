@@ -24,7 +24,10 @@ Compat Module
   True on Python 2, False on newer.
 
 .. attribute:: ENV_PATH
-  :annotation: = ['/usr/local/bin', '/usr/bin', ... ]
+  :annotation: = ('/usr/local/bin', '/usr/bin', ... )
+
+.. attribute:: ENV_PATHEXT
+  :annotation: = ('.exe', '.bat', ... ) if os.name == 'nt' else ('',)
 
   List of paths where commands are located, taken and processed from
   :envvar:`PATH` environment variable. Used by :func:`which`.
@@ -86,3 +89,7 @@ Compat Module
 .. autofunction:: getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd)
 
 .. autofunction:: re_escape(pattern, chars="()[]{}?*+|^$\\.-#")
+
+.. autofunction:: pathsplit(value, sep=os.pathsep)
+
+.. autofunction:: pathparse(value, sep=os.pathsep, os_sep=os.sep)
