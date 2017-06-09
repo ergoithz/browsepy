@@ -35,7 +35,7 @@ Compat Module
   Values which should be equivalent to True, used by :func:`getdebug`
 
 .. attribute:: FileNotFoundError
-  :annotation: = type('FileNotFoundError', (OSError,), {}) if PY_LEGACY else FileNotFoundError
+  :annotation: = OSError if PY_LEGACY else FileNotFoundError
 
   Convenience python exception type reference.
 

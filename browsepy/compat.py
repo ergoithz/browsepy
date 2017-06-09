@@ -266,7 +266,7 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
 
 
 if PY_LEGACY:
-    FileNotFoundError = type('FileNotFoundError', (OSError,), {})  # noqa
+    FileNotFoundError = OSError  # noqa
     range = xrange  # noqa
     filter = itertools.ifilter
     basestring = basestring  # noqa
