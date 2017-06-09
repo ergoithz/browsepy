@@ -859,8 +859,8 @@ def check_base(path, base, os_sep=os.sep):
     :rtype: bool
     '''
     return (
-        check_path(path, base, os_sep)
-        or check_under_base(path, base, os_sep)
+        check_path(path, base, os_sep) or
+        check_under_base(path, base, os_sep)
         )
 
 
