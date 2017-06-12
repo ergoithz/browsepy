@@ -15,7 +15,7 @@ import mimetypes
 
 import flask
 
-from werkzeug.utils import cached_property
+from werkzeug.exceptions import NotFound
 
 import browsepy
 import browsepy.file
@@ -33,48 +33,31 @@ class FileMock(object):
         self.__dict__.update(kwargs)
 
 
-class PluginMock(object):
-    registered_arguments_manager = None
-    registered_arguments = False
-    registered_plugin_manager = None
-    registered_plugin = False
-
-    def register_arguments(self, manager):
-        self.registered_arguments_manager = manager
-        self.registered_arguments = True
-        manager.register_argument('--pluginmock', action='store_true')
-
-    def register_plugin(self, manager):
-        self.registered_plugin_manager = manager
-        self.registered_plugin = True
-
-
 class AppMock(object):
     config = browsepy.app.config.copy()
 
 
 class Page(object):
-    if hasattr(ET.Element, 'itertext'):
-        @classmethod
-        def itertext(cls, element):
-            return element.itertext()
-    else:
-        # Old 2.7 minors
-        @classmethod
-        def itertext(cls, element):
-            yield element.text or ''
-            for child in element:
-                for text in cls.itertext(child):
-                    yield text
-                yield child.tail or ''
+    @classmethod
+    def itertext(cls, element):
+        '''
+        Compatible element.itertext()
+        '''
+        if element.text:
+            yield element.text
+        for child in element:
+            for text in cls.itertext(child):
+                yield text
+            if child.tail:
+                yield child.tail
 
     def __init__(self, data, response=None):
         self.data = data
         self.response = response
 
     @classmethod
-    def innerText(cls, element):
-        return ''.join(cls.itertext(element))
+    def innerText(cls, element, sep=''):
+        return sep.join(cls.itertext(element))
 
     @classmethod
     def from_source(cls, source, response=None):
@@ -109,7 +92,7 @@ class ListPage(Page):
         return cls(
             cls.path_strip_re.sub(
                 '/',
-                cls.innerText(html.find('.//h1'))
+                cls.innerText(html.find('.//h1'), '/')
                 ).strip(),
             [url for isdir, url, removable in rows if isdir],
             [url for isdir, url, removable in rows if not isdir],
@@ -159,127 +142,6 @@ class Page302Exception(PageException):
     pass
 
 
-class TestCompat(unittest.TestCase):
-    module = browsepy.compat
-
-    def _warn(self, message, category=None, stacklevel=None):
-        if not hasattr(self, '_warnings'):
-            self._warnings = []
-        self._warnings.append({
-            'message': message,
-            'category': category,
-            'stacklevel': stacklevel
-            })
-
-    @cached_property
-    def assertWarnsRegex(self):
-        supa = super(TestCompat, self)
-        if hasattr(supa, 'assertWarnsRegex'):
-            return supa.assertWarnsRegex
-        return self.customAssertWarnsRegex
-
-    def customAssertWarnsRegex(self, expected_warning, expected_regex, fnc,
-                               *args, **kwargs):
-
-        import warnings
-        old_warn = warnings.warn
-        warnings.warn = self._warn
-        try:
-            fnc(*args, **kwargs)
-        finally:
-            warnings.warn = old_warn
-        warnings = ()
-        if hasattr(self, '_warnings'):
-            warnings = self._warnings
-            del self._warnings
-        regex = re.compile(expected_regex)
-        self.assertTrue(any(
-            warn['category'] == expected_warning and
-            regex.match(warn['message'])
-            for warn in warnings
-        ))
-
-    def test_which(self):
-        self.assertTrue(self.module.which('python'))
-        self.assertIsNone(self.module.which('lets-put-a-wrong-executable'))
-
-    def test_fsdecode(self):
-        path = b'/a/\xc3\xb1'
-        self.assertEqual(
-            self.module.fsdecode(path, os_name='posix', fs_encoding='utf-8'),
-            path.decode('utf-8')
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsdecode(path, os_name='nt', fs_encoding='latin-1'),
-            path.decode('latin-1')
-            )
-        path = b'/a/\xf1'
-        self.assertRaises(
-            UnicodeDecodeError,
-            self.module.fsdecode,
-            path,
-            fs_encoding='utf-8',
-            errors='strict'
-        )
-
-    def test_fsencode(self):
-        path = b'/a/\xc3\xb1'
-        self.assertEqual(
-            self.module.fsencode(
-                path.decode('utf-8'),
-                fs_encoding='utf-8'
-                ),
-            path
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsencode(
-                path.decode('latin-1'),
-                fs_encoding='latin-1'
-                ),
-            path
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsencode(path, fs_encoding='utf-8'),
-            path
-            )
-
-    def test_getcwd(self):
-        self.assertIsInstance(self.module.getcwd(), self.module.unicode)
-        self.assertIsInstance(
-            self.module.getcwd(
-                fs_encoding='latin-1',
-                cwd_fnc=lambda: b'\xf1'
-                ),
-            self.module.unicode
-            )
-        self.assertIsInstance(
-            self.module.getcwd(
-                fs_encoding='utf-8',
-                cwd_fnc=lambda: b'\xc3\xb1'
-                ),
-            self.module.unicode
-            )
-
-    def test_getdebug(self):
-        enabled = ('TRUE', 'true', 'True', '1', 'yes', 'enabled')
-        for case in enabled:
-            self.assertTrue(self.module.getdebug({'DEBUG': case}))
-        disabled = ('FALSE', 'false', 'False', '', '0', 'no', 'disabled')
-        for case in disabled:
-            self.assertFalse(self.module.getdebug({'DEBUG': case}))
-
-    def test_deprecated(self):
-        environ = {'DEBUG': 'true'}
-        self.assertWarnsRegex(
-            DeprecationWarning,
-            'DEPRECATED',
-            self.module.deprecated('DEPRECATED', environ)(lambda: None)
-            )
-
-
 class TestApp(unittest.TestCase):
     module = browsepy
     generic_page_class = Page
@@ -297,21 +159,29 @@ class TestApp(unittest.TestCase):
         self.start = os.path.join(self.base, 'start')
         self.remove = os.path.join(self.base, 'remove')
         self.upload = os.path.join(self.base, 'upload')
+        self.exclude = os.path.join(self.base, 'exclude')
 
         os.mkdir(self.start)
         os.mkdir(self.remove)
         os.mkdir(self.upload)
+        os.mkdir(self.exclude)
 
         open(os.path.join(self.start, 'testfile.txt'), 'w').close()
         open(os.path.join(self.remove, 'testfile.txt'), 'w').close()
+        open(os.path.join(self.exclude, 'testfile.txt'), 'w').close()
+
+        def exclude_fnc(path):
+            return path == self.exclude \
+                or path.startswith(self.exclude + os.sep)
 
         self.app.config.update(
             directory_base=self.base,
             directory_start=self.start,
             directory_remove=self.remove,
             directory_upload=self.upload,
+            exclude_fnc=exclude_fnc,
             SERVER_NAME='test',
-        )
+            )
 
         self.base_directories = [
             self.url_for('browse', path='remove'),
@@ -389,7 +259,8 @@ class TestApp(unittest.TestCase):
         page = self.get('index')
         self.assertEqual(page.path, '%s/start' % os.path.basename(self.base))
 
-        self.app.config['directory_start'] = os.path.join(self.base, '..')
+        start = os.path.abspath(os.path.join(self.base, '..'))
+        self.app.config['directory_start'] = start
 
         self.assertRaises(
             Page404Exception,
@@ -427,6 +298,16 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'browse', path='..'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'browse', path='start/testfile.txt'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'browse', path='exclude'
         )
 
     def test_open(self):
@@ -483,6 +364,11 @@ class TestApp(unittest.TestCase):
             self.get, 'remove', path='../shall_not_pass.txt'
         )
 
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'remove', path='exclude/testfile.txt'
+        )
+
     def test_download_file(self):
         binfile = os.path.join(self.base, 'testfile.bin')
         bindata = bytes(range(256))
@@ -499,29 +385,62 @@ class TestApp(unittest.TestCase):
             self.get, 'download_file', path='../shall_not_pass.txt'
         )
 
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'download_file', path='start'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'download_file', path='exclude/testfile.txt'
+        )
+
     def test_download_directory(self):
         binfile = os.path.join(self.start, 'testfile.bin')
+        excfile = os.path.join(self.start, 'testfile.exc')
         bindata = bytes(range(256))
+        exclude = self.app.config['exclude_fnc']
 
-        with open(binfile, 'wb') as f:
-            f.write(bindata)
-        page = self.get('download_directory', path='start')
-        os.remove(binfile)
+        def tarball_files(path):
+            page = self.get('download_directory', path=path)
+            iodata = io.BytesIO(page.data)
+            with tarfile.open('p.tgz', mode="r:gz", fileobj=iodata) as tgz:
+                tgz_files = [
+                    member.name
+                    for member in tgz.getmembers()
+                    if member.name
+                    ]
+            tgz_files.sort()
+            return tgz_files
 
-        iodata = io.BytesIO(page.data)
-        with tarfile.open('start.tgz', mode="r:gz", fileobj=iodata) as tgz:
-            tgz_files = [
-                member.name
-                for member in tgz.getmembers()
-                if member.name
-                ]
-        tgz_files.sort()
+        for path in (binfile, excfile):
+            with open(path, 'wb') as f:
+                f.write(bindata)
 
-        self.assertEqual(tgz_files, ['testfile.bin', 'testfile.txt'])
+        self.app.config['exclude_fnc'] = None
+
+        self.assertEqual(
+            tarball_files('start'),
+            ['testfile.%s' % x for x in ('bin', 'exc', 'txt')]
+        )
+
+        self.app.config['exclude_fnc'] = lambda p: p.endswith('.exc')
+
+        self.assertEqual(
+            tarball_files('start'),
+            ['testfile.%s' % x for x in ('bin', 'txt')]
+        )
+
+        self.app.config['exclude_fnc'] = exclude
 
         self.assertRaises(
             Page404Exception,
             self.get, 'download_directory', path='../../shall_not_pass'
+        )
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'download_directory', path='exclude'
         )
 
     def test_upload(self):
@@ -547,6 +466,13 @@ class TestApp(unittest.TestCase):
             )
         self.assertEqual(sorted(output.files), expected_links)
         self.clear(self.upload)
+
+        self.assertRaises(
+            Page404Exception,
+            self.post, 'upload', path='start', data={
+                'file': (genbytesio(127, 'ascii'), 'testfile.txt')
+                }
+            )
 
     def test_upload_duplicate(self):
         c = unichr if PY_LEGACY else chr  # noqa
@@ -581,6 +507,12 @@ class TestApp(unittest.TestCase):
         self.clear(self.upload)
 
     def test_sort(self):
+
+        self.assertRaises(
+            Page404Exception,
+            self.get, 'sort', property='text', path='exclude'
+        )
+
         files = {
             'a.txt': 'aaa',
             'b.png': 'aa',
@@ -649,7 +581,7 @@ class TestApp(unittest.TestCase):
                         follow_redirects=True)
 
     def test_sort_cookie_size(self):
-        files = [chr(i) * 255 for i in range(97, 123)]
+        files = [chr(i) * 150 for i in range(97, 123)]
         for name in files:
             path = os.path.join(self.base, name)
             os.mkdir(path)
@@ -662,6 +594,45 @@ class TestApp(unittest.TestCase):
             for cookie in page.response.headers.getlist('set-cookie'):
                 if cookie.startswith('browse-sorting='):
                     self.assertLessEqual(len(cookie), 4000)
+
+    def test_endpoints(self):
+        # test endpoint function for the library use-case
+        # likely not to happen when serving due flask's routing protections
+        with self.app.app_context():
+            self.assertIsInstance(
+                self.module.sort(property='name', path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.browse(path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.open_file(path='../something'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.download_file(path='../something'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.download_directory(path='..'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.remove(path='../something'),
+                NotFound
+            )
+
+            self.assertIsInstance(
+                self.module.upload(path='..'),
+                NotFound
+            )
 
 
 class TestFile(unittest.TestCase):
@@ -682,7 +653,7 @@ class TestFile(unittest.TestCase):
         return tmp_txt
 
     def test_iter_listdir(self):
-        directory = self.module.Directory(path=self.workbench, app=self.app)
+        directory = self.module.Directory(path=self.workbench)
 
         tmp_txt = self.textfile('somefile.txt', 'a')
 
@@ -727,10 +698,11 @@ class TestFile(unittest.TestCase):
         tmp_txt = self.textfile('ascii_text_file', 'ascii text')
 
         # test file command
-        f = self.module.File(tmp_txt, app=self.app)
-        self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
-        self.assertEqual(f.type, 'text/plain')
-        self.assertEqual(f.encoding, 'us-ascii')
+        if browsepy.compat.which('file'):
+            f = self.module.File(tmp_txt, app=self.app)
+            self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
+            self.assertEqual(f.type, 'text/plain')
+            self.assertEqual(f.encoding, 'us-ascii')
 
         # test non-working file command
         bad_path = os.path.join(self.workbench, 'path')
@@ -742,17 +714,18 @@ class TestFile(unittest.TestCase):
         os.chmod(bad_file, os.stat(bad_file).st_mode | stat.S_IEXEC)
 
         old_path = os.environ['PATH']
-        os.environ['PATH'] = bad_path + os.pathsep + old_path
+        os.environ['PATH'] = bad_path
 
-        f = self.module.File(tmp_txt, app=self.app)
-        self.assertEqual(f.mimetype, 'application/octet-stream')
-
-        os.environ['PATH'] = old_path
+        try:
+            f = self.module.File(tmp_txt, app=self.app)
+            self.assertEqual(f.mimetype, 'application/octet-stream')
+        finally:
+            os.environ['PATH'] = old_path
 
     def test_size(self):
         test_file = os.path.join(self.workbench, 'test.csv')
-        with open(test_file, 'w') as f:
-            f.write(',\n' * 512)
+        with open(test_file, 'wb') as f:
+            f.write(b',\n' * 512)
         f = self.module.File(test_file, app=self.app)
 
         default = self.app.config['use_binary_multiples']
@@ -764,8 +737,6 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.size, '1.02 KB')
 
         self.app.config['use_binary_multiples'] = default
-
-        self.assertEqual(f.encoding, 'default')
 
     def test_properties(self):
         empty_file = os.path.join(self.workbench, 'empty.txt')
@@ -863,19 +834,26 @@ class TestFileFunctions(unittest.TestCase):
 
     def test_relativize_path(self):
         self.assertEqual(
-            self.module.relativize_path('/parent/child', '/parent'),
+            self.module.relativize_path(
+                '/parent/child',
+                '/parent',
+                '/'),
             'child')
         self.assertEqual(
             self.module.relativize_path(
                 '/grandpa/parent/child',
-                '/grandpa/parent'),
+                '/grandpa/parent',
+                '/'),
             'child')
         self.assertEqual(
-            self.module.relativize_path('/grandpa/parent/child', '/grandpa'),
+            self.module.relativize_path(
+                '/grandpa/parent/child',
+                '/grandpa',
+                '/'),
             'parent/child')
         self.assertRaises(
             browsepy.OutsideDirectoryBase,
-            self.module.relativize_path, '/other', '/parent'
+            self.module.relativize_path, '/other', '/parent', '/'
         )
 
     def test_under_base(self):
@@ -893,8 +871,11 @@ class TestMain(unittest.TestCase):
 
     def setUp(self):
         self.app = browsepy.app
-        self.parser = self.module.ArgParse()
+        self.parser = self.module.ArgParse(sep=os.sep)
         self.base = tempfile.mkdtemp()
+        self.exclude_file = os.path.join(self.base, '.ignore')
+        with open(self.exclude_file, 'w') as f:
+            f.write('.ignore\n')
 
     def tearDown(self):
         shutil.rmtree(self.base)
@@ -907,6 +888,8 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, None)
         self.assertEqual(result.removable, None)
         self.assertEqual(result.upload, None)
+        self.assertListEqual(result.exclude, [])
+        self.assertListEqual(result.exclude_from, [])
         self.assertEqual(result.plugin, [])
 
     def test_params(self):
@@ -918,7 +901,11 @@ class TestMain(unittest.TestCase):
             '--initial=%s' % self.base,
             '--removable=%s' % self.base,
             '--upload=%s' % self.base,
-            '--plugin=%s' % ','.join(plugins),
+            '--exclude=a',
+            '--exclude-from=%s' % self.exclude_file,
+            ] + [
+            '--plugin=%s' % plugin
+            for plugin in plugins
             ])
         self.assertEqual(result.host, '127.1.1.1')
         self.assertEqual(result.port, 5000)
@@ -926,7 +913,18 @@ class TestMain(unittest.TestCase):
         self.assertEqual(result.initial, self.base)
         self.assertEqual(result.removable, self.base)
         self.assertEqual(result.upload, self.base)
+        self.assertListEqual(result.exclude, ['a'])
+        self.assertListEqual(result.exclude_from, [self.exclude_file])
         self.assertEqual(result.plugin, plugins)
+
+        result = self.parser.parse_args([
+            '--directory', self.base,
+            '--plugin', ','.join(plugins),
+            '--exclude', '/.*'
+            ])
+        self.assertEqual(result.directory, self.base)
+        self.assertEqual(result.plugin, plugins)
+        self.assertListEqual(result.exclude, ['/.*'])
 
         result = self.parser.parse_args([
             '--directory=%s' % self.base,
@@ -938,6 +936,8 @@ class TestMain(unittest.TestCase):
         self.assertIsNone(result.initial)
         self.assertIsNone(result.removable)
         self.assertIsNone(result.upload)
+        self.assertListEqual(result.exclude, [])
+        self.assertListEqual(result.exclude_from, [])
         self.assertListEqual(result.plugin, [])
 
         self.assertRaises(
@@ -945,6 +945,33 @@ class TestMain(unittest.TestCase):
             self.parser.parse_args,
             ['--directory=%s' % __file__]
         )
+
+        self.assertRaises(
+            SystemExit,
+            self.parser.parse_args,
+            ['--exclude-from=non-existing']
+        )
+
+    def test_exclude(self):
+        result = self.parser.parse_args([
+            '--exclude', '/.*',
+            '--exclude-from', self.exclude_file,
+        ])
+        extra = self.module.collect_exclude_patterns(result.exclude_from)
+        self.assertListEqual(extra, ['.ignore'])
+        match = self.module.create_exclude_fnc(
+            result.exclude + extra, '/b', sep='/')
+        self.assertTrue(match('/b/.a'))
+        self.assertTrue(match('/b/.a/b'))
+        self.assertFalse(match('/b/a/.a'))
+        self.assertTrue(match('/b/a/.ignore'))
+
+        match = self.module.create_exclude_fnc(
+            result.exclude + extra, 'C:\\b', sep='\\')
+        self.assertTrue(match('C:\\b\\.a'))
+        self.assertTrue(match('C:\\b\\.a\\b'))
+        self.assertFalse(match('C:\\b\\a\\.a'))
+        self.assertTrue(match('C:\\b\\a\\.ignore'))
 
     def test_main(self):
         params = {}
@@ -1086,7 +1113,3 @@ def register_plugin(manager):
         view_func=lambda: 'test_plugin_root')
 
     manager.register_blueprint(test_plugin_blueprint)
-
-
-if __name__ == '__main__':
-    unittest.main()

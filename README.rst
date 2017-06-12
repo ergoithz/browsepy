@@ -1,16 +1,20 @@
 browsepy
 ========
 
-.. image:: http://img.shields.io/travis/ergoithz/browsepy/master.svg?style=flat-square
+.. image:: http://img.shields.io/travis/ergoithz/browsepy/0.5.3.svg?style=flat-square
   :target: https://travis-ci.org/ergoithz/browsepy
   :alt: Travis-CI badge
 
-.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/master.svg?style=flat-square
-  :target: https://coveralls.io/r/ergoithz/browsepy
+.. image:: https://img.shields.io/appveyor/ci/ergoithz/browsepy/0.5.3.svg?style=flat-square
+  :target: https://ci.appveyor.com/project/ergoithz/browsepy/branch/0.5.3
+  :alt: AppVeyor badge
+
+.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/0.5.3.svg?style=flat-square
+  :target: https://coveralls.io/r/ergoithz/browsepy?branch=0.5.3
   :alt: Coveralls badge
 
-.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/master.svg?style=flat-square
-  :target: https://www.codacy.com/app/ergoithz/browsepy
+.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/0.5.3.svg?style=flat-square
+  :target: https://www.codacy.com/app/ergoithz/browsepy/dashboard?bid=4246124
   :alt: Codacy badge
 
 .. image:: http://img.shields.io/pypi/l/browsepy.svg?style=flat-square
@@ -19,7 +23,7 @@ browsepy
 
 .. image:: http://img.shields.io/pypi/v/browsepy.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
-  :alt: Version: 0.5.2
+  :alt: Version: 0.5.3
 
 .. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.3%2B-FFC100.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
@@ -129,22 +133,25 @@ plugins (loaded with `plugin` argument) could add extra arguments to this list.
 
 ::
 
-    usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
-                    [--upload PATH] [--plugin PLUGIN_LIST] [--debug]
-                    [host] [port]
+  usage: browsepy [-h] [--directory PATH] [--initial PATH] [--removable PATH]
+                  [--upload PATH] [--exclude PATTERN] [--exclude-from PATH]
+                  [--plugin MODULE]
+                  [host] [port]
 
-    positional arguments:
-      host                  address to listen (default: 127.0.0.1)
-      port                  port to listen (default: 8080)
+  positional arguments:
+    host                  address to listen (default: 127.0.0.1)
+    port                  port to listen (default: 8080)
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      --directory PATH      base serving directory (default: current path)
-      --initial PATH        initial directory (default: same as --directory)
-      --removable PATH      base directory for remove (default: none)
-      --upload PATH         base directory for upload (default: none)
-      --plugin PLUGIN_LIST  comma-separated list of plugins
-      --debug               debug mode
+  optional arguments:
+    -h, --help            show this help message and exit
+    --directory PATH      serving directory (default: current path)
+    --initial PATH        default directory (default: same as --directory)
+    --removable PATH      base directory allowing remove (default: none)
+    --upload PATH         base directory allowing upload (default: none)
+    --exclude PATTERN     exclude paths by pattern (multiple)
+    --exclude-from PATH   exclude paths by pattern file (multiple)
+    --plugin MODULE       load plugin module (multiple)
+
 
 Using as library
 ----------------
@@ -180,6 +187,7 @@ following configuration options.
   plugin_namespaces) will be loaded.
 * **plugin_namespaces** prefixes for module names listed at plugin_modules
   where relative plugin_modules are searched.
+* **exclude_fnc** function will be used to exclude files from listing and directory tarballs. Can be either None or function receiving an absolute path and returning a boolean.
 
 After editing `plugin_modules` value, plugin manager (available at module
 plugin_manager and app.extensions['plugin_manager']) should be reloaded using

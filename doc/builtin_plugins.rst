@@ -37,8 +37,9 @@ built-in plugins, as long as they comply with the following requirements:
 * Plugins must not add external requirements to browsepy, optional
   requirements are allowed if plugin can work without them, even with
   limited functionality.
-* Plugins must not add specific logic on browsepy itself, but extending
-  browsepy's plugin interface in a generic and useful way is welcome.
+* Plugins should avoid adding specific logic on browsepy itself, but extending
+  browsepy's itself (specially via plugin interface) in a generic and useful
+  way is definitely welcome.
 
 Said that, feel free to fork, code great stuff and fill pull requests at
 `GitHub <https://github.com/ergoithz/browsepy>`_.

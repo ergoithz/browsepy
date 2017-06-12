@@ -162,11 +162,34 @@ table.browser td:nth-child(3) {
 h1 {
   line-height: 1.15em;
   font-size: 3em;
+  white-space: normal;
+  word-wrap: normal;
   margin: 0;
   padding: 0 0 0.3em;
   display: block;
   color: black;
   text-shadow: 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 0 0 white, -1px 0 0 white, 0 -1px 0 white, 0 1px 0 white, 2px 2px 0 black, -2px -2px 0 black, 2px -2px 0 black, -2px 2px 0 black, 2px 0 0 black, -2px 0 0 black, 0 2px 0 black, 0 -2px 0 black, 2px 1px 0 black, -2px 1px 0 black, 1px 2px 0 black, 1px -2px 0 black, 2px -1px 0 black, -2px -1px 0 black, -1px 2px 0 black, -1px -2px 0 black;
+}
+
+ol.path,
+ol.path li {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+ol.path li *:before {
+  content: ' ';
+}
+
+ol.path li *:after{
+  content: ' /';
+}
+
+ol.path li:first-child *:before,
+ol.path li:last-child *:after,
+ol.path li *.root:after {
+  content: '';
 }
 
 ul.navbar,

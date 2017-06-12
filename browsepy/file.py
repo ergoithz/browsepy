@@ -6,9 +6,7 @@ import os.path
 import re
 import shutil
 import codecs
-import threading
 import string
-import tarfile
 import random
 import datetime
 import logging
@@ -18,6 +16,7 @@ from werkzeug.utils import cached_property
 
 from . import compat
 from .compat import range
+from .stream import TarFileStream
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +29,7 @@ binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
 standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 common_path_separators = '\\/'
 restricted_chars = '\\/\0'
-restricted_names = ('.', '..', '::', os.sep)
+restricted_names = ('.', '..', '::', '/', '\\')
 nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
                    'LPT2', 'LPT3', 'PRN', 'NUL')
 fs_safe_characters = string.ascii_uppercase + string.digits
@@ -57,6 +56,18 @@ class Node(object):
 
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     can_download = False
+    is_root = False
+
+    @cached_property
+    def is_excluded(self):
+        '''
+        Get if current node shouldn't be shown, using :attt:`app` config's
+        exclude_fnc.
+
+        :returns: True if excluded, False otherwise
+        '''
+        exclude = self.app and self.app.config['exclude_fnc']
+        return exclude and exclude(self.path)
 
     @cached_property
     def plugin_manager(self):
@@ -114,7 +125,7 @@ class Node(object):
         :rtype: bool
         '''
         dirbase = self.app.config["directory_remove"]
-        return dirbase and self.path.startswith(dirbase + os.sep)
+        return dirbase and check_under_base(self.path, dirbase)
 
     @cached_property
     def stats(self):
@@ -134,7 +145,7 @@ class Node(object):
         :returns: parent object if available
         :rtype: Node instance or None
         '''
-        if self.path == self.app.config['directory_base']:
+        if check_path(self.path, self.app.config['directory_base']):
             return None
         parent = os.path.dirname(self.path) if self.path else None
         return self.directory_class(parent, self.app) if parent else None
@@ -162,8 +173,11 @@ class Node(object):
         :returns: iso9008-like date-time string (without timezone)
         :rtype: str
         '''
-        dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
-        return dt.strftime('%Y.%m.%d %H:%M:%S')
+        try:
+            dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
+            return dt.strftime('%Y.%m.%d %H:%M:%S')
+        except OSError:
+            return None
 
     @property
     def urlpath(self):
@@ -373,10 +387,13 @@ class File(Node):
         :returns: fuzzy size with unit
         :rtype: str
         '''
-        size, unit = fmt_size(
-            self.stats.st_size,
-            self.app.config["use_binary_multiples"]
-            )
+        try:
+            size, unit = fmt_size(
+                self.stats.st_size,
+                self.app.config['use_binary_multiples'] if self.app else False
+                )
+        except OSError:
+            return None
         if unit == binary_units[0]:
             return "%d %s" % (size, unit)
         return "%.2f %s" % (size, unit)
@@ -432,9 +449,19 @@ class Directory(Node):
     _listdir_cache = None
     mimetype = 'inode/directory'
     is_file = False
-    size = 0
+    size = None
     encoding = 'default'
     generic = False
+
+    @property
+    def name(self):
+        '''
+        Get the basename portion of directory's path.
+
+        :returns: filename
+        :rtype: str
+        '''
+        return super(Directory, self).name or self.path
 
     @cached_property
     def widgets(self):
@@ -504,6 +531,16 @@ class Directory(Node):
         return os.path.isdir(self.path)
 
     @cached_property
+    def is_root(self):
+        '''
+        Get if directory is filesystem's root
+
+        :returns: True if FS root, False otherwise
+        :rtype: bool
+        '''
+        return check_path(os.path.dirname(self.path), self.path)
+
+    @cached_property
     def can_download(self):
         '''
         Get if path is downloadable (if app's `directory_downloadable` config
@@ -524,10 +561,18 @@ class Directory(Node):
         :rtype: bool
         '''
         dirbase = self.app.config["directory_upload"]
-        return dirbase and (
-            dirbase == self.path or
-            self.path.startswith(dirbase + os.sep)
-            )
+        return dirbase and check_base(self.path, dirbase)
+
+    @cached_property
+    def can_remove(self):
+        '''
+        Get if current node can be removed based on app config's
+        directory_remove.
+
+        :returns: True if current node can be removed, False otherwise.
+        :rtype: bool
+        '''
+        return self.parent and super(Directory, self).can_remove
 
     @cached_property
     def is_empty(self):
@@ -562,7 +607,8 @@ class Directory(Node):
         return self.app.response_class(
             TarFileStream(
                 self.path,
-                self.app.config["directory_tar_buffsize"]
+                self.app.config['directory_tar_buffsize'],
+                self.app.config['exclude_fnc'],
                 ),
             mimetype="application/octet-stream"
             )
@@ -599,169 +645,45 @@ class Directory(Node):
             new_filename = alternative_filename(filename)
         return new_filename
 
-    def _listdir(self, precomputed_stats=os.name == 'nt'):
+    def _listdir(self, precomputed_stats=(os.name == 'nt')):
         '''
         Iter unsorted entries on this directory.
 
         :yields: Directory or File instance for each entry in directory
         :ytype: Node
         '''
-        for entry in compat.scandir(self.path):
-            kwargs = {'path': entry.path, 'app': self.app, 'parent': self}
-            if precomputed_stats and not entry.is_symlink():
-                kwargs['stats'] = entry.stat()
-            if entry.is_dir(follow_symlinks=True):
-                yield self.directory_class(**kwargs)
-                continue
-            yield self.file_class(**kwargs)
+        for entry in scandir(self.path, self.app):
+            kwargs = {
+                'path': entry.path,
+                'app': self.app,
+                'parent': self,
+                'is_excluded': False
+                }
+            try:
+                if precomputed_stats and not entry.is_symlink():
+                    kwargs['stats'] = entry.stat()
+                if entry.is_dir(follow_symlinks=True):
+                    yield self.directory_class(**kwargs)
+                else:
+                    yield self.file_class(**kwargs)
+            except OSError as e:
+                logger.exception(e)
 
     def listdir(self, sortkey=None, reverse=False):
         '''
         Get sorted list (by given sortkey and reverse params) of File objects.
 
         :return: sorted list of File instances
-        :rtype: list of File
+        :rtype: list of File instances
         '''
         if self._listdir_cache is None:
-            if sortkey:
-                data = sorted(self._listdir(), key=sortkey, reverse=reverse)
-            elif reverse:
-                data = list(reversed(self._listdir()))
-            else:
-                data = list(self._listdir())
-            self._listdir_cache = data
-        return self._listdir_cache
-
-
-class TarFileStream(object):
-    '''
-    Tarfile which compresses while reading for streaming.
-
-    Buffsize can be provided, it must be 512 multiple (the tar block size) for
-    compression.
-
-    Note on corroutines: this class uses threading by default, but
-    corroutine-based applications can change this behavior overriding the
-    :attr:`event_class` and :attr:`thread_class` values.
-    '''
-    event_class = threading.Event
-    thread_class = threading.Thread
-    tarfile_class = tarfile.open
-
-    def __init__(self, path, buffsize=10240):
-        '''
-        Internal tarfile object will be created, and compression will start
-        on a thread until buffer became full with writes becoming locked until
-        a read occurs.
-
-        :param path: local path of directory whose content will be compressed.
-        :type path: str
-        :param buffsize: size of internal buffer on bytes, defaults to 10KiB
-        :type buffsize: int
-        '''
-        self.path = path
-        self.name = os.path.basename(path) + ".tgz"
-
-        self._finished = 0
-        self._want = 0
-        self._data = bytes()
-        self._add = self.event_class()
-        self._result = self.event_class()
-        self._tarfile = self.tarfile_class(  # stream write
-            fileobj=self,
-            mode="w|gz",
-            bufsize=buffsize
-            )
-        self._th = self.thread_class(target=self.fill)
-        self._th.start()
-
-    def fill(self):
-        '''
-        Writes data on internal tarfile instance, which writes to current
-        object, using :meth:`write`.
-
-        As this method is blocking, it is used inside a thread.
-
-        This method is called automatically, on a thread, on initialization,
-        so there is little need to call it manually.
-        '''
-        self._tarfile.add(self.path, "")
-        self._tarfile.close()  # force stream flush
-        self._finished += 1
-        if not self._result.is_set():
-            self._result.set()
-
-    def write(self, data):
-        '''
-        Write method used by internal tarfile instance to output data.
-        This method blocks tarfile execution once internal buffer is full.
-
-        As this method is blocking, it is used inside the same thread of
-        :meth:`fill`.
-
-        :param data: bytes to write to internal buffer
-        :type data: bytes
-        :returns: number of bytes written
-        :rtype: int
-        '''
-        self._add.wait()
-        self._data += data
-        if len(self._data) > self._want:
-            self._add.clear()
-            self._result.set()
-        return len(data)
-
-    def read(self, want=0):
-        '''
-        Read method, gets data from internal buffer while releasing
-        :meth:`write` locks when needed.
-
-        The lock usage means it must ran on a different thread than
-        :meth:`fill`, ie. the main thread, otherwise will deadlock.
-
-        The combination of both write and this method running on different
-        threads makes tarfile being streamed on-the-fly, with data chunks being
-        processed and retrieved on demand.
-
-        :param want: number bytes to read, defaults to 0 (all available)
-        :type want: int
-        :returns: tarfile data as bytes
-        :rtype: bytes
-        '''
-        if self._finished:
-            if self._finished == 1:
-                self._finished += 1
-                return ""
-            return EOFError("EOF reached")
-
-        # Thread communication
-        self._want = want
-        self._add.set()
-        self._result.wait()
-        self._result.clear()
-
-        if want:
-            data = self._data[:want]
-            self._data = self._data[want:]
-        else:
-            data = self._data
-            self._data = bytes()
+            self._listdir_cache = tuple(self._listdir())
+        if sortkey:
+            return sorted(self._listdir_cache, key=sortkey, reverse=reverse)
+        data = list(self._listdir_cache)
+        if reverse:
+            data.reverse()
         return data
-
-    def __iter__(self):
-        '''
-        Iterate through tarfile result chunks.
-
-        Similarly to :meth:`read`, this methos must ran on a different thread
-        than :meth:`write` calls.
-
-        :yields: data chunks as taken from :meth:`read`.
-        :ytype: bytes
-        '''
-        data = self.read()
-        while data:
-            yield data
-            data = self.read()
 
 
 class OutsideDirectoryBase(Exception):
@@ -785,7 +707,9 @@ def fmt_size(size, binary=True):
     Get size and unit.
 
     :param size: size in bytes
+    :type size: int
     :param binary: whether use binary or standard units, defaults to True
+    :type binary: bool
     :return: size and unit
     :rtype: tuple of int and unit as str
     '''
@@ -807,13 +731,16 @@ def relativize_path(path, base, os_sep=os.sep):
     Make absolute path relative to an absolute base.
 
     :param path: absolute path
+    :type path: str
     :param base: absolute base path
+    :type base: str
     :param os_sep: path component separator, defaults to current OS separator
+    :type os_sep: str
     :return: relative path
     :rtype: str or unicode
     :raises OutsideDirectoryBase: if path is not below base
     '''
-    if not check_under_base(path, base, os_sep):
+    if not check_base(path, base, os_sep):
         raise OutsideDirectoryBase("%r is not under %r" % (path, base))
     prefix_len = len(base)
     if not base.endswith(os_sep):
@@ -848,7 +775,7 @@ def urlpath_to_abspath(path, base, os_sep=os.sep):
     '''
     prefix = base if base.endswith(os_sep) else base + os_sep
     realpath = os.path.abspath(prefix + path.replace('/', os_sep))
-    if base == realpath or realpath.startswith(prefix):
+    if check_path(base, realpath) or check_under_base(realpath, base):
         return realpath
     raise OutsideDirectoryBase("%r is not under %r" % (realpath, base))
 
@@ -902,17 +829,55 @@ def check_forbidden_filename(filename,
     return filename in restricted_names
 
 
+def check_path(path, base, os_sep=os.sep):
+    '''
+    Check if both given paths are equal.
+
+    :param path: absolute path
+    :type path: str
+    :param base: absolute base path
+    :type base: str
+    :param os_sep: path separator, defaults to os.sep
+    :type base: str
+    :return: wether two path are equal or not
+    :rtype: bool
+    '''
+    base = base[:-len(os_sep)] if base.endswith(os_sep) else base
+    return os.path.normcase(path) == os.path.normcase(base)
+
+
+def check_base(path, base, os_sep=os.sep):
+    '''
+    Check if given absolute path is under or given base.
+
+    :param path: absolute path
+    :type path: str
+    :param base: absolute base path
+    :type base: str
+    :param os_sep: path separator, defaults to os.sep
+    :return: wether path is under given base or not
+    :rtype: bool
+    '''
+    return (
+        check_path(path, base, os_sep) or
+        check_under_base(path, base, os_sep)
+        )
+
+
 def check_under_base(path, base, os_sep=os.sep):
     '''
     Check if given absolute path is under given base.
 
     :param path: absolute path
+    :type path: str
     :param base: absolute base path
+    :type base: str
+    :param os_sep: path separator, defaults to os.sep
     :return: wether file is under given base or not
     :rtype: bool
     '''
     prefix = base if base.endswith(os_sep) else base + os_sep
-    return path == base or path.startswith(prefix)
+    return os.path.normcase(path).startswith(os.path.normcase(prefix))
 
 
 def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
@@ -970,3 +935,24 @@ def alternative_filename(filename, attempt=None):
     else:
         extra = u' (%d)' % attempt
     return u'%s%s%s' % (name, extra, ext)
+
+
+def scandir(path, app=None):
+    '''
+    Config-aware scandir. Currently, only aware of ``exclude_fnc``.
+
+    :param path: absolute path
+    :type path: str
+    :param app: flask application
+    :type app: flask.Flask or None
+    :returns: filtered scandir entries
+    :rtype: iterator
+    '''
+    exclude = app and app.config.get('exclude_fnc')
+    if exclude:
+        return (
+            item
+            for item in compat.scandir(path)
+            if not exclude(item.path)
+            )
+    return compat.scandir(path)

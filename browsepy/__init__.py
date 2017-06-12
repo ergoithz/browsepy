@@ -12,12 +12,16 @@ from flask import Flask, Response, request, render_template, redirect, \
                   make_response
 from werkzeug.exceptions import NotFound
 
-from .__meta__ import __app__, __version__, __license__, __author__  # noqa
 from .manager import PluginManager
 from .file import Node, OutsideRemovableBase, OutsideDirectoryBase, \
                   secure_filename
 from . import compat
+from . import __meta__ as meta
 
+__app__ = meta.app  # noqa
+__version__ = meta.version  # noqa
+__license__ = meta.license  # noqa
+__author__ = meta.author  # noqa
 __basedir__ = os.path.abspath(os.path.dirname(compat.fsdecode(__file__)))
 
 logger = logging.getLogger(__name__)
@@ -42,8 +46,9 @@ app.config.update(
         'browsepy_',
         '',
         ),
+    exclude_fnc=None,
     )
-app.jinja_env.add_extension('browsepy.extensions.HTMLCompress')
+app.jinja_env.add_extension('browsepy.transform.htmlcompress.HTMLCompress')
 
 if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
@@ -51,15 +56,15 @@ if "BROWSEPY_SETTINGS" in os.environ:
 plugin_manager = PluginManager(app)
 
 
-def iter_cookie_browse_sorting():
+def iter_cookie_browse_sorting(cookies):
     '''
-    Get sorting-cookie data of current request.
+    Get sorting-cookie from cookies dictionary.
 
     :yields: tuple of path and sorting property
     :ytype: 2-tuple of strings
     '''
     try:
-        data = request.cookies.get('browse-sorting', 'e30=').encode('ascii')
+        data = cookies.get('browse-sorting', 'e30=').encode('ascii')
         for path, prop in json.loads(base64.b64decode(data).decode('utf-8')):
             yield path, prop
     except (ValueError, TypeError, KeyError) as e:
@@ -73,16 +78,22 @@ def get_cookie_browse_sorting(path, default):
     :returns: sorting property
     :rtype: string
     '''
-    for cpath, cprop in iter_cookie_browse_sorting():
-        if path == cpath:
-            return cprop
+    if request:
+        for cpath, cprop in iter_cookie_browse_sorting(request.cookies):
+            if path == cpath:
+                return cprop
     return default
 
 
 def browse_sortkey_reverse(prop):
     '''
-    Get sorting function for browse
+    Get sorting function for directory listing based on given attribute
+    name, with some caveats:
+    * Directories will be first.
+    * If *name* is given, link widget lowercase text will be used istead.
+    * If *size* is given, bytesize will be used.
 
+    :param prop: file attribute name
     :returns: tuple with sorting gunction and reverse bool
     :rtype: tuple of a dict and a bool
     '''
@@ -148,12 +159,12 @@ def sort(property, path):
     except OutsideDirectoryBase:
         return NotFound()
 
-    if not directory.is_directory:
+    if not directory.is_directory or directory.is_excluded:
         return NotFound()
 
     data = [
         (cpath, cprop)
-        for cpath, cprop in iter_cookie_browse_sorting()
+        for cpath, cprop in iter_cookie_browse_sorting(request.cookies)
         if cpath != path
         ]
     data.append((path, property))
@@ -177,7 +188,7 @@ def browse(path):
 
     try:
         directory = Node.from_urlpath(path)
-        if directory.is_directory:
+        if directory.is_directory and not directory.is_excluded:
             return stream_template(
                 'browse.html',
                 file=directory,
@@ -194,7 +205,7 @@ def browse(path):
 def open_file(path):
     try:
         file = Node.from_urlpath(path)
-        if file.is_file:
+        if file.is_file and not file.is_excluded:
             return send_from_directory(file.parent.path, file.name)
     except OutsideDirectoryBase:
         pass
@@ -205,7 +216,7 @@ def open_file(path):
 def download_file(path):
     try:
         file = Node.from_urlpath(path)
-        if file.is_file:
+        if file.is_file and not file.is_excluded:
             return file.download()
     except OutsideDirectoryBase:
         pass
@@ -216,7 +227,7 @@ def download_file(path):
 def download_directory(path):
     try:
         directory = Node.from_urlpath(path)
-        if directory.is_directory:
+        if directory.is_directory and not directory.is_excluded:
             return directory.download()
     except OutsideDirectoryBase:
         pass
@@ -229,10 +240,13 @@ def remove(path):
         file = Node.from_urlpath(path)
     except OutsideDirectoryBase:
         return NotFound()
+
+    if not file.can_remove or file.is_excluded:
+        return NotFound()
+
     if request.method == 'GET':
-        if not file.can_remove:
-            return NotFound()
         return render_template('remove.html', file=file)
+
     parent = file.parent
     if parent is None:
         # base is not removable
@@ -254,7 +268,10 @@ def upload(path):
     except OutsideDirectoryBase:
         return NotFound()
 
-    if not directory.is_directory or not directory.can_upload:
+    if (
+      not directory.is_directory or not directory.can_upload or
+      directory.is_excluded
+      ):
         return NotFound()
 
     for v in request.files.listvalues():

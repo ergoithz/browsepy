@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-__app__ = "browsepy"
-__version__ = "0.5.2"
-__license__ = 'MIT'
-__author__ = "Felipe A. Hernandez <ergoithz@gmail.com>"
+app = 'browsepy'
+description = 'Simple web file browser'
+version = '0.5.3'
+license = 'MIT'
+author_name = 'Felipe A. Hernandez'
+author_mail = 'ergoithz@gmail.com'
+author = '%s <%s>' % (author_name, author_mail)
+url = 'https://github.com/ergoithz/browsepy'
+tarball = '%s/archive/%s.tar.gz' % (url, version)

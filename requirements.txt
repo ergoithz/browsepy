@@ -1,5 +1,6 @@
 flask
 scandir
+unicategories
 sphinx
 pep8
 flake8

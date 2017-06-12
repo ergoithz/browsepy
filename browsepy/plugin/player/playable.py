@@ -128,10 +128,14 @@ class PlayListFile(PlayableBase):
     def normalize_playable_path(self, path):
         if '://' in path:
             return path
+        path = os.path.normpath(path)
         if not os.path.isabs(path):
-            return os.path.normpath(os.path.join(self.parent.path, path))
+            return os.path.join(self.parent.path, path)
+        drive = os.path.splitdrive(self.path)[0]
+        if drive and not os.path.splitdrive(path)[0]:
+            path = drive + path
         if check_under_base(path, self.app.config['directory_base']):
-            return os.path.normpath(path)
+            return path
         return None
 
     def _entries(self):
@@ -146,7 +150,7 @@ class PlayListFile(PlayableBase):
 
 class PLSFile(PlayListFile):
     ini_parser_class = PLSFileParser
-    maxsize = getattr(sys, 'maxsize', None) or getattr(sys, 'maxint', None)
+    maxsize = getattr(sys, 'maxint', 0) or getattr(sys, 'maxsize', 0) or 2**32
     mimetype = 'audio/x-scpls'
     extensions = PlayableBase.extensions_from_mimetypes([mimetype])
 
@@ -192,7 +196,7 @@ class M3UFile(PlayListFile):
             if f.read(len(prefix)) != prefix:
                 f.seek(0)
             for line in f:
-                line = line.rstrip('\n')
+                line = line.rstrip()
                 if line:
                     yield line
 

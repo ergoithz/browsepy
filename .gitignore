@@ -9,9 +9,12 @@ doc/.build/*
 env/*
 env2/*
 env3/*
+wenv2/*
+wenv3/*
 node_modules/*
-__pycache__/*
+**/__pycache__/*
 **.egg/*
+**.eggs/*
 **.egg-info/*
 **.pyc
 **/node_modules/*

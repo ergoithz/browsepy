@@ -70,5 +70,8 @@ Utility functions
 .. autofunction:: abspath_to_urlpath
 .. autofunction:: urlpath_to_abspath
 .. autofunction:: check_under_base
+.. autofunction:: check_base
+.. autofunction:: check_path
 .. autofunction:: secure_filename
 .. autofunction:: alternative_filename
+.. autofunction:: scandir
