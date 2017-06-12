@@ -125,7 +125,7 @@ class Node(object):
         :rtype: bool
         '''
         dirbase = self.app.config["directory_remove"]
-        return dirbase and check_under_base(self.path, dirbase)
+        return bool(dirbase and check_under_base(self.path, dirbase))
 
     @cached_property
     def stats(self):
@@ -136,6 +136,16 @@ class Node(object):
         :rtype: posix.stat_result or nt.stat_result
         '''
         return os.stat(self.path)
+
+    @cached_property
+    def pathconf(self):
+        '''
+        Get filesystem config for current path.
+
+        :returns: fs config
+        :rtype: dict
+        '''
+        return {key: os.pathconf(self.path, key) for key in os.pathconf_names}
 
     @cached_property
     def parent(self):

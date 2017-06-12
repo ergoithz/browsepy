@@ -5,15 +5,15 @@ browsepy
   :target: https://travis-ci.org/ergoithz/browsepy
   :alt: Travis-CI badge
 
-.. image:: https://img.shields.io/appveyor/ci/ergoithz/browsepy/master.svg?style=flat-square
-  :target: https://ci.appveyor.com/project/ergoithz/browsepy/branch/master
+.. image:: https://img.shields.io/appveyor/ci/ergoithz/browsepy/0.5.4.svg?style=flat-square
+  :target: https://ci.appveyor.com/project/ergoithz/browsepy/branch/0.5.4
   :alt: AppVeyor badge
 
-.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/master.svg?style=flat-square
-  :target: https://coveralls.io/r/ergoithz/browsepy?branch=master
+.. image:: http://img.shields.io/coveralls/ergoithz/browsepy/0.5.4.svg?style=flat-square
+  :target: https://coveralls.io/r/ergoithz/browsepy?branch=0.5.4
   :alt: Coveralls badge
 
-.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/master.svg?style=flat-square
+.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/0.5.4.svg?style=flat-square
   :target: https://www.codacy.com/app/ergoithz/browsepy/dashboard?bid=4246124
   :alt: Codacy badge
 
