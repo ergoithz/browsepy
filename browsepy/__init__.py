@@ -62,7 +62,7 @@ plugin_manager = PluginManager(app)
 if app.config.password :
     g.user_is_logged = False
 else :
-    g.user_is_logged = False
+    g.user_is_logged = True
 
 
 
@@ -166,6 +166,7 @@ def login():
         if request.method == 'POST':
             password = request.form['password']
             if password == app.config.password:
+                g.user_is_logged = True
                 return redirect(request.args.get("next"))
             else:
                 return abort(401)
