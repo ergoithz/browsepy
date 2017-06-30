@@ -7,6 +7,9 @@ import os.path
 import json
 import base64
 
+from functools import wraps
+from flask import g, request, redirect, url_for
+
 from flask import Flask, Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
                   make_response
@@ -54,6 +57,13 @@ if "BROWSEPY_SETTINGS" in os.environ:
     app.config.from_envvar("BROWSEPY_SETTINGS")
 
 plugin_manager = PluginManager(app)
+
+# if a password is not provided in args consider the user logged
+if app.config.password :
+    g.user_is_logged = False
+else :
+    g.user_is_logged = True
+
 
 
 def iter_cookie_browse_sorting(cookies):
@@ -141,6 +151,34 @@ def stream_template(template_name, **context):
     template = app.jinja_env.get_template(template_name)
     stream = template.generate(context)
     return Response(stream_with_context(stream))
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if g.user is None: # TODO implement if pass ...
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if not g.user_is_logged :
+        if request.method == 'POST':
+            password = request.form['password']
+            if password == app.config.password:
+                g.user_is_logged = True
+                return redirect(request.args.get("next"))
+            else:
+                return abort(401)
+        else:
+            return Response('''
+            <form action="" method="post">
+                <p><input type=password name=password>
+                <p><input type=submit value=Login>
+            </form>
+            ''')
+    else :
+        return redirect(request.args.get("next"))
 
 
 @app.context_processor

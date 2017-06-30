@@ -93,6 +93,12 @@ class ArgParse(argparse.ArgumentParser):
             default=[],
             help='exclude paths by pattern file (multiple)')
         self.add_argument(
+            '--password',
+            metavar='PASSWORD',
+            action='append',
+            default="",
+            help='a password for protecting access')
+        self.add_argument(
             '--plugin', metavar='MODULE',
             action=self.plugin_action_class,
             default=[],
@@ -149,6 +155,7 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         directory_start=args.initial or args.directory,
         directory_remove=args.removable,
         directory_upload=args.upload,
+        password=args.password,
         plugin_modules=args.plugin,
         exclude_fnc=create_exclude_fnc(patterns, args.directory)
         )
