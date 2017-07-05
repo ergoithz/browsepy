@@ -7,11 +7,12 @@ import os.path
 import json
 import base64
 
-from flask import Flask, Response, request, render_template, redirect, \
+from flask import Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
                   make_response
 from werkzeug.exceptions import NotFound
 
+from .appconfig import Flask
 from .manager import PluginManager
 from .file import Node, OutsideRemovableBase, OutsideDirectoryBase, \
                   secure_filename
