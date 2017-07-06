@@ -51,8 +51,8 @@ app.config.update(
     )
 app.jinja_env.add_extension('browsepy.transform.htmlcompress.HTMLCompress')
 
-if "BROWSEPY_SETTINGS" in os.environ:
-    app.config.from_envvar("BROWSEPY_SETTINGS")
+if 'BROWSEPY_SETTINGS' in os.environ:
+    app.config.from_envvar('BROWSEPY_SETTINGS')
 
 plugin_manager = PluginManager(app)
 

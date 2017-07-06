@@ -25,9 +25,15 @@ class TestApp(unittest.TestCase):
 class TestConfig(unittest.TestCase):
     pwd = os.path.dirname(os.path.abspath(__file__))
     module = browsepy.appconfig
-    
+
     def test_case_insensitivity(self):
         cfg = self.module.Config(self.pwd, defaults={'prop': 1})
         self.assertEqual(cfg['prop'], cfg['PROP'])
         self.assertEqual(cfg['pRoP'], cfg.pop('prop'))
-    
+        cfg.update(prop=1)
+        self.assertEqual(cfg['PROP'], 1)
+        self.assertEqual(cfg.get('pRop'), 1)
+        self.assertEqual(cfg.popitem(), ('PROP', 1))
+        self.assertRaises(KeyError, cfg.pop, 'prop')
+        self.assertIsNone(cfg.pop('prop', None))
+        self.assertIsNone(cfg.get('prop'))
