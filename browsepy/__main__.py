@@ -10,7 +10,7 @@ import warnings
 
 import flask
 
-from . import app, compat
+from . import app
 from . import __meta__ as meta
 from .compat import PY_LEGACY, getdebug, get_terminal_size
 from .transform.glob import translate
@@ -46,7 +46,11 @@ class PluginAction(argparse.Action):
 
 class ArgParse(argparse.ArgumentParser):
     default_directory = app.config['directory_base']
-    default_initial = app.config['directory_start']
+    default_initial = (
+        None
+        if app.config['directory_start'] == app.config['directory_base'] else
+        app.config['directory_start']
+        )
     default_removable = app.config['directory_remove']
     default_upload = app.config['directory_upload']
 
@@ -77,11 +81,7 @@ class ArgParse(argparse.ArgumentParser):
         self.add_argument(
             '--initial', metavar='PATH',
             type=lambda x: self._directory(x) if x else None,
-            default=(
-                None
-                if self.default_initial == self.default_directory else
-                self.default_initial
-                ),
+            default=self.default_initial,
             help='default directory (default: same as --directory)')
         self.add_argument(
             '--removable', metavar='PATH', type=self._directory,

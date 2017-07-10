@@ -190,7 +190,7 @@ def pathsplit(value, sep=os.pathsep):
     :ytype: str
     '''
     for part in value.split(sep):
-        if part[:0] == part[-1:] == '"' or part[:0] == part[-1:] == '\'':
+        if part[:1] == part[-1:] == '"' or part[:1] == part[-1:] == '\'':
             part = part[1:-1]
         yield part
 
@@ -214,18 +214,18 @@ def pathparse(value, sep=os.pathsep, os_sep=os.sep):
     escapes = []
     if '\\' not in (os_sep, sep):
         escapes.extend((
-            ('\\\\', '<ESCAPE-ESCAPE>'),
-            ('\\"', '<ESCAPE-DQUOTE>'),
-            ('\\\'', '<ESCAPE-SQUOTE>'),
-            ('\\%s' % sep, '<ESCAPE-PATHSEP>'),
+            ('\\\\', '<ESCAPE-ESCAPE>', '\\'),
+            ('\\"', '<ESCAPE-DQUOTE>', '"'),
+            ('\\\'', '<ESCAPE-SQUOTE>', '\''),
+            ('\\%s' % sep, '<ESCAPE-PATHSEP>', sep),
             ))
-    for original, escape in escapes:
+    for original, escape, unescape in escapes:
         value = value.replace(original, escape)
     for part in pathsplit(value, sep=sep):
-        if part[-1:] == os_sep:
+        if part[-1:] == os_sep and part != os_sep:
             part = part[:-1]
-        for original, escape in escapes:
-            part = part.replace(escape, original)
+        for original, escape, unescape in escapes:
+            part = part.replace(escape, unescape)
         yield os.path.normpath(fsdecode(part))
 
 

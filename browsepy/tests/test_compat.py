@@ -110,6 +110,13 @@ class TestCompat(unittest.TestCase):
             self.module.unicode
             )
 
+    def test_path(self):
+        parse = self.module.pathparse
+        self.assertListEqual(
+            list(parse('"/":/escaped\\:path:asdf/', sep=':', os_sep='/')),
+            ['/', '/escaped:path', 'asdf']
+            )
+
     def test_getdebug(self):
         enabled = ('TRUE', 'true', 'True', '1', 'yes', 'enabled')
         for case in enabled:
