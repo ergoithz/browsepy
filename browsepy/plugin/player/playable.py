@@ -4,6 +4,8 @@ import codecs
 import os.path
 import warnings
 
+from werkzeug.utils import cached_property
+
 from browsepy.compat import range, PY_LEGACY  # noqa
 from browsepy.file import Node, File, Directory, \
                           underscore_replace, check_under_base
@@ -219,9 +221,9 @@ class PlayableDirectory(Directory):
     file_class = PlayableFile
     name = ''
 
-    @property
+    @cached_property
     def parent(self):
-        return super(PlayableDirectory, self)  # parent is self as directory
+        return Directory(self.path)
 
     @classmethod
     def detect(cls, node):
