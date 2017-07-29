@@ -142,6 +142,7 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     plugin_manager = app.extensions['plugin_manager']
     args = plugin_manager.load_arguments(argv, parser())
     patterns = args.exclude + collect_exclude_patterns(args.exclude_from)
+    print(patterns)
     if args.debug:
         os.environ['DEBUG'] = 'true'
     app.config.update(

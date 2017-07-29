@@ -936,6 +936,28 @@ def alternative_filename(filename, attempt=None):
         extra = u' (%d)' % attempt
     return u'%s%s%s' % (name, extra, ext)
 
+def myExclude(path):
+    exclude = True
+    desired_extensions = ['png', 'jpeg', 'jpg','bmp','gif']
+    # for de in desired_extensions:
+    if path.endswith(tuple(desired_extensions)):
+        exclude = False
+    # print('Going to exclude because no match?')
+    # print(exclude)
+    return exclude
+
+    # print(path.endswith('.yml'))
+    # return not path.endswith('.yml')
+    # imgs = re.compile('*\.yml|*\.in|*\.jpeg')
+    # print(path)
+    # print(imgs)
+    # print(imgs.match(path))
+    # if imgs.match(path) is None:
+    #     return True
+    # else:
+    #     print('Match!')
+    #     return False
+
 
 def scandir(path, app=None):
     '''
@@ -948,7 +970,8 @@ def scandir(path, app=None):
     :returns: filtered scandir entries
     :rtype: iterator
     '''
-    exclude = app and app.config.get('exclude_fnc')
+    # exclude = app and app.config.get('exclude_fnc')
+    exclude = myExclude
     if exclude:
         return (
             item

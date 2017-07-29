@@ -207,3 +207,11 @@ convenience abstraction for already used elements like external stylesheet and
 javascript tags, links, buttons and file upload.
 
 More information at http://ergoithz.github.io/browsepy/plugins.html
+
+
+Development
+------------
+python3 -m venv env3
+source ./env3/bin/activate
+pip install -r requirements.txt
+python3 -m browsepy

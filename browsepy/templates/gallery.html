@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% macro draw_widget(f, widget) -%}
+  {%- if widget.type == 'button' -%}
+    <a
+      href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
+      class="
+        {{- widget.type -}}
+        {%- if widget.text %} text{% endif -%}
+        {%- if widget.css %} {{ widget.css }}{% endif -%}"
+      >{{ widget.text or '' }}</a>
+  {%- elif widget.type == 'link' -%}
+    <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}" target="_BLANK"
+       {% if widget.css %}class="{{ widget.css }}"{% endif %}
+       >
+        <img src="{{ url_for(widget.endpoint, path=f.urlpath) }}" title="{{widget.text or ''}}"/>
+    </a>
+  {%- elif widget.type == 'script' -%}
+    <script
+      src="{{ widget.src or url_for(widget.endpoint, filename=widget.filename) }}"
+      ></script>
+  {%- elif widget.type == 'stylesheet' -%}
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ widget.href or url_for(widget.endpoint, filename=widget.filename) }}"/>
+  {%- elif widget.type == 'upload' -%}
+    <form class="upload autosubmit{% if widget.css %} {{ widget.css }}{% endif %}"
+          method="post"
+          action="{{ widget.action or url_for(widget.endpoint, path=file.urlpath) }}"
+          enctype="multipart/form-data">
+      <label>
+        <h2>{{ widget.text or 'Upload' }}</h2>
+        <input type="file" name="file[]" multiple=""/>
+      </label>
+      <input type="submit"/>
+    </form>
+  {%- elif widget.type == 'html' -%}
+    {{ widget.html|safe }}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro draw_widgets(f, place) -%}
+  {%- for widget in f.widgets -%}
+    {%- if widget.place == place -%}
+      {{ draw_widget(f, widget) }}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endmacro %}
+
+{% macro th(text, property, type='text', colspan=1) -%}
+<th{% if colspan > 1 %} colspan="{{ colspan }}"{% endif %}>
+    {% set urlpath = file.urlpath or None %}
+    {% set property_desc = '-{}'.format(property) %}
+    {% set prop = property_desc if sort_property == property else property %}
+    {% set active = ' active' if sort_property in (property, property_desc) else '' %}
+    {% set desc = ' desc' if sort_property == property_desc else '' %}
+    <a href="{{ url_for('gallery_sort', path=urlpath, property=prop) }}"
+       class="{{type}} sorting{{active}}{{desc}}"
+       >{{ text }}</a>
+</th>
+{%- endmacro %}
+
+{% block styles %}
+  {{ super() }}
+  {{ draw_widgets(file, 'styles') }}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='gallery.css') }}"/>
+{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  {{ draw_widgets(file, 'head') }}
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  {{ draw_widgets(file, 'scripts') }}
+{% endblock %}
+
+{% block header %}
+<h1>
+  <ol class="path">
+    {% for parent in file.ancestors[::-1] %}
+      <li>
+        <a href="{{ url_for('browse', path=parent.urlpath) }}"
+           {% if parent.is_root %}class="root"{% endif %}
+           >{{ parent.name }}</a>
+      </li>
+    {% endfor %}
+    {% if file.name %}
+      <li><span>{{ file.name }}</span></li>
+    {% endif %}
+  </ol>
+</h1>
+{% endblock %}
+
+{% block content %}
+{% block content_header %}
+{{ draw_widgets(file, 'header') }}
+{% endblock %}
+
+{% block content_table %}
+{% if file.is_empty %}
+    <p>No files in directory</p>
+{% else %}
+    <table class="browser">
+        <thead>
+            <tr>
+              {{ th('Name', 'text', 'text', 3) }}
+              {{ th('Mimetype', 'type') }}
+              {{ th('Modified', 'modified', 'numeric') }}
+              {{ th('Size', 'size', 'numeric') }}
+            </tr>
+        </thead>
+    </table>
+    <div class="container">
+      {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
+          <div class="box">
+              {% if f.link %}
+                {{ draw_widget(f, f.link) }}
+              {% endif %}
+              <span>{{ f.type or '' }}</span>
+              <span>{{ f.modified or '' }}</span>
+              <span>{{ f.size or '' }}</span>
+          </div>
+      {% endfor %}
+    </div>
+
+{% endif %}
+{% endblock %}
+
+{% block content_footer %}
+
+{% endblock %}
+{% endblock %}

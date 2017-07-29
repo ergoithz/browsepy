@@ -179,6 +179,34 @@ def sort(property, path):
     response.set_cookie('browse-sorting', raw_data)
     return response
 
+@app.route('/gallery/sort/<string:property>', defaults={"path": ""})
+@app.route('/gallery/sort/<string:property>/<path:path>')
+def gallery_sort(property, path):
+    try:
+        directory = Node.from_urlpath(path)
+    except OutsideDirectoryBase:
+        return NotFound()
+
+    if not directory.is_directory or directory.is_excluded:
+        return NotFound()
+
+    data = [
+        (cpath, cprop)
+        for cpath, cprop in iter_cookie_browse_sorting(request.cookies)
+        if cpath != path
+        ]
+    data.append((path, property))
+    raw_data = base64.b64encode(json.dumps(data).encode('utf-8'))
+
+    # prevent cookie becoming too large
+    while len(raw_data) > 3975:  # 4000 - len('browse-sorting=""; Path=/')
+        data.pop(0)
+        raw_data = base64.b64encode(json.dumps(data).encode('utf-8'))
+
+    response = redirect(url_for(".gallery", path=directory.urlpath))
+    response.set_cookie('browse-sorting', raw_data)
+    return response
+
 
 @app.route("/browse", defaults={"path": ""})
 @app.route('/browse/<path:path>')
@@ -191,6 +219,26 @@ def browse(path):
         if directory.is_directory and not directory.is_excluded:
             return stream_template(
                 'browse.html',
+                file=directory,
+                sort_property=sort_property,
+                sort_fnc=sort_fnc,
+                sort_reverse=sort_reverse
+                )
+    except OutsideDirectoryBase:
+        pass
+    return NotFound()
+
+@app.route("/gallery", defaults={"path": ""})
+@app.route('/gallery/<path:path>')
+def gallery(path):
+    sort_property = get_cookie_browse_sorting(path, 'text')
+    sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
+
+    try:
+        directory = Node.from_urlpath(path)
+        if directory.is_directory and not directory.is_excluded:
+            return stream_template(
+                'gallery.html',
                 file=directory,
                 sort_property=sort_property,
                 sort_fnc=sort_fnc,
