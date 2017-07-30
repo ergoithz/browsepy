@@ -9,6 +9,9 @@ import itertools
 import warnings
 import functools
 
+import posixpath
+import ntpath
+
 FS_ENCODING = sys.getfilesystemencoding()
 PY_LEGACY = sys.version_info < (3, )
 TRUE_VALUES = frozenset(('true', 'yes', '1', 'enable', 'enabled', True, 1))
@@ -212,6 +215,7 @@ def pathparse(value, sep=os.pathsep, os_sep=os.sep):
     :ytype: str
     '''
     escapes = []
+    normpath = ntpath.normpath if os_sep == '\\' else posixpath.normpath
     if '\\' not in (os_sep, sep):
         escapes.extend((
             ('\\\\', '<ESCAPE-ESCAPE>', '\\'),
@@ -226,7 +230,7 @@ def pathparse(value, sep=os.pathsep, os_sep=os.sep):
             part = part[:-1]
         for original, escape, unescape in escapes:
             part = part.replace(escape, unescape)
-        yield os.path.normpath(fsdecode(part))
+        yield normpath(fsdecode(part))
 
 
 ENV_PATH = tuple(pathparse(os.getenv('PATH', '')))
