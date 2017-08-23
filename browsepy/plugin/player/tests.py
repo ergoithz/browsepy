@@ -191,6 +191,7 @@ class TestPlayable(TestIntegrationBase):
         for ext, media_format in exts.items():
             pf = self.module.PlayableFile(path='asdf.%s' % ext, app=self.app)
             self.assertEqual(pf.media_format, media_format)
+            self.assertEqual(pf.title, 'asdf.%s' % ext)
 
     def test_playabledirectory(self):
         tmpdir = tempfile.mkdtemp()
@@ -201,6 +202,9 @@ class TestPlayable(TestIntegrationBase):
             self.assertTrue(self.module.PlayableDirectory.detect(node))
 
             directory = self.module.PlayableDirectory(tmpdir, app=self.app)
+
+            self.assertEqual(directory.parent.path, directory.path)
+
             entries = directory.entries()
             self.assertEqual(next(entries).path, file)
             self.assertRaises(StopIteration, next, entries)

@@ -10,7 +10,7 @@ import warnings
 
 import flask
 
-from . import app, compat
+from . import app
 from . import __meta__ as meta
 from .compat import PY_LEGACY, getdebug, get_terminal_size
 from .transform.glob import translate
@@ -45,7 +45,15 @@ class PluginAction(argparse.Action):
 
 
 class ArgParse(argparse.ArgumentParser):
-    default_directory = os.path.abspath(compat.getcwd())
+    default_directory = app.config['directory_base']
+    default_initial = (
+        None
+        if app.config['directory_start'] == app.config['directory_base'] else
+        app.config['directory_start']
+        )
+    default_removable = app.config['directory_remove']
+    default_upload = app.config['directory_upload']
+
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
     plugin_action_class = PluginAction
@@ -69,19 +77,20 @@ class ArgParse(argparse.ArgumentParser):
         self.add_argument(
             '--directory', metavar='PATH', type=self._directory,
             default=self.default_directory,
-            help='serving directory (default: current path)')
+            help='serving directory (default: %(default)s)')
         self.add_argument(
             '--initial', metavar='PATH',
             type=lambda x: self._directory(x) if x else None,
+            default=self.default_initial,
             help='default directory (default: same as --directory)')
         self.add_argument(
             '--removable', metavar='PATH', type=self._directory,
-            default=None,
-            help='base directory allowing remove (default: none)')
+            default=self.default_removable,
+            help='base directory allowing remove (default: %(default)s)')
         self.add_argument(
             '--upload', metavar='PATH', type=self._directory,
-            default=None,
-            help='base directory allowing upload (default: none)')
+            default=self.default_upload,
+            help='base directory allowing upload (default: %(default)s)')
         self.add_argument(
             '--exclude', metavar='PATTERN',
             action='append',
@@ -138,6 +147,20 @@ def collect_exclude_patterns(paths):
     return patterns
 
 
+def list_union(*lists):
+    lst = [i for l in lists for i in l]
+    return sorted(frozenset(lst), key=lst.index)
+
+
+def filter_union(*functions):
+    filtered = [fnc for fnc in functions if fnc]
+    if filtered:
+        if len(filtered) == 1:
+            return filtered[0]
+        return lambda data: any(fnc(data) for fnc in filtered)
+    return None
+
+
 def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     plugin_manager = app.extensions['plugin_manager']
     args = plugin_manager.load_arguments(argv, parser())
@@ -149,8 +172,14 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         directory_start=args.initial or args.directory,
         directory_remove=args.removable,
         directory_upload=args.upload,
-        plugin_modules=args.plugin,
-        exclude_fnc=create_exclude_fnc(patterns, args.directory)
+        plugin_modules=list_union(
+            app.config['plugin_modules'],
+            args.plugin,
+            ),
+        exclude_fnc=filter_union(
+            app.config['exclude_fnc'],
+            create_exclude_fnc(patterns, args.directory),
+            ),
         )
     plugin_manager.reload()
     run_fnc(

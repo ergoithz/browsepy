@@ -1,11 +1,8 @@
-
+import unittest
 import os
 import os.path
-import unittest
 import tempfile
 import shutil
-
-import browsepy
 import browsepy.__main__
 
 
@@ -131,3 +128,19 @@ class TestMain(unittest.TestCase):
             }
         params_subset = {k: v for k, v in params.items() if k in defaults}
         self.assertEqual(defaults, params_subset)
+
+    def test_filter_union(self):
+        fu = self.module.filter_union
+        self.assertIsNone(fu())
+        self.assertIsNone(fu(None))
+        self.assertIsNone(fu(None, None))
+
+        def fnc1(path):
+            return False
+
+        self.assertEqual(fu(fnc1), fnc1)
+
+        def fnc2(path):
+            return True
+
+        self.assertTrue(fu(fnc1, fnc2)('a'))
