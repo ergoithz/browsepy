@@ -28,10 +28,14 @@ codecs.register_error(underscore_replace,
 binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
 standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 common_path_separators = '\\/'
-restricted_chars = '\\/\0'
+restricted_chars = '/\0'
+nt_restricted_chars = '/\0\\<>:"|?*' + ''.join(map(chr, range(1, 32)))
 restricted_names = ('.', '..', '::', '/', '\\')
-nt_device_names = ('CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1',
-                   'LPT2', 'LPT3', 'PRN', 'NUL')
+nt_device_names = (
+    ('CON', 'PRN', 'AUX', 'NUL') +
+    tuple(map('COM{}'.format, range(1, 10))) +
+    tuple(map('LPT{}'.format, range(1, 10)))
+    )
 fs_safe_characters = string.ascii_uppercase + string.digits
 
 
@@ -831,12 +835,11 @@ def check_forbidden_filename(filename,
     :return: wether is forbidden on given OS (or filesystem) or not
     :rtype: bool
     '''
-    if destiny_os == 'nt':
-        fpc = filename.split('.', 1)[0].upper()
-        if fpc in nt_device_names:
-            return True
-
-    return filename in restricted_names
+    return (
+      filename in restricted_names or
+      destiny_os == 'nt' and
+      filename.split('.', 1)[0].upper() in nt_device_names
+      )
 
 
 def check_path(path, base, os_sep=os.sep):
@@ -904,7 +907,14 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
     :rtype: str
     '''
     path = generic_filename(path)
-    path = clean_restricted_chars(path)
+    path = clean_restricted_chars(
+        path,
+        restricted_chars=(
+            nt_restricted_chars
+            if destiny_os == 'nt' else
+            restricted_chars
+            ))
+    path = path.strip(' .')  # required by nt, recommended for others
 
     if check_forbidden_filename(path, destiny_os=destiny_os):
         return ''
@@ -914,11 +924,11 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
 
     # Decode and recover from filesystem encoding in order to strip unwanted
     # characters out
-    kwargs = dict(
-        os_name=destiny_os,
-        fs_encoding=fs_encoding,
-        errors=underscore_replace
-        )
+    kwargs = {
+        'os_name': destiny_os,
+        'fs_encoding': fs_encoding,
+        'errors': underscore_replace,
+        }
     fs_encoded_path = compat.fsencode(path, **kwargs)
     fs_decoded_path = compat.fsdecode(fs_encoded_path, **kwargs)
     return fs_decoded_path

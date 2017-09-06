@@ -270,7 +270,8 @@ def upload(path):
         return NotFound()
 
     if (
-      not directory.is_directory or not directory.can_upload or
+      not directory.is_directory or
+      not directory.can_upload or
       directory.is_excluded
       ):
         return NotFound()
