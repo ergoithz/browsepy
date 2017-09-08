@@ -1,5 +1,3 @@
-import os.path
-
 
 class OutsideDirectoryBase(Exception):
     '''
@@ -42,8 +40,8 @@ class InvalidFilenameError(InvalidPathError):
     template = 'Filename {0.filename!r} is not valid.'
 
     def __init__(self, message=None, path=None, filename=None):
-        self.filename = os.path.basename(path) if path else filename
-        super(InvalidFilenameError, self).__init__(message, path)
+        self.filename = filename
+        super(InvalidFilenameError, self).__init__(message, path=path)
 
 
 class PathTooLongError(InvalidPathError):
@@ -57,7 +55,7 @@ class PathTooLongError(InvalidPathError):
 
     def __init__(self, message=None, path=None, limit=0):
         self.limit = limit
-        super(PathTooLongError, self).__init__(message, path)
+        super(PathTooLongError, self).__init__(message, path=path)
 
 
 class FilenameTooLongError(InvalidFilenameError):
@@ -69,4 +67,5 @@ class FilenameTooLongError(InvalidFilenameError):
 
     def __init__(self, message=None, path=None, filename=None, limit=0):
         self.limit = limit
-        super(FilenameTooLongError, self).__init__(message, path, filename)
+        super(FilenameTooLongError, self).__init__(
+            message, path=path, filename=filename)

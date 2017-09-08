@@ -93,6 +93,35 @@ class TestCompat(unittest.TestCase):
             path
             )
 
+    def test_pathconf(self):
+        kwargs = {
+            'os_name': 'posix',
+            'pathconf_fnc': lambda x, k: 500,
+            'pathconf_names': ('PC_PATH_MAX', 'PC_NAME_MAX')
+            }
+        pcfg = self.module.pathconf('/', **kwargs)
+        self.assertEqual(pcfg['PC_PATH_MAX'], 500)
+        self.assertEqual(pcfg['PC_NAME_MAX'], 500)
+        kwargs.update(
+            pathconf_fnc=None,
+            )
+        pcfg = self.module.pathconf('/', **kwargs)
+        self.assertEqual(pcfg['PC_PATH_MAX'], 255)
+        self.assertEqual(pcfg['PC_NAME_MAX'], 254)
+        kwargs.update(
+            os_name='nt',
+            isdir_fnc=lambda x: False
+            )
+        pcfg = self.module.pathconf('c:\\a', **kwargs)
+        self.assertEqual(pcfg['PC_PATH_MAX'], 259)
+        self.assertEqual(pcfg['PC_NAME_MAX'], 255)
+        kwargs.update(
+            isdir_fnc=lambda x: True
+            )
+        pcfg = self.module.pathconf('c:\\a', **kwargs)
+        self.assertEqual(pcfg['PC_PATH_MAX'], 247)
+        self.assertEqual(pcfg['PC_NAME_MAX'], 243)
+
     def test_getcwd(self):
         self.assertIsInstance(self.module.getcwd(), self.module.unicode)
         self.assertIsInstance(

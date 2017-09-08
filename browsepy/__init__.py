@@ -285,7 +285,10 @@ def upload(path):
                 filepath = os.path.join(directory.path, filename)
                 f.save(filepath)
             else:
-                raise InvalidFilenameError(filename=f.filename)
+                raise InvalidFilenameError(
+                    path=directory.path,
+                    filename=f.filename
+                    )
     return redirect(url_for(".browse", path=directory.urlpath))
 
 
@@ -308,8 +311,13 @@ def page_not_found(response):
 
 @app.errorhandler(InvalidPathError)
 def bad_request_error(e):
-    file = Node(e.path) if isinstance(e, InvalidPathError) else None
-    return render_template('error.upload.html', file=file, error=e), 400
+    file = None
+    if hasattr(e, 'path'):
+        if isinstance(e, InvalidFilenameError):
+            file = Node(e.path)
+        else:
+            file = Node(e.path).parent
+    return render_template('400.html', file=file, error=e), 400
 
 
 @app.errorhandler(404)

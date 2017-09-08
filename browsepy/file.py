@@ -665,13 +665,15 @@ class Directory(Node):
                 new_filename = alternative_filename(filename)
 
         pcfg = compat.pathconf(self.path)
-
-        if pcfg.get('PC_NAME_MAX', 0) and pcfg['PC_NAME_MAX'] < len(filename):
-            raise FilenameTooLongError(filename, pcfg['PC_NAME_MAX'])
+        limit = pcfg.get('PC_NAME_MAX', 0)
+        if limit and limit < len(filename):
+            raise FilenameTooLongError(
+                path=self.path, filename=filename, limit=limit)
 
         abspath = os.path.join(self.path, filename)
-        if pcfg.get('PC_PATH_MAX', 0) and pcfg['PC_PATH_MAX'] < len(abspath):
-            raise PathTooLongError(abspath, pcfg['PC_PATH_MAX'])
+        limit = pcfg.get('PC_PATH_MAX', 0)
+        if limit and limit < len(abspath):
+            raise PathTooLongError(path=abspath, limit=limit)
 
         return new_filename
 

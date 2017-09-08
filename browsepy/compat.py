@@ -233,7 +233,11 @@ def pathparse(value, sep=os.pathsep, os_sep=os.sep):
         yield normpath(fsdecode(part))
 
 
-def pathconf(path):
+def pathconf(path,
+             os_name=os.name,
+             isdir_fnc=os.path.isdir,
+             pathconf_fnc=getattr(os, 'pathconf', None),
+             pathconf_names=getattr(os, 'pathconf_names', ())):
     '''
     Get all pathconf variables for given path.
 
@@ -242,20 +246,17 @@ def pathconf(path):
     :returns: dictionary containing pathconf keys and their values (both str)
     :rtype: dict
     '''
-    if os.name == 'posix':
-        return {key: os.pathconf(path, key) for key in os.pathconf_names}
-    if os.name == 'nt':
-        if path.startswith('\\\\?\\'):
-            mxpath = 32767
-        else:
-            mxpath = int(os.getenv('MAX_PATH', 260))
-        if os.path.isdir(path):
-            mxpath -= 12
-        return {
-            'PC_PATH_MAX': mxpath,
-            'PC_NAME_MAX': mxpath - len(path),
-            }
-    return {}
+
+    if pathconf_fnc and pathconf_names:
+        return {key: pathconf_fnc(path, key) for key in pathconf_names}
+    if os_name == 'nt':
+        maxpath = 247 if isdir_fnc(path) else 259  # 260 minus <END>
+    else:
+        maxpath = 255  # conservative sane default
+    return {
+        'PC_PATH_MAX': maxpath,
+        'PC_NAME_MAX': maxpath - len(path),
+        }
 
 
 ENV_PATH = tuple(pathparse(os.getenv('PATH', '')))

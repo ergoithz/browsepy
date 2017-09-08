@@ -132,6 +132,10 @@ class Page404Exception(PageException):
     pass
 
 
+class Page400Exception(PageException):
+    pass
+
+
 class Page302Exception(PageException):
     pass
 
@@ -143,6 +147,7 @@ class TestApp(unittest.TestCase):
     confirm_page_class = ConfirmPage
     page_exceptions = {
         404: Page404Exception,
+        400: Page400Exception,
         302: Page302Exception,
         None: PageException
     }
@@ -499,6 +504,41 @@ class TestApp(unittest.TestCase):
 
         self.assertEqual(file_contents, expected_file_contents)
         self.clear(self.upload)
+
+    def test_upload_restrictions(self):
+        pathconf = browsepy.compat.pathconf(self.upload)
+        maxname = pathconf['PC_NAME_MAX']
+        maxpath = pathconf['PC_PATH_MAX']
+
+        longname = ''.join(('a',) * maxname)
+
+        self.assertRaises(
+            Page400Exception,
+            self.post, 'upload', path='upload', data={
+                'file': (io.BytesIO('test'.encode('ascii')), longname + 'a')
+                }
+            )
+
+        subdirs = [longname] * (
+            (maxpath - len(self.upload) + len(os.sep)) //
+            (maxname + len(os.sep))
+            )
+        longpath = os.path.join(self.upload, *subdirs)
+
+        os.makedirs(longpath)
+        self.assertRaises(
+            Page400Exception,
+            self.post, 'upload', path='upload/' + '/'.join(subdirs), data={
+                'file': (io.BytesIO('test'.encode('ascii')), longname)
+                }
+            )
+
+        self.assertRaises(
+            Page400Exception,
+            self.post, 'upload', path='upload', data={
+                'file': (io.BytesIO('test'.encode('ascii')), '..')
+                }
+            )
 
     def test_sort(self):
 
