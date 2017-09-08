@@ -17,6 +17,8 @@ from werkzeug.utils import cached_property
 from . import compat
 from .compat import range
 from .stream import TarFileStream
+from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
+                        PathTooLongError, FilenameTooLongError
 
 
 logger = logging.getLogger(__name__)
@@ -649,14 +651,28 @@ class Directory(Node):
         :type attempts: int
         :returns: filename
         :rtype: str
+
+        :raises FilenameTooLong: when filesystem filename size limit is reached
+        :raises PathTooLong: when OS or filesystem path size limit is reached
         '''
         new_filename = filename
         for attempt in range(2, attempts + 1):
             if not self.contains(new_filename):
-                return new_filename
+                break
             new_filename = alternative_filename(filename, attempt)
-        while self.contains(new_filename):
-            new_filename = alternative_filename(filename)
+        else:
+            while self.contains(new_filename):
+                new_filename = alternative_filename(filename)
+
+        pcfg = compat.pathconf(self.path)
+
+        if pcfg.get('PC_NAME_MAX', 0) and pcfg['PC_NAME_MAX'] < len(filename):
+            raise FilenameTooLongError(filename, pcfg['PC_NAME_MAX'])
+
+        abspath = os.path.join(self.path, filename)
+        if pcfg.get('PC_PATH_MAX', 0) and pcfg['PC_PATH_MAX'] < len(abspath):
+            raise PathTooLongError(abspath, pcfg['PC_PATH_MAX'])
+
         return new_filename
 
     def _listdir(self, precomputed_stats=(os.name == 'nt')):
@@ -698,22 +714,6 @@ class Directory(Node):
         if reverse:
             data.reverse()
         return data
-
-
-class OutsideDirectoryBase(Exception):
-    '''
-    Exception thrown when trying to access to a file outside path defined on
-    `directory_base` config property.
-    '''
-    pass
-
-
-class OutsideRemovableBase(Exception):
-    '''
-    Exception thrown when trying to access to a file outside path defined on
-    `directory_remove` config property.
-    '''
-    pass
 
 
 def fmt_size(size, binary=True):
@@ -899,10 +899,12 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
 
     If path is invalid or protected, return empty string.
 
-    :param path: unsafe path
+    :param path: unsafe path, only basename will be used
     :type: str
-    :param destiny_os: destination operative system
+    :param destiny_os: destination operative system (defaults to os.name)
     :type destiny_os: str
+    :param fs_encoding: fs path encoding (defaults to detected)
+    :type fs_encoding: str
     :return: filename or empty string
     :rtype: str
     '''

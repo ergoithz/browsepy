@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% set description %}
+  <p>The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).</p>
+  <p>Please try other parameters or contact server administrator.</p>
+{% endset %}
+{% if error and error.code %}
+  {% if error.code == 'invalid-filename-length' or  error.code == 'invalid-path-length'%}
+    {% set workaround %}
+      <p>Please try again with a shorter filename, other location, or contact server administrator.</p>
+    {% endset %}
+    {% if error.code == 'invalid-filename-length' %}
+      {% set description -%}
+        <h2>Filename is too long.</h2>
+        <p>Upload filename is too long for target directory.</p>
+        {%- if error.limit -%}
+          <p>{% if error.filename %}Filename length is {{ error.filename | length }}. {% endif %}Maximum allowed filename size in target directory is {{ error.limit }}.</p>
+        {%- endif -%}
+        {{ workaround }}
+      {%- endset %}
+    {% else %}
+      {% set description %}
+        <h2>Path is too long.</h2>
+        <p>Resulting path is too long for target filesystem.</p>
+        {%- if error.limit -%}
+          <p>{% if error.path %}Path length is {{ error.path | length }}. {% endif %}Maximum allowed path size in target filesystem is {{ error.limit }}.</p>
+        {%- endif -%}
+        {{ workaround }}
+      {% endset %}
+    {% endif %}
+  {% elif error.code.startswith('invalid-filename') %}
+    {% set description %}
+      <h2>Filename is not valid.</h2>
+      <p>Upload filename is not valid: incompatible name encoding or reserved name on filesystem.</p>
+      <p>Please try again with other filename or contact server administrator.</p>
+    {%- endset %}
+  {% endif %}
+{% endif %}
+
+{% block title %}400 Bad Request{% endblock %}
+{% block content %}
+  <h1>Bad Request</h1>
+  {{ description }}
+  {% if file %}
+    <form method="get" class="remove" action="{{ url_for('browse', path=file.urlpath) }}">
+      <input type="submit" class="cancel" alt="Go back" value="Go back" />
+    </form>
+  {% endif %}
+{% endblock %}

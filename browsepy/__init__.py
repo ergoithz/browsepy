@@ -14,8 +14,9 @@ from werkzeug.exceptions import NotFound
 
 from .appconfig import Flask
 from .manager import PluginManager
-from .file import Node, OutsideRemovableBase, OutsideDirectoryBase, \
-                  secure_filename
+from .file import Node, secure_filename
+from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
+                        InvalidFilenameError, InvalidPathError
 from . import compat
 from . import __meta__ as meta
 
@@ -283,6 +284,8 @@ def upload(path):
                 filename = directory.choose_filename(filename)
                 filepath = os.path.join(directory.path, filename)
                 f.save(filepath)
+            else:
+                raise InvalidFilenameError(filename=f.filename)
     return redirect(url_for(".browse", path=directory.urlpath))
 
 
@@ -301,6 +304,12 @@ def page_not_found(response):
     if response.status_code == 404:
         return make_response((render_template('404.html'), 404))
     return response
+
+
+@app.errorhandler(InvalidPathError)
+def bad_request_error(e):
+    file = Node(e.path) if isinstance(e, InvalidPathError) else None
+    return render_template('error.upload.html', file=file, error=e), 400
 
 
 @app.errorhandler(404)

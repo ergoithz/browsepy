@@ -72,6 +72,8 @@ Compat Module
 
   New walk, either from scandir module or Python3.6+ os module.
 
+.. autofunction:: pathconf(path)
+
 .. autofunction:: isexec(path)
 
 .. autofunction:: which(name, env_path=ENV_PATH, is_executable_fnc=isexec, path_join_fnc=os.path.join)

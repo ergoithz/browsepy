@@ -52,6 +52,7 @@ Specific information about functions, class or methods.
    file
    stream
    compat
+   exceptions
    tests_utils
 
 Indices and tables

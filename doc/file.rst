@@ -50,17 +50,6 @@ File
   :inherited-members:
   :undoc-members:
 
-.. _file-exceptions:
-
-Exceptions
-----------
-
-.. autoclass:: OutsideDirectoryBase
-  :show-inheritance:
-
-.. autoclass:: OutsideRemovableBase
-  :show-inheritance:
-
 .. _file-util:
 
 Utility functions

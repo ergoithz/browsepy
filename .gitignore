@@ -12,6 +12,9 @@ env3/*
 wenv2/*
 wenv3/*
 node_modules/*
+.eggs/*
+browsepy.build/*
+browsepy.egg-info/*
 **/__pycache__/*
 **.egg/*
 **.eggs/*
