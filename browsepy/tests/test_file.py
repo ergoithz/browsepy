@@ -22,6 +22,13 @@ class TestFile(unittest.TestCase):
         self.app = browsepy.app  # FIXME
         self.workbench = tempfile.mkdtemp()
 
+    def clear_workbench(self):
+        for entry in browsepy.compat.scandir(self.workbench):
+            if entry.is_dir():
+                shutil.rmtree(entry.path)
+            else:
+                os.remove(entry.path)
+
     def tearDown(self):
         shutil.rmtree(self.workbench)
         test_utils.clear_flask_context()
@@ -31,6 +38,12 @@ class TestFile(unittest.TestCase):
         with open(tmp_txt, 'w') as f:
             f.write(text)
         return tmp_txt
+
+    def binfile(self, name, content):
+        tmp_bin = os.path.join(self.workbench, name)
+        with open(tmp_bin, 'wb') as f:
+            f.write(content)
+        return tmp_bin
 
     def test_iter_listdir(self):
         directory = self.module.Directory(path=self.workbench)
@@ -76,6 +89,8 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.mimetype, 'text/plain')
 
         tmp_txt = self.textfile('ascii_text_file', 'ascii text')
+        tmp_bin = self.binfile('binary_file', '\0'.encode('ascii'))
+        tmp_err = os.path.join(self.workbench, 'nonexisting_file')
 
         # test file command
         if browsepy.compat.which('file'):
@@ -83,6 +98,17 @@ class TestFile(unittest.TestCase):
             self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
             self.assertEqual(f.type, 'text/plain')
             self.assertEqual(f.encoding, 'us-ascii')
+
+            f = self.module.File(tmp_bin, app=self.app)
+            self.assertEqual(f.mimetype,
+                             'application/octet-stream; charset=binary')
+            self.assertEqual(f.type, 'application/octet-stream')
+            self.assertEqual(f.encoding, 'binary')
+
+            f = self.module.File(tmp_err, app=self.app)
+            self.assertEqual(f.mimetype, 'application/octet-stream')
+            self.assertEqual(f.type, 'application/octet-stream')
+            self.assertEqual(f.encoding, 'default')
 
         # test non-working file command
         bad_path = os.path.join(self.workbench, 'path')
@@ -118,6 +144,30 @@ class TestFile(unittest.TestCase):
 
         self.app.config['use_binary_multiples'] = default
 
+    def test_stats(self):
+        virtual_file = os.path.join(self.workbench, 'file.txt')
+        f = self.module.File(virtual_file, app=self.app)
+
+        self.assertRaises(
+            browsepy.compat.FileNotFoundError,
+            lambda: f.stats
+            )
+        self.assertEqual(f.modified, None)
+        self.assertEqual(f.size, None)
+
+        open(virtual_file, 'w').close()
+        self.assertNotEqual(f.modified, None)
+        self.assertNotEqual(f.size, None)
+
+    def check_stubs(self):
+        virtual_file = os.path.join(self.workbench, 'file.txt')
+        n = self.module.Node(virtual_file, app=self.app)
+
+        self.assertRaises(
+            self.module.OutsideRemovableBase,
+            n.remove
+            )
+
     def test_properties(self):
         empty_file = os.path.join(self.workbench, 'empty.txt')
         open(empty_file, 'w').close()
@@ -129,6 +179,19 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.can_upload, False)
         self.assertEqual(f.parent.path, self.workbench)
         self.assertEqual(f.is_directory, False)
+
+        d = self.module.Directory(self.workbench, app=self.app)
+        self.assertEqual(d.is_empty, False)
+
+        d = self.module.Directory(self.workbench, app=self.app)
+        listdir = d.listdir(reverse=True)  # generate cache
+        self.assertNotEqual(listdir, [])
+        self.assertIsNotNone(d._listdir_cache)
+        self.clear_workbench()  # empty workbench
+        self.assertEqual(d.is_empty, False)  # using cache
+
+        d = self.module.Directory(self.workbench, app=self.app)
+        self.assertEqual(d.is_empty, True)
 
     def test_choose_filename(self):
         f = self.module.Directory(self.workbench, app=self.app)

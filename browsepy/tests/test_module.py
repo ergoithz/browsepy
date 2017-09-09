@@ -61,13 +61,14 @@ class Page(object):
 class ListPage(Page):
     path_strip_re = re.compile('\s+/\s+')
 
-    def __init__(self, path, directories, files, removable, upload, source,
-                 response=None):
+    def __init__(self, path, directories, files, removable, upload, tarfile,
+                 source, response=None):
         self.path = path
         self.directories = directories
         self.files = files
         self.removable = removable
         self.upload = upload
+        self.tarfile = tarfile
         self.source = source
         self.response = response
 
@@ -79,6 +80,8 @@ class ListPage(Page):
                 row[0].attrib.get('class') == 'icon inode',
                 row[1].find('.//a').attrib['href'],
                 any(button.attrib.get('class') == 'button remove'
+                    for button in row[2].findall('.//a')),
+                any(button.attrib.get('class') == 'button download'
                     for button in row[2].findall('.//a'))
             )
             for row in html.findall('.//table/tbody/tr')
@@ -88,12 +91,15 @@ class ListPage(Page):
                 '/',
                 cls.innerText(html.find('.//h1'), '/')
                 ).strip(),
-            [url for isdir, url, removable in rows if isdir],
-            [url for isdir, url, removable in rows if not isdir],
+            [url for isdir, url, removable, download in rows if isdir],
+            [url for isdir, url, removable, download in rows if not isdir],
             all(removable
-                for isdir, url, removable in rows
+                for isdir, url, removable, download in rows
                 ) if rows else False,
             html.find('.//form//input[@type=\'file\']') is not None,
+            all(download
+                for isdir, url, removable, download in rows if isdir
+                ) if rows else False,
             source,
             response
         )
@@ -308,6 +314,13 @@ class TestApp(unittest.TestCase):
             Page404Exception,
             self.get, 'browse', path='exclude'
         )
+
+        self.app.config['directory_downloadable'] = True
+        page = self.get('browse')
+        self.assertTrue(page.tarfile)
+        self.app.config['directory_downloadable'] = False
+        page = self.get('browse')
+        self.assertFalse(page.tarfile)
 
     def test_open(self):
         content = b'hello world'

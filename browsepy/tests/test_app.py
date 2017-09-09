@@ -29,7 +29,7 @@ class TestConfig(unittest.TestCase):
     module = browsepy.appconfig
 
     def test_case_insensitivity(self):
-        cfg = self.module.Config(self.pwd, defaults={'prop': 1})
+        cfg = self.module.Config(self.pwd, defaults={'prop': 2})
         self.assertEqual(cfg['prop'], cfg['PROP'])
         self.assertEqual(cfg['pRoP'], cfg.pop('prop'))
         cfg.update(prop=1)
@@ -37,5 +37,8 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(cfg.get('pRop'), 1)
         self.assertEqual(cfg.popitem(), ('PROP', 1))
         self.assertRaises(KeyError, cfg.pop, 'prop')
+        cfg.update(prop=1)
+        del cfg['PrOp']
+        self.assertRaises(KeyError, cfg.__delitem__, 'prop')
         self.assertIsNone(cfg.pop('prop', None))
         self.assertIsNone(cfg.get('prop'))

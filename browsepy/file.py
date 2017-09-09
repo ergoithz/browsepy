@@ -147,11 +147,12 @@ class Node(object):
     def pathconf(self):
         '''
         Get filesystem config for current path.
+        See :func:`compat.pathconf`.
 
         :returns: fs config
         :rtype: dict
         '''
-        return {key: os.pathconf(self.path, key) for key in os.pathconf_names}
+        return compat.pathconf(self.path)
 
     @cached_property
     def parent(self):
@@ -599,7 +600,7 @@ class Directory(Node):
         :rtype: bool
         '''
         if self._listdir_cache is not None:
-            return bool(self._listdir_cache)
+            return not bool(self._listdir_cache)
         for entry in self._listdir():
             return False
         return True
@@ -664,14 +665,13 @@ class Directory(Node):
             while self.contains(new_filename):
                 new_filename = alternative_filename(filename)
 
-        pcfg = compat.pathconf(self.path)
-        limit = pcfg.get('PC_NAME_MAX', 0)
+        limit = self.pathconf.get('PC_NAME_MAX', 0)
         if limit and limit < len(filename):
             raise FilenameTooLongError(
                 path=self.path, filename=filename, limit=limit)
 
         abspath = os.path.join(self.path, filename)
-        limit = pcfg.get('PC_PATH_MAX', 0)
+        limit = self.pathconf.get('PC_PATH_MAX', 0)
         if limit and limit < len(abspath):
             raise PathTooLongError(path=abspath, limit=limit)
 
