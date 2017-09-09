@@ -119,8 +119,8 @@ class TestCompat(unittest.TestCase):
             isdir_fnc=lambda x: True
             )
         pcfg = self.module.pathconf('c:\\a', **kwargs)
-        self.assertEqual(pcfg['PC_PATH_MAX'], 247)
-        self.assertEqual(pcfg['PC_NAME_MAX'], 243)
+        self.assertEqual(pcfg['PC_PATH_MAX'], 246)
+        self.assertEqual(pcfg['PC_NAME_MAX'], 242)
 
     def test_getcwd(self):
         self.assertIsInstance(self.module.getcwd(), self.module.unicode)

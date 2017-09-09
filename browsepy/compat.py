@@ -250,7 +250,7 @@ def pathconf(path,
     if pathconf_fnc and pathconf_names:
         return {key: pathconf_fnc(path, key) for key in pathconf_names}
     if os_name == 'nt':
-        maxpath = 247 if isdir_fnc(path) else 259  # 260 minus <END>
+        maxpath = 246 if isdir_fnc(path) else 259  # 260 minus <END>
     else:
         maxpath = 255  # conservative sane default
     return {

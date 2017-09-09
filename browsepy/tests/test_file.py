@@ -226,7 +226,10 @@ class TestFileFunctions(unittest.TestCase):
     def test_secure_filename(self):
         self.assertEqual(self.module.secure_filename('/path'), 'path')
         self.assertEqual(self.module.secure_filename('..'), '')
-        self.assertEqual(self.module.secure_filename('::'), '')
+        self.assertEqual(
+            self.module.secure_filename('::'),
+            '__' if os.name == 'nt' else ''
+            )
         self.assertEqual(self.module.secure_filename('\0'), '_')
         self.assertEqual(self.module.secure_filename('/'), '')
         self.assertEqual(self.module.secure_filename('C:\\'), '')
