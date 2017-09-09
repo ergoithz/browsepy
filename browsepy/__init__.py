@@ -243,23 +243,14 @@ def remove(path):
     except OutsideDirectoryBase:
         return NotFound()
 
-    if not file.can_remove or file.is_excluded:
+    if not file.can_remove or file.is_excluded or not file.parent:
         return NotFound()
 
     if request.method == 'GET':
         return render_template('remove.html', file=file)
 
-    parent = file.parent
-    if parent is None:
-        # base is not removable
-        return NotFound()
-
-    try:
-        file.remove()
-    except OutsideRemovableBase:
-        return NotFound()
-
-    return redirect(url_for(".browse", path=parent.urlpath))
+    file.remove()
+    return redirect(url_for(".browse", path=file.parent.urlpath))
 
 
 @app.route("/upload", defaults={'path': ''}, methods=("POST",))
@@ -320,6 +311,7 @@ def bad_request_error(e):
     return render_template('400.html', file=file, error=e), 400
 
 
+@app.errorhandler(OutsideRemovableBase)
 @app.errorhandler(404)
 def page_not_found_error(e):
     return render_template('404.html'), 404

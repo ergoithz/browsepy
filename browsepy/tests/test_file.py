@@ -146,13 +146,21 @@ class TestFile(unittest.TestCase):
         self.assertNotEqual(f.modified, None)
         self.assertNotEqual(f.size, None)
 
-    def check_stubs(self):
+    def test_cannot_remove(self):
         virtual_file = os.path.join(self.workbench, 'file.txt')
         n = self.module.Node(virtual_file, app=self.app)
 
+        self.assertFalse(n.can_remove)
         self.assertRaises(
             self.module.OutsideRemovableBase,
             n.remove
+            )
+
+        f = self.module.File(virtual_file, app=self.app)
+        self.assertFalse(f.can_remove)
+        self.assertRaises(
+            self.module.OutsideRemovableBase,
+            f.remove
             )
 
     def test_properties(self):

@@ -265,7 +265,7 @@ class Node(object):
         '''
         Does nothing except raising if can_remove property returns False.
 
-        :raises: OutsideRemovableBase if :property:can_remove returns false
+        :raises: OutsideRemovableBase if :property:`can_remove` returns false
         '''
         if not self.can_remove:
             raise OutsideRemovableBase("File outside removable base")

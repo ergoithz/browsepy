@@ -7,6 +7,7 @@ import warnings
 
 from browsepy.compat import unicode
 
+import browsepy.transform
 import browsepy.transform.glob
 
 
@@ -14,6 +15,14 @@ def fu(c):
     if isinstance(c, unicode):
         return c
     return c.decode('utf-8')
+
+
+class TestStateMachine(unittest.TestCase):
+    module = browsepy.transform
+
+    def test_nearest_error(self):
+        m = self.module.StateMachine()
+        self.assertRaises(KeyError, lambda: m.nearest)
 
 
 class TestGlob(unittest.TestCase):
