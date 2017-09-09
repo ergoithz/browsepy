@@ -61,6 +61,7 @@ travis-script-sphinx:
 	travis-sphinx --nowarn --source=doc build
 
 travis-success:
+	codecov
 	coveralls
 
 travis-success-sphinx:
