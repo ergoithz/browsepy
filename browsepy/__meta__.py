@@ -3,7 +3,7 @@
 
 app = 'browsepy'
 description = 'Simple web file browser'
-version = '0.5.4'
+version = '0.5.5'
 license = 'MIT'
 author_name = 'Felipe A. Hernandez'
 author_mail = 'ergoithz@gmail.com'
