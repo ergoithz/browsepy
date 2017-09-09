@@ -12,7 +12,7 @@
   data-player-swf="{{ url_for('player.static', filename='js') }}"
   {% if playlist %}
     data-player-urls="
-      {%- for entry in file.entries() -%}
+      {%- for entry in file.entries(sortkey=sort_fnc, reverse=sort_reverse) -%}
         {%- if not loop.first -%}|{%- endif -%}
         {{- entry.media_format -}}|
         {{- entry.name -}}|

@@ -6,7 +6,8 @@ import os.path
 from flask import Blueprint, render_template
 from werkzeug.exceptions import NotFound
 
-from browsepy import stream_template
+from browsepy import stream_template, get_cookie_browse_sorting, \
+                     browse_sortkey_reverse
 from browsepy.file import OutsideDirectoryBase
 
 from .playable import PlayableFile, PlayableDirectory, \
@@ -53,12 +54,17 @@ def playlist(path):
 @player.route("/directory", defaults={"path": ""})
 @player.route('/directory/<path:path>')
 def directory(path):
+    sort_property = get_cookie_browse_sorting(path, 'text')
+    sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
     try:
         file = PlayableDirectory.from_urlpath(path)
         if file.is_directory:
             return stream_template(
                 'audio.player.html',
                 file=file,
+                sort_property=sort_property,
+                sort_fnc=sort_fnc,
+                sort_reverse=sort_reverse,
                 playlist=True
                 )
     except OutsideDirectoryBase:

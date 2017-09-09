@@ -144,7 +144,7 @@ class PlayListFile(PlayableBase):
         return
         yield  # noqa
 
-    def entries(self):
+    def entries(self, sortkey=None, reverse=None):
         for file in self._entries():
             if PlayableFile.detect(file):
                 yield file
@@ -233,8 +233,9 @@ class PlayableDirectory(Directory):
                     return cls.mimetype
         return None
 
-    def entries(self):
-        for file in super(PlayableDirectory, self)._listdir():
+    def entries(self, sortkey=None, reverse=None):
+        listdir_fnc = super(PlayableDirectory, self).listdir
+        for file in listdir_fnc(sortkey=sortkey, reverse=reverse):
             if PlayableFile.detect(file):
                 yield file
 
