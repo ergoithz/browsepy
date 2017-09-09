@@ -192,5 +192,5 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
         )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()

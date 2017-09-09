@@ -39,12 +39,6 @@ class TestFile(unittest.TestCase):
             f.write(text)
         return tmp_txt
 
-    def binfile(self, name, content):
-        tmp_bin = os.path.join(self.workbench, name)
-        with open(tmp_bin, 'wb') as f:
-            f.write(content)
-        return tmp_bin
-
     def test_iter_listdir(self):
         directory = self.module.Directory(path=self.workbench)
 
@@ -89,7 +83,6 @@ class TestFile(unittest.TestCase):
         self.assertEqual(f.mimetype, 'text/plain')
 
         tmp_txt = self.textfile('ascii_text_file', 'ascii text')
-        tmp_bin = self.binfile('binary_file', '\0'.encode('ascii'))
         tmp_err = os.path.join(self.workbench, 'nonexisting_file')
 
         # test file command
@@ -98,12 +91,6 @@ class TestFile(unittest.TestCase):
             self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
             self.assertEqual(f.type, 'text/plain')
             self.assertEqual(f.encoding, 'us-ascii')
-
-            f = self.module.File(tmp_bin, app=self.app)
-            self.assertEqual(f.mimetype,
-                             'application/octet-stream; charset=binary')
-            self.assertEqual(f.type, 'application/octet-stream')
-            self.assertEqual(f.encoding, 'binary')
 
             f = self.module.File(tmp_err, app=self.app)
             self.assertEqual(f.mimetype, 'application/octet-stream')
