@@ -29,9 +29,9 @@
           enctype="multipart/form-data">
       <label>
         <h2>{{ widget.text or 'Upload' }}</h2>
-        <input type="file" name="file[]" multiple=""/>
+        <input class="button text suggested" type="file" name="file[]" multiple=""/>
       </label>
-      <input type="submit"/>
+      <input class="button text" type="submit"/>
     </form>
   {%- elif widget.type == 'html' -%}
     {{ widget.html|safe }}
@@ -46,8 +46,9 @@
   {%- endfor -%}
 {%- endmacro %}
 
-{% macro th(text, property, type='text', colspan=1) -%}
+{% macro th(text, property=None, type='text', colspan=1) -%}
 <th{% if colspan > 1 %} colspan="{{ colspan }}"{% endif %}>
+  {% if property %}
     {% set urlpath = file.urlpath or None %}
     {% set property_desc = '-{}'.format(property) %}
     {% set prop = property_desc if sort_property == property else property %}
@@ -56,6 +57,9 @@
     <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
        class="{{type}} sorting{{active}}{{desc}}"
        >{{ text }}</a>
+  {% else %}
+    {{- text -}}
+  {% endif %}
 </th>
 {%- endmacro %}
 

@@ -6,9 +6,7 @@
     {%- if file.parent.urlpath %} data-prefix="{{ file.parent.urlpath }}/"{%- endif -%}
     >{{ file.name }}</strong>?</p>
   <form method="post" class="remove">
-    <input type="submit" value="Yes" />
-  </form>
-  <form method="get" class="remove" action="{{ url_for('browse', path=file.parent.urlpath) }}">
-    <input type="submit" class="cancel" alt="Go back" value="Cancel" />
+    <a class="long button text" href="{{ url_for('browse', path=file.parent.urlpath) }}" title="Go back">Cancel</a>
+    <input class="long button destructive text" type="submit" value="Yes" />
   </form>
 {% endblock %}

@@ -1,0 +1,42 @@
+{% extends "browse.html" %}
+
+{% block content_header %}
+  <form method="post">
+    <input class="button text" type="submit" name="mode-cut" value="Cut selected">
+    <input class="button text" type="submit" name="mode-copy" value="Copy selected">
+    <a class="button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Cancel</a>
+{% endblock %}
+
+{% block content_table %}
+{% if file.is_empty %}
+  <p>No files in directory</p>
+{% else %}
+  <table class="browser">
+    <thead>
+      <tr>
+        {{ th('Name', colspan=2) }}
+        {{ th('Mimetype') }}
+        {{ th('Modified') }}
+        {{ th('Size') }}
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
+        {% if f.link and f.link.text %}
+          <tr>
+            <td><input type="checkbox" name="path" value="{{ f.urlpath }}"></td>
+            <td>{{ f.link.text }}</td>
+            <td>{{ f.type or '' }}</td>
+            <td>{{ f.modified or '' }}</td>
+            <td>{{ f.size or '' }}</td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+{% endblock %}
+
+{% block content_footer %}
+    </form>
+{% endblock %}

@@ -97,14 +97,6 @@ form.upload input {
   margin: 0.5em 1em;
 }
 
-form.remove {
-  display: inline-block;
-}
-
-form.remove input[type=submit] {
-  min-width: 10em;
-}
-
 html.autosubmit-support form.autosubmit{
   border: 0;
   background: transparent;
@@ -302,8 +294,9 @@ a.sorting.numeric.desc.active:after {
   content: "\ea4b";
 }
 
-a.button,
+a.button, input.button,
 html.autosubmit-support form.autosubmit label {
+  font-size: 1em;
   color: white;
   background: #333;
   display: inline-block;
@@ -316,33 +309,65 @@ html.autosubmit-support form.autosubmit label {
   text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
 }
 
-a.button:active,
+a.button:active, input.button:active,
 html.autosubmit-support form.autosubmit label:active{
   border: 1px solid black;
 }
 
-a.button:hover,
+a.button:hover, input.button:hover,
 html.autosubmit-support form.autosubmit label:hover {
   color: white;
   background: black;
 }
 
-a.button,
+a.button.long, input.button.long {
+  min-width: 10em;
+}
+
+a.button.destructive, input.button.destructive {
+  background: #f31;
+  border-color: #f88;
+}
+
+a.button.destructive:hover, input.button.destructive:hover {
+  background: #d10;
+}
+
+a.button.destructive:active, input.button.destructive:active {
+  background: #d10;
+  border-color: #d10;
+}
+
+a.button.suggested, input.button.suggested {
+  background: #29f;
+  border-color: #8cF;
+}
+
+a.button.suggested:hover, input.button.suggested:hover {
+  background: #16e;
+}
+
+a.button.suggested:active, input.button.suggested:active {
+  background: #16e;
+  border-color: #16e;
+}
+
+a.button, input.button,
 html.autosubmit-support form.autosubmit{
   margin-left: 3px;
 }
 
-a.button {
+a.button, input.button {
   width: 1.5em;
   height: 1.5em;
 }
 
-a.button.text{
+a.button.text, input.button.text{
   width: auto;
   height: auto;
 }
 
-a.button.text,
+a.button.text, input.button.text,
 html.autosubmit-support form.autosubmit label{
   padding: 0.25em 0.5em;
 }

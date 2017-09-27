@@ -316,6 +316,7 @@ if PY_LEGACY:
     FileNotFoundError = OSError  # noqa
     range = xrange  # noqa
     filter = itertools.ifilter
+    map = itertools.imap
     basestring = basestring  # noqa
     unicode = unicode  # noqa
     chr = unichr  # noqa
@@ -324,6 +325,7 @@ else:
     FileNotFoundError = FileNotFoundError
     range = range
     filter = filter
+    map = map
     basestring = str
     unicode = str
     chr = chr

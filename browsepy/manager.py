@@ -104,6 +104,7 @@ class PluginManagerBase(object):
         :type plugin: str
         :raises PluginNotFoundError: if not found on any namespace
         '''
+        plugin = plugin.replace('-', '_')
         names = [
             '%s%s%s' % (namespace, '' if namespace[-1] == '_' else '.', plugin)
             if namespace else
@@ -119,8 +120,9 @@ class PluginManagerBase(object):
             try:
                 __import__(name)
                 return sys.modules[name]
-            except (ImportError, KeyError):
-                pass
+            except (ImportError, KeyError) as e:
+                if not (e.args and e.args[0].endswith('\'{}\''.format(name))):
+                    raise e
 
         raise PluginNotFoundError(
             'No plugin module %r found, tried %r' % (plugin, names),
