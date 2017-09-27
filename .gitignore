@@ -18,3 +18,4 @@ node_modules/*
 **.egg-info/*
 **.pyc
 **/node_modules/*
+tmp/*

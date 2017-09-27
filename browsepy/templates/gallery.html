@@ -13,7 +13,14 @@
     <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}" target="_BLANK"
        {% if widget.css %}class="{{ widget.css }}"{% endif %}
        >
-        <img src="{{ url_for(widget.endpoint, path=f.urlpath) }}" title="{{widget.text or ''}}"/>
+        <img
+          {% if f.thumbnail_path %}
+            src="{{ url_for(widget.endpoint, path=f.thumbnail_path) }}"
+          {% else %}
+            src="{{ url_for('static', filename='no-preview.jpg') }}"
+          {% endif %}
+          title="{{widget.text or ''}}"
+        />
     </a>
   {%- elif widget.type == 'script' -%}
     <script

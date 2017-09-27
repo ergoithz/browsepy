@@ -11,6 +11,8 @@ import random
 import datetime
 import logging
 
+import cv2
+
 from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
 
@@ -191,6 +193,19 @@ class Node(object):
         return abspath_to_urlpath(self.path, self.app.config['directory_base'])
 
     @property
+    def thumbnail_path(self):
+        '''
+        Get the URL of the thumbnail for this file.
+
+        :returns: relative-url-like for node's thumbnail path
+        :rtype: str
+        '''
+        tp = getOrGenerateThumbnail(self.path)
+        if tp:
+            tp = abspath_to_urlpath(tp, self.app.config['directory_base'])
+        return tp
+
+    @property
     def name(self):
         '''
         Get the basename portion of node's path.
@@ -267,9 +282,11 @@ class Node(object):
         :return: file object pointing to path
         :rtype: File
         '''
+        #print("def from_urlpath(cls, path, app=None)::def from_urlpath({}, {}, {}):".format(cls, path, app))
         app = app or current_app
         base = app.config['directory_base']
         path = urlpath_to_abspath(path, base)
+        #print("base='{}', path='{}'".format(base, path))
         if not cls.generic:
             kls = cls
         elif os.path.isdir(path):
@@ -937,11 +954,24 @@ def alternative_filename(filename, attempt=None):
     return u'%s%s%s' % (name, extra, ext)
 
 def myExclude(path):
+    #print("Judge the path '{}' for ex/inclusion...".format(path))
     exclude = True
-    desired_extensions = ['png', 'jpeg', 'jpg','bmp','gif']
-    # for de in desired_extensions:
+    desired_extensions = ['png', 'jpeg', 'jpg','bmp','gif', 'mp4', 'mov', 'webm', 'swf', 'avi', 'ts']
+
+    path_parts = os.path.splitext(path)
+    name = path_parts[0]
+    extension = path_parts[1]
+
     if path.endswith(tuple(desired_extensions)):
+        # ignore our thumbnails for the sake of listing the directory.
+        # Bail here so we can avoid the OS check.
+        if path.endswith('_thumbnail' + extension):
+            return True
+        # Not a file? You're gettin' excluded, sucka!
+        if not os.path.isfile(path):
+            return True
         exclude = False
+        #getOrGenerateThumbnail(path)
     # print('Going to exclude because no match?')
     # print(exclude)
     return exclude
@@ -958,6 +988,68 @@ def myExclude(path):
     #     print('Match!')
     #     return False
 
+def getOrGenerateThumbnail(path=None):
+    if not path or not os.path.isfile(path):
+        print("No value for PATH was provided... We aren't just gonna make shit up here...Sheesh.")
+        return False
+    #print("def getOrGenerateThumbnail(path)::def getOrGenerateThumbnail({}):".format(path))
+    image_extensions = ['png', 'jpeg', 'jpg','bmp']
+    video_extensions = ['gif', 'mp4', 'webm', 'avi', 'ts']
+    #video_extensions = ['gif', 'mp4', 'mov', 'webm', 'swf', 'avi', 'ts']
+
+    image_path_parts = os.path.splitext(path)
+    image_name = image_path_parts[0]
+    image_extension = image_path_parts[1]
+
+    if path.endswith(tuple(image_extensions)):
+        if path.endswith('_thumbnail' + image_extension):
+            return path
+        thumbnail_path = image_name + '_thumbnail' + image_extension
+        #print('Got a Still Image.')
+
+        if os.path.isfile(thumbnail_path):
+            print("Thumbnail '{}' already exists for file '{}'...Skipping.".format(thumbnail_path, path))
+            return thumbnail_path
+
+        print("Generating thumbnail of '{}' at '{}'".format(path, thumbnail_path))
+
+        image = cv2.imread(path)
+        # if we couldn't read it, let's get outta here.
+        if image is None:
+            return False
+
+        # we need to keep in mind aspect ratio so the image does
+        # not look skewed or distorted -- therefore, we calculate
+        # the ratio of the new image to the old image
+        r = 100.0 / image.shape[1]
+        dim = (100, int(image.shape[0] * r))
+
+        # perform the actual resizing of the image and show it
+        resized = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
+        cv2.imwrite(thumbnail_path, resized)
+        return thumbnail_path
+
+    elif path.endswith(tuple(video_extensions)):
+        if path.endswith('_still_thumbnail.jpg' + image_extension):
+            return path
+        screenshot_path = image_name + '_still_thumbnail.jpg'
+
+        if os.path.isfile(screenshot_path):
+            print("Thumbnail '{}' already exists for file '{}'...Skipping.".format(screenshot_path, path))
+            return screenshot_path
+
+        #print("Got a Movin' One!")
+        vidcap = cv2.VideoCapture(path)
+        vidcap.set(cv2.CAP_PROP_POS_MSEC, 1)
+        success, image = vidcap.read()
+        if success:
+            cv2.imwrite(screenshot_path, image)
+            print("Extracted a still from '{}' named '{}'".format(path, screenshot_path))
+            return screenshot_path
+        else:
+            print("Unable to extract a still from '{}'!".format(path))
+    else:
+        return False
 
 def scandir(path, app=None):
     '''
