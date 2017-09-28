@@ -62,13 +62,14 @@ def clipboard(path):
         return NotFound()
 
     if request.method == 'POST':
-        mode = 'cut' if request.form.get('mode-cut', None) else 'copy'
+        mode = 'cut' if request.form.get('mode-cut') else 'copy'
         response = redirect(url_for('browse', path=directory.urlpath))
         clipboard = Clipboard(request.form.getlist('path'), mode)
         clipboard.to_response(response)
         return response
 
     clipboard = Clipboard.from_request()
+    clipboard.mode = 'select'  # disables exclusion
     return render_template(
         'clipboard.html',
         file=directory,
@@ -97,6 +98,7 @@ def clipboard_paste(path):
     response = redirect(url_for('browse', path=directory.urlpath))
     clipboard = Clipboard.from_request()
     cut = clipboard.mode == 'cut'
+    clipboard.mode = 'paste'  # disables exclusion
 
     for node in map(Node.from_urlpath, clipboard):
         if not node.is_excluded:
@@ -130,17 +132,27 @@ def register_plugin(manager):
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
     '''
+    excluded = manager.app.config.get('exclude_fnc')
+    manager.app.config['exclude_fnc'] = (
+        Clipboard.excluded
+        if not excluded else
+        lambda path: Clipboard.excluded(path) or excluded(path)
+        )
     manager.register_blueprint(actions)
-
-    # add style tag
     manager.register_widget(
         place='styles',
         type='stylesheet',
         endpoint='file_actions.static',
-        filename='css/browse.css'
+        filename='clipboard.css',
+        filter=Clipboard.detect_selection,
         )
-
-    # register header button
+    manager.register_widget(
+        place='scripts',
+        type='script',
+        endpoint='file_actions.static',
+        filename='clipboard.js',
+        filter=Clipboard.detect_selection,
+        )
     manager.register_widget(
         place='header',
         type='button',
@@ -153,7 +165,7 @@ def register_plugin(manager):
         type='button',
         endpoint='file_actions.clipboard',
         text=lambda file: (
-            '{} items selected'.format(Clipboard.count())
+            'Selection ({})...'.format(Clipboard.count())
             if Clipboard.count() else
             'Selection...'
             ),

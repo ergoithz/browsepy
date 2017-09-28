@@ -100,6 +100,7 @@ form.upload input {
 html.autosubmit-support form.autosubmit{
   border: 0;
   background: transparent;
+  margin-bottom: 0;
 }
 
 html.autosubmit-support form.autosubmit input{
@@ -118,6 +119,7 @@ table.browser {
   table-layout: fixed;
   border-collapse: collapse;
   overflow-x: auto;
+  margin: 1.5em 0;
 }
 
 table.browser tr:nth-child(2n) {

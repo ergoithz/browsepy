@@ -14,7 +14,8 @@
   <table class="browser">
     <thead>
       <tr>
-        {{ th('Name', colspan=2) }}
+        <th class="select-all-container"></th>
+        {{ th('Name') }}
         {{ th('Mimetype') }}
         {{ th('Modified') }}
         {{ th('Size') }}
@@ -24,7 +25,11 @@
       {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
         {% if f.link and f.link.text %}
           <tr>
-            <td><input type="checkbox" name="path" value="{{ f.urlpath }}"></td>
+            <td>
+              <input type="checkbox" name="path" value="{{ f.urlpath }}"
+              {%- if f.urlpath in clipboard %} checked="checked"{% endif -%}
+              >
+            </td>
             <td>{{ f.link.text }}</td>
             <td>{{ f.type or '' }}</td>
             <td>{{ f.modified or '' }}</td>

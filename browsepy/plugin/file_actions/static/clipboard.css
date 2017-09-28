@@ -1,0 +1,48 @@
+input[type=checkbox] {
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: 0;
+}
+input[type=checkbox]:after {
+  content: " ";
+  min-width: 1.5em;
+  min-height: 1.5em;
+
+  font-family: 'icomoon';
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  font-size: 1em;
+  color: white;
+  background: #333;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.5em;
+  text-align: center;
+  border-radius: 0.25em;
+  border: 1px solid gray;
+  box-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black;
+  text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
+}
+input[type=checkbox]:hover:after {
+  color: white;
+  background: black;
+}
+input[type=checkbox]:checked:after {
+  content: "\ea10";
+  background: black;
+  border: 1px solid black;
+}
+tr.clickable:hover {
+  cursor: pointer;
+}
+tr.clickable:hover > td{
+  background-color: #ddd;
+}

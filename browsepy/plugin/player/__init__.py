@@ -106,7 +106,7 @@ def register_plugin(manager):
         type='stylesheet',
         endpoint='player.static',
         filename='css/browse.css'
-    )
+        )
 
     # register link actions
     manager.register_widget(
@@ -114,14 +114,14 @@ def register_plugin(manager):
         type='link',
         endpoint='player.audio',
         filter=PlayableFile.detect
-    )
+        )
     manager.register_widget(
         place='entry-link',
         icon='playlist',
         type='link',
         endpoint='player.playlist',
         filter=PlayListFile.detect
-    )
+        )
 
     # register action buttons
     manager.register_widget(
@@ -130,14 +130,14 @@ def register_plugin(manager):
         type='button',
         endpoint='player.audio',
         filter=PlayableFile.detect
-    )
+        )
     manager.register_widget(
         place='entry-actions',
         css='play',
         type='button',
         endpoint='player.playlist',
         filter=PlayListFile.detect
-    )
+        )
 
     # check argument (see `register_arguments`) before registering
     if manager.get_argument('player_directory_play'):

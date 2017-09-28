@@ -509,14 +509,14 @@ class Directory(Node):
                     file=self,
                     endpoint='static',
                     filename='browse.directory.head.js'
-                ),
+                    ),
                 self.plugin_manager.create_widget(
                     'scripts',
                     'script',
                     file=self,
                     endpoint='static',
                     filename='browse.directory.body.js'
-                ),
+                    ),
                 self.plugin_manager.create_widget(
                     'header',
                     'upload',

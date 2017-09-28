@@ -7,8 +7,9 @@ import base64
 import logging
 import hashlib
 
-from flask import request
+from flask import request, current_app
 from browsepy.compat import range
+from browsepy.file import abspath_to_urlpath
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ class Clipboard(set):
     cookie_sign_name = 'clipboard-signature'
     cookie_mode_name = 'clipboard-mode'
     cookie_list_name = 'clipboard-{:x}'
+    cookie_path = '/'
     request_cache_field = '_browsepy_file_actions_clipboard_cache'
     max_pages = 0xffffffff
 
@@ -35,17 +37,29 @@ class Clipboard(set):
         return node.can_upload and cls.detect(node)
 
     @classmethod
+    def detect_selection(cls, node):
+        return cls.from_request(request).mode == 'select'
+
+    @classmethod
+    def excluded(cls, path, request=request, app=current_app):
+        if request and app:
+            urlpath = abspath_to_urlpath(path, app.config['directory_base'])
+            self = cls.from_request(request)
+            return self.mode == 'cut' and urlpath in self
+
+    @classmethod
     def from_request(cls, request=request):
         cached = getattr(request, cls.request_cache_field, None)
         if cached is not None:
             return cached
         self = cls()
+        setattr(request, cls.request_cache_field, self)
         signature = cls._cookiebytes(cls.cookie_sign_name, request)
         data = cls._read_paginated_cookie(request)
-        method = cls._cookietext(cls.cookie_mode_name, request)
-        if cls._signature(data, method) == signature:
+        mode = cls._cookietext(cls.cookie_mode_name, request)
+        if cls._signature(data, mode) == signature:
             try:
-                self.method = method
+                self.mode = mode
                 self.update(json.loads(base64.b64decode(data).decode('utf-8')))
             except BaseException as e:
                 logger.warn('Bad cookie')
@@ -60,9 +74,9 @@ class Clipboard(set):
         return request.cookies.get(name, '')
 
     @classmethod
-    def _paginated_cookie_length(cls, page=0, path='/'):
+    def _paginated_cookie_length(cls, page=0):
         name_fnc = cls.cookie_list_name.format
-        return 3990 - len(name_fnc(page) + path)  # 4000 - len('=""; Path=')
+        return 3990 - len(name_fnc(page) + cls.cookie_path)
 
     @classmethod
     def _read_paginated_cookie(cls, request=request):
@@ -111,10 +125,11 @@ class Clipboard(set):
         if self:
             data = base64.b64encode(json.dumps(list(self)).encode('utf-8'))
             signature = self._signature(data, self.mode)
-            start = self._write_paginated_cookie(data, response)
+            start = self._write_paginated_cookie(data, response) + 1
+            response.set_cookie(self.cookie_mode_name, self.mode)
+            response.set_cookie(self.cookie_sign_name, signature)
         else:
-            signature = b''
             start = 0
+            response.set_cookie(self.cookie_mode_name, '', expires=0)
+            response.set_cookie(self.cookie_sign_name, '', expires=0)
         self._delete_paginated_cookie(response, start, request)
-        response.set_cookie(self.cookie_mode_name, self.mode)
-        response.set_cookie(self.cookie_sign_name, signature)
