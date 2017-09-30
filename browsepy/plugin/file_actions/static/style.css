@@ -1,14 +1,28 @@
 input[type=checkbox] {
-  cursor: pointer;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   outline: 0;
+  padding: 1px;
+}
+input[type=checkbox],
+input[type=checkbox]:after {
+  font-size: 1em;
+  display: inline-block;
+  line-height: 1.5em;
+  width: 1.5em;
+  height: 1.5em;
+  margin: 0;
+  vertical-align: middle;
+  cursor: pointer;
+  text-align: center;
 }
 input[type=checkbox]:after {
-  content: " ";
-  min-width: 1.5em;
-  min-height: 1.5em;
+  content: "";
+  border-radius: 0.25em;
+  border: 1px solid gray;
+  box-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black;
+  margin: -1px;
 
   font-family: 'icomoon';
   speak: none;
@@ -19,26 +33,21 @@ input[type=checkbox]:after {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  font-size: 1em;
   color: white;
   background: #333;
-  display: inline-block;
-  vertical-align: middle;
-  line-height: 1.5em;
-  text-align: center;
-  border-radius: 0.25em;
-  border: 1px solid gray;
-  box-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black;
   text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
 }
 input[type=checkbox]:hover:after {
-  color: white;
   background: black;
 }
 input[type=checkbox]:checked:after {
   content: "\ea10";
   background: black;
   border: 1px solid black;
+}
+input[type=text] {
+  padding: 0.25em 1px;
+  width: 22.5em;
 }
 tr.clickable:hover {
   cursor: pointer;

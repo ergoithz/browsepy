@@ -33,10 +33,17 @@ body {
   min-height: 100%;
 }
 
+*, :after, :before {
+  box-sizing: content-box;
+}
+
 a,
 label,
 input[type=submit],
-input[type=file] {
+input[type=file],
+input[type=button],
+input[type=radio],
+input[type=checkbox] {
   cursor: pointer;
 }
 
@@ -132,11 +139,11 @@ table.browser td {
   text-align: center;
   vertical-align: middle;
   white-space: nowrap;
-  padding: 5px;
+  padding: 0.5em;
 }
 
 table.browser th {
-  padding-bottom: 10px;
+  padding-bottom: 0.75em;
   border-bottom: 1px solid black;
 }
 
@@ -149,20 +156,48 @@ table.browser td:nth-child(2) {
   width: 100%;
 }
 
+table.browser td:nth-child(2) a {
+  display: block;
+  line-height: 1.5em;
+  vertical-align: middle;
+  margin: -0.5em;
+  padding: 0.5em;
+}
+
 table.browser td:nth-child(3) {
   text-align: left;
 }
 
-h1 {
+h1, h2, h3, h4 {
   line-height: 1.15em;
-  font-size: 3em;
   white-space: normal;
   word-wrap: normal;
   margin: 0;
-  padding: 0 0 0.3em;
+  padding: 0;
   display: block;
-  color: black;
+  color: inherit;
+}
+
+h1 {
+  padding: 0 0 0.3em;
+  font-size: 3em;
   text-shadow: 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 0 0 white, -1px 0 0 white, 0 -1px 0 white, 0 1px 0 white, 2px 2px 0 black, -2px -2px 0 black, 2px -2px 0 black, -2px 2px 0 black, 2px 0 0 black, -2px 0 0 black, 0 2px 0 black, 0 -2px 0 black, 2px 1px 0 black, -2px 1px 0 black, 1px 2px 0 black, 1px -2px 0 black, 2px -1px 0 black, -2px -1px 0 black, -1px 2px 0 black, -1px -2px 0 black;
+}
+
+h2, h3, h4 {
+  margin: 0 0 0.75em;
+}
+
+h2 {
+  font-size: 1.75em;
+}
+
+h3 {
+  font-size: 1.5em;
+}
+
+h4 {
+  font-size: 1.25em;
 }
 
 ol.path,
@@ -296,37 +331,48 @@ a.sorting.numeric.desc.active:after {
   content: "\ea4b";
 }
 
-a.button, input.button,
+a.button,
+input.button,
+input.entry,
 html.autosubmit-support form.autosubmit label {
   font-size: 1em;
-  color: white;
-  background: #333;
   display: inline-block;
   vertical-align: middle;
   line-height: 1.5em;
-  text-align: center;
   border-radius: 0.25em;
   border: 1px solid gray;
   box-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black;
+}
+
+a.button,
+input.button,
+html.autosubmit-support form.autosubmit label {
+  color: white;
+  background: #333;
+  text-align: center;
   text-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 0 0 black, -1px 0 0 black, 0 -1px 0 black, 0 1px 0 black;
 }
 
-a.button:active, input.button:active,
-html.autosubmit-support form.autosubmit label:active{
+a.button:active,
+input.button:active,
+html.autosubmit-support form.autosubmit label:active {
   border: 1px solid black;
 }
 
-a.button:hover, input.button:hover,
+a.button:hover,
+input.button:hover,
 html.autosubmit-support form.autosubmit label:hover {
   color: white;
   background: black;
 }
 
-a.button.long, input.button.long {
+a.button.long,
+input.button.long {
   min-width: 10em;
 }
 
-a.button.destructive, input.button.destructive {
+a.button.destructive,
+input.button.destructive {
   background: #f31;
   border-color: #f88;
 }
@@ -354,9 +400,18 @@ a.button.suggested:active, input.button.suggested:active {
   border-color: #16e;
 }
 
-a.button, input.button,
+a.button,
+input.button,
+input.entry,
 html.autosubmit-support form.autosubmit{
-  margin-left: 3px;
+  margin-left: 0.5em;
+}
+
+a.button:first-child,
+input.button:first-child,
+input.entry,
+html.autosubmit-support form.autosubmit:first-child {
+  margin-left: 0;
 }
 
 a.button, input.button {
@@ -369,7 +424,9 @@ a.button.text, input.button.text{
   height: auto;
 }
 
-a.button.text, input.button.text,
+a.button.text,
+input.button.text,
+input.entry,
 html.autosubmit-support form.autosubmit label{
   padding: 0.25em 0.5em;
 }
@@ -382,31 +439,24 @@ a.button.remove:after {
   content: "\e902";
 }
 
-strong[data-prefix] {
-  display: inline-block;
-  cursor: help;
-}
-
-strong[data-prefix]:after {
-  display: inline-block;
+input.entry {
   position: relative;
-  top: -0.5em;
-  margin: 0 0.25em;
-  width: 1.2em;
-  height: 1.2em;
-  font-size: 0.75em;
-  text-align: center;
-  line-height: 1.2em;
-  content: 'i';
-  border-radius: 0.5em;
-  color: white;
-  background-color: darkgray;
+  min-width: 10em;
+  overflow: visible;
+  outline: 0;
 }
 
-strong[data-prefix]:hover:after {
-  display: none;
+input.entry:hover,
+input.entry:focus {
+  border-color: #8cF;
 }
 
-strong[data-prefix]:hover:before {
-  content: attr(data-prefix);
+input.entry:invalid {
+  border-color: #f31;
+}
+
+.group {
+  display: block;
+  padding: 0;
+  margin: 1em 0;
 }

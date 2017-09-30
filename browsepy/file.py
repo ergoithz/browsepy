@@ -32,6 +32,9 @@ standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 common_path_separators = '\\/'
 restricted_chars = '/\0'
 nt_restricted_chars = '/\0\\<>:"|?*' + ''.join(map(chr, range(1, 32)))
+current_restricted_chars = (
+    nt_restricted_chars if os.name == 'nt' else restricted_chars
+    )
 restricted_names = ('.', '..', '::', '/', '\\')
 nt_device_names = (
     ('CON', 'PRN', 'AUX', 'NUL') +

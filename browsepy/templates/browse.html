@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% macro draw_widget(f, widget) -%}
-  {%- if widget.type == 'button' -%}
+  {%- if widget.type == 'button' or widget.type == 'link'-%}
     <a
       href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
       class="
@@ -9,10 +9,6 @@
         {%- if widget.text %} text{% endif -%}
         {%- if widget.css %} {{ widget.css }}{% endif -%}"
       >{{ widget.text or '' }}</a>
-  {%- elif widget.type == 'link' -%}
-    <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
-       {% if widget.css %}class="{{ widget.css }}"{% endif %}
-       >{{ widget.text or '' }}</a>
   {%- elif widget.type == 'script' -%}
     <script
       src="{{ widget.src or url_for(widget.endpoint, filename=widget.filename) }}"
@@ -63,6 +59,11 @@
 </th>
 {%- endmacro %}
 
+{% block title -%}
+  {{ super() }}
+  {%- if file and file.urlpath %} - {{ file.urlpath }}{% endif -%}
+{%- endblock %}
+
 {% block styles %}
   {{ super() }}
   {{ draw_widgets(file, 'styles') }}
@@ -79,25 +80,12 @@
 {% endblock %}
 
 {% block header %}
-<h1>
-  <ol class="path">
-    {% for parent in file.ancestors[::-1] %}
-      <li>
-        <a href="{{ url_for('browse', path=parent.urlpath) }}"
-           {% if parent.is_root %}class="root"{% endif %}
-           >{{ parent.name }}</a>
-      </li>
-    {% endfor %}
-    {% if file.name %}
-      <li><span>{{ file.name }}</span></li>
-    {% endif %}
-  </ol>
-</h1>
+<h1>{{ breadcrumbs(file) }}</h1>
 {% endblock %}
 
 {% block content %}
 {% block content_header %}
-{{ draw_widgets(file, 'header') }}
+<div class="group">{{ draw_widgets(file, 'header') }}</div>
 {% endblock %}
 
 {% block content_table %}

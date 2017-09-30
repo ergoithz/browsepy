@@ -2,17 +2,16 @@
 # -*- coding: UTF-8 -*-
 
 import unittest
-import re
 import os
 import os.path
 import shutil
 import tempfile
 import tarfile
-import xml.etree.ElementTree as ET
 import io
 import mimetypes
 
 import flask
+import bs4
 
 from werkzeug.exceptions import NotFound
 
@@ -50,17 +49,11 @@ class Page(object):
         self.response = response
 
     @classmethod
-    def innerText(cls, element, sep=''):
-        return sep.join(cls.itertext(element))
-
-    @classmethod
     def from_source(cls, source, response=None):
         return cls(source, response)
 
 
 class ListPage(Page):
-    path_strip_re = re.compile('\s+/\s+')
-
     def __init__(self, path, directories, files, removable, upload, tarfile,
                  source, response=None):
         self.path = path
@@ -74,58 +67,55 @@ class ListPage(Page):
 
     @classmethod
     def from_source(cls, source, response=None):
-        html = ET.fromstring(source)
+        html = bs4.BeautifulSoup(source, 'html.parser')
         rows = [
             (
-                row[0].attrib.get('class') == 'icon inode',
-                row[1].find('.//a').attrib['href'],
-                any(button.attrib.get('class') == 'button remove'
-                    for button in row[2].findall('.//a')),
-                any(button.attrib.get('class') == 'button download'
-                    for button in row[2].findall('.//a'))
-            )
-            for row in html.findall('.//table/tbody/tr')
-        ]
+                all(a in row.contents[0]['class'] for a in ('icon', 'inode')),
+                row.contents[1].find('a')['href'],
+                bool(row.contents[2].find('a', class_='button remove')),
+                bool(row.contents[2].find('a', class_='button download')),
+                )
+            for row in html.select('table > tbody > tr')
+            ]
         return cls(
-            cls.path_strip_re.sub(
-                '/',
-                cls.innerText(html.find('.//h1'), '/')
-                ).strip(),
+            '/'.join(
+                o.get_text()
+                for o in html.find('h1').find_all(['a', 'span'])
+                ),
             [url for isdir, url, removable, download in rows if isdir],
             [url for isdir, url, removable, download in rows if not isdir],
             all(removable
                 for isdir, url, removable, download in rows
                 ) if rows else False,
-            html.find('.//form//input[@type=\'file\']') is not None,
+            bool(html.select('form input[type=file]')),
             all(download
                 for isdir, url, removable, download in rows if isdir
                 ) if rows else False,
             source,
             response
-        )
+            )
 
 
 class ConfirmPage(Page):
-    def __init__(self, path, name, back, source, response=None):
+    def __init__(self, path, back, source, response=None):
         self.path = path
-        self.name = name
         self.back = back
         self.source = source
         self.response = response
 
     @classmethod
     def from_source(cls, source, response=None):
-        html = ET.fromstring(source)
-        name = cls.innerText(html.find('.//strong')).strip()
-        prefix = html.find('.//strong').attrib.get('data-prefix', '')
+        html = bs4.BeautifulSoup(source, 'html.parser')
 
         return cls(
-            prefix + name,
-            name,
-            html.find('.//form[@method=\'get\']').attrib['action'],
+            '/'.join(
+                o.get_text()
+                for o in html.find('h1').find_all(['a', 'span'])
+                ),
+            html.find('a', class_='button')['href'],
             source,
             response
-        )
+            )
 
 
 class PageException(Exception):
@@ -156,7 +146,7 @@ class TestApp(unittest.TestCase):
         400: Page400Exception,
         302: Page302Exception,
         None: PageException
-    }
+        }
 
     def setUp(self):
         self.app = self.module.app
@@ -270,7 +260,7 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'index'
-        )
+            )
 
         self.app.config['directory_start'] = self.start
 
@@ -303,17 +293,17 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'browse', path='..'
-        )
+            )
 
         self.assertRaises(
             Page404Exception,
             self.get, 'browse', path='start/testfile.txt'
-        )
+            )
 
         self.assertRaises(
             Page404Exception,
             self.get, 'browse', path='exclude'
-        )
+            )
 
         self.app.config['directory_downloadable'] = True
         page = self.get('browse')
@@ -333,16 +323,17 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'open', path='../shall_not_pass.txt'
-        )
+            )
 
     def test_remove(self):
         open(os.path.join(self.remove, 'testfile2.txt'), 'w').close()
-        page = self.get('remove', path='remove/testfile2.txt')
-        self.assertEqual(page.name, 'testfile2.txt')
-        self.assertEqual(page.path, 'remove/testfile2.txt')
-        self.assertEqual(page.back, self.url_for('browse', path='remove'))
 
         basename = os.path.basename(self.base)
+
+        page = self.get('remove', path='remove/testfile2.txt')
+        self.assertEqual(page.path, '%s/remove/testfile2.txt' % basename)
+        self.assertEqual(page.back, self.url_for('browse', path='remove'))
+
         page = self.post('remove', path='remove/testfile2.txt')
         self.assertEqual(page.path, '%s/remove' % basename)
         self.assertEqual(page.files, self.remove_files)

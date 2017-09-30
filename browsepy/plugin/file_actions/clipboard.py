@@ -7,9 +7,8 @@ import base64
 import logging
 import hashlib
 
-from flask import request, current_app
+from flask import request
 from browsepy.compat import range
-from browsepy.file import abspath_to_urlpath
 
 
 logger = logging.getLogger(__name__)
@@ -29,26 +28,16 @@ class Clipboard(set):
         return len(cls.from_request(request))
 
     @classmethod
-    def detect(cls, node):
-        return bool(cls.count())
-
-    @classmethod
-    def detect_target(cls, node):
-        return node.can_upload and cls.detect(node)
-
-    @classmethod
-    def detect_selection(cls, node):
-        return cls.from_request(request).mode == 'select'
-
-    @classmethod
-    def excluded(cls, path, request=request, app=current_app):
-        if request and app:
-            urlpath = abspath_to_urlpath(path, app.config['directory_base'])
-            self = cls.from_request(request)
-            return self.mode == 'cut' and urlpath in self
-
-    @classmethod
     def from_request(cls, request=request):
+        '''
+        Create clipboard object from request cookies.
+        Uses request itself for cache.
+
+        :param request: optional request, defaults to current flask request
+        :type request: werkzeug.Request
+        :returns: clipboard instance
+        :rtype: Clipboard
+        '''
         cached = getattr(request, cls.request_cache_field, None)
         if cached is not None:
             return cached

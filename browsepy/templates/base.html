@@ -1,9 +1,28 @@
+{% macro breadcrumb(file) -%}
+  <a href="{{ url_for('browse', path=file.urlpath) }}"
+     {% if file.is_root %}class="root"{% endif %}
+     >{{ file.name }}</a>
+{%- endmacro %}
+
+{% macro breadcrumbs(file, circular=False) -%}
+  <ol class="path">
+    {% for parent in file.ancestors[::-1] %}
+      <li>{{ breadcrumb(parent) }}</li>
+    {% endfor %}
+    {% if circular %}
+      <li>{{ breadcrumb(file) }}</li>
+    {% elif file.name %}
+      <li><span>{{ file.name }}</span></li>
+    {% endif %}
+  </ol>
+{%- endmacro %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <meta name="viewport" content="width=device-width, user-scalable=no"/>
-  <title>{% block title %}{{ config.get("title", "BrowsePy") }}{% endblock %}</title>
+  <title>{% block title %}{{ config.get('title', 'browsepy') }}{% endblock %}</title>
   {% block styles %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='base.css') }}"/>
   {% endblock %}

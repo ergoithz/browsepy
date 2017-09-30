@@ -38,8 +38,12 @@
 {% endif %}
 
 {% block title %}400 Bad Request{% endblock %}
-{% block content %}
+
+{% block header %}
   <h1>Bad Request</h1>
+{% endblock %}
+
+{% block content %}
   {{ description }}
   {% if file %}
     <a class="long button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Accept</a>

@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Upload failed{% endblock %}
-{% block content %}
+{% block title %}404 Not Found{% endblock %}
+
+{% block header %}
   <h1>Not Found</h1>
+{% endblock %}
+
+{% block content %}
   <img src="{{ url_for('static', filename='giorgio.jpg') }}" alt=""/>
   <p>The resource you're looking for is not available.</p>
   <a class="long button text" href="{{ url_for('index') }}" title="Go home">Accept</a>

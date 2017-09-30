@@ -27,12 +27,15 @@
         .querySelectorAll('td input[type=checkbox]')
         .forEach(function (target) {target.checked = checkbox.checked;});
     }
-    function checkRow (tr, event) {
+    function checkRow (checkbox, tr, event) {
       if (!event || !event.target || event.target.type !== 'checkbox') {
         var
           targets = tr.querySelectorAll('td input[type=checkbox]'),
           checked = every(targets, function (target) {return target.checked;});
-        targets.forEach(function (target) {target.checked = !checked;});
+        targets.forEach(function (target) {
+          target.checked = !checked;
+          check(checkbox, event);
+        });
       }
     }
     function check (checkbox) {
@@ -56,7 +59,7 @@
           .querySelectorAll('tbody tr')
           .forEach(function (tr) {
             tr.className += ' clickable';
-            event(tr, 'click', checkRow, tr);
+            event(tr, 'click', checkRow, checkbox, tr);
           });
       });
   }

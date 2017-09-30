@@ -95,14 +95,18 @@ setup(
             'templates/*',
             'static/fonts/*',
             'static/*.*',  # do not capture directories
-        ],
+            ],
         'browsepy.plugin.player': [
             'templates/*',
             'static/*/*',
-        ]},
-    install_requires=['flask', 'unicategories'] + extra_requires,
+            ],
+        },
+    install_requires=(
+        ['flask', 'unicategories'] + extra_requires
+        ),
+    tests_require=['beautifulsoup4'],
     test_suite='browsepy.tests',
     test_runner='browsepy.tests.runner:DebuggerTextTestRunner',
     zip_safe=False,
-    platforms='any'
-)
+    platforms='any',
+    )

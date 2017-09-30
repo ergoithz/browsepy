@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
+{% block header %}
+  <h1>{{ breadcrumbs(file, circular=file.is_directory) }}</h1>
+  <h2>Remove</h2>
+{% endblock %}
+
 {% block content %}
-  <h1>Remove</h1>
-  <p>Do you really want to remove <strong
-    {%- if file.parent.urlpath %} data-prefix="{{ file.parent.urlpath }}/"{%- endif -%}
-    >{{ file.name }}</strong>?</p>
-  <form method="post" class="remove">
+  <p>Do you really want to remove this file?</p>
+  <form method="post" class="group">
     <a class="long button text" href="{{ url_for('browse', path=file.parent.urlpath) }}" title="Go back">Cancel</a>
     <input class="long button destructive text" type="submit" value="Yes" />
   </form>

@@ -296,7 +296,9 @@ def which(name,
 
 def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
     '''
-    Escape all special regex characters in pattern.
+    Escape all special regex characters in pattern and converts non-ascii
+    characters into unicode escape sequences.
+
     Logic taken from regex module.
 
     :param pattern: regex pattern to escape
@@ -304,10 +306,12 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
     :returns: escaped pattern
     :rtype: str
     '''
-    escape = '\\{}'.format
+    chr_escape = '\\{}'.format
+    uni_escape = '\\u{:04d}'.format
     return ''.join(
-        escape(c) if c in chars or c.isspace() else
-        '\\000' if c == '\x00' else c
+        chr_escape(c) if c in chars or c.isspace() else
+        c if '\x19' < c < '\x80' else
+        uni_escape(ord(c))
         for c in pattern
         )
 

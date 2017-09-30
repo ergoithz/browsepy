@@ -44,7 +44,7 @@ class TestCompat(unittest.TestCase):
             warn['category'] == expected_warning and
             regex.match(warn['message'])
             for warn in warnings
-        ))
+            ))
 
     def test_which(self):
         self.assertTrue(self.module.which('python'))
@@ -68,7 +68,7 @@ class TestCompat(unittest.TestCase):
             path,
             fs_encoding='utf-8',
             errors='strict'
-        )
+            )
 
     def test_fsencode(self):
         path = b'/a/\xc3\xb1'

@@ -9,9 +9,10 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
-from browsepy.file import Node
-from browsepy.compat import map
-from browsepy.exceptions import OutsideDirectoryBase
+from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
+                          current_restricted_chars, common_path_separators
+from browsepy.compat import map, re_escape
+from browsepy.exceptions import OutsideDirectoryBase, InvalidFilenameError
 
 from .clipboard import Clipboard
 
@@ -24,6 +25,9 @@ actions = Blueprint(
     url_prefix='/file-actions',
     template_folder=os.path.join(__basedir__, 'templates'),
     static_folder=os.path.join(__basedir__, 'static'),
+    )
+re_basename = '^[^ {0}]([^{0}]*[^ {0}])?$'.format(
+    re_escape(current_restricted_chars + common_path_separators)
     )
 
 
@@ -40,11 +44,22 @@ def create_directory(path):
         return NotFound()
 
     if request.method == 'GET':
-        return render_template('create_directory.html', file=directory)
+        return render_template(
+            'create_directory.file_actions.html',
+            file=directory,
+            re_basename=re_basename,
+            )
 
-    os.mkdir(os.path.join(directory.path, request.form['name']))
+    basename = request.form['name']
+    if secure_filename(basename) != basename or not basename:
+        raise InvalidFilenameError(
+            path=directory.path,
+            filename=basename,
+            )
 
-    return redirect(url_for('browse', path=directory.urlpath))
+    os.mkdir(os.path.join(directory.path, basename))
+
+    return redirect(url_for('browse', file=directory))
 
 
 @actions.route('/clipboard', methods=('GET', 'POST'), defaults={'path': ''})
@@ -71,9 +86,10 @@ def clipboard(path):
     clipboard = Clipboard.from_request()
     clipboard.mode = 'select'  # disables exclusion
     return render_template(
-        'clipboard.html',
+        'clipboard.file_actions.html',
         file=directory,
         clipboard=clipboard,
+        cut_support=any(node.can_remove for node in directory.listdir()),
         sort_property=sort_property,
         sort_fnc=sort_fnc,
         sort_reverse=sort_reverse,
@@ -132,39 +148,61 @@ def register_plugin(manager):
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
     '''
+    def detect_selection(directory):
+        return (
+            directory.is_directory and
+            Clipboard.from_request().mode == 'select'
+            )
+
+    def detect_upload(directory):
+        return directory.is_directory and directory.can_upload
+
+    def detect_target(directory):
+        return detect_upload(directory) and detect_clipboard(directory)
+
+    def detect_clipboard(directory):
+        return directory.is_directory and Clipboard.from_request()
+
+    def excluded_clipboard(path):
+        clipboard = Clipboard.from_request(request)
+        if clipboard.mode == 'cut':
+            base = manager.app.config['directory_base']
+            return abspath_to_urlpath(path, base) in clipboard
+
     excluded = manager.app.config.get('exclude_fnc')
     manager.app.config['exclude_fnc'] = (
-        Clipboard.excluded
+        excluded_clipboard
         if not excluded else
-        lambda path: Clipboard.excluded(path) or excluded(path)
+        lambda path: excluded_clipboard(path) or excluded(path)
         )
     manager.register_blueprint(actions)
     manager.register_widget(
         place='styles',
         type='stylesheet',
         endpoint='file_actions.static',
-        filename='clipboard.css',
-        filter=Clipboard.detect_selection,
+        filename='style.css',
+        filter=detect_selection,
         )
     manager.register_widget(
         place='scripts',
         type='script',
         endpoint='file_actions.static',
-        filename='clipboard.js',
-        filter=Clipboard.detect_selection,
+        filename='script.js',
+        filter=detect_selection,
         )
     manager.register_widget(
         place='header',
         type='button',
         endpoint='file_actions.create_directory',
         text='Create directory',
-        filter=lambda file: file.can_upload,
+        filter=detect_upload,
         )
     manager.register_widget(
         place='header',
         type='button',
         endpoint='file_actions.clipboard',
-        text=lambda file: (
+        filter=lambda directory: directory.is_directory,
+        text=lambda directory: (
             'Selection ({})...'.format(Clipboard.count())
             if Clipboard.count() else
             'Selection...'
@@ -175,12 +213,12 @@ def register_plugin(manager):
         type='button',
         endpoint='file_actions.clipboard_paste',
         text='Paste here',
-        filter=Clipboard.detect_target,
+        filter=detect_target,
         )
     manager.register_widget(
         place='header',
         type='button',
         endpoint='file_actions.clipboard_clear',
         text='Clear',
-        filter=Clipboard.detect,
+        filter=detect_clipboard,
         )
