@@ -1008,26 +1008,30 @@ def getOrGenerateThumbnail(path=None):
         #print('Got a Still Image.')
 
         if os.path.isfile(thumbnail_path):
-            print("Thumbnail '{}' already exists for file '{}'...Skipping.".format(thumbnail_path, path))
+            # print("Thumbnail '{}' already exists for file '{}'...Skipping.".format(thumbnail_path, path))
             return thumbnail_path
 
         print("Generating thumbnail of '{}' at '{}'".format(path, thumbnail_path))
 
-        image = cv2.imread(path)
-        # if we couldn't read it, let's get outta here.
-        if image is None:
+        try:
+            image = cv2.imread(path)
+            # if we couldn't read it, let's get outta here.
+            if image is None:
+                    return False
+
+            # we need to keep in mind aspect ratio so the image does
+            # not look skewed or distorted -- therefore, we calculate
+            # the ratio of the new image to the old image
+            r = 100.0 / image.shape[1]
+            dim = (100, int(image.shape[0] * r))
+
+            # perform the actual resizing of the image and show it
+            resized = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
+            cv2.imwrite(thumbnail_path, resized)
+            return thumbnail_path
+        except:
+            print("==========Couldn't do somethin to img...")
             return False
-
-        # we need to keep in mind aspect ratio so the image does
-        # not look skewed or distorted -- therefore, we calculate
-        # the ratio of the new image to the old image
-        r = 100.0 / image.shape[1]
-        dim = (100, int(image.shape[0] * r))
-
-        # perform the actual resizing of the image and show it
-        resized = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
-        cv2.imwrite(thumbnail_path, resized)
-        return thumbnail_path
 
     elif path.endswith(tuple(video_extensions)):
         if path.endswith('_still_thumbnail.jpg' + image_extension):
@@ -1035,19 +1039,23 @@ def getOrGenerateThumbnail(path=None):
         screenshot_path = image_name + '_still_thumbnail.jpg'
 
         if os.path.isfile(screenshot_path):
-            print("Thumbnail '{}' already exists for file '{}'...Skipping.".format(screenshot_path, path))
+            # print("Thumbnail '{}' already exists for file '{}'...Skipping.".format(screenshot_path, path))
             return screenshot_path
 
-        #print("Got a Movin' One!")
-        vidcap = cv2.VideoCapture(path)
-        vidcap.set(cv2.CAP_PROP_POS_MSEC, 1)
-        success, image = vidcap.read()
-        if success:
-            cv2.imwrite(screenshot_path, image)
-            print("Extracted a still from '{}' named '{}'".format(path, screenshot_path))
-            return screenshot_path
-        else:
-            print("Unable to extract a still from '{}'!".format(path))
+            try:
+                #print("Got a Movin' One!")
+                vidcap = cv2.VideoCapture(path)
+                vidcap.set(cv2.CAP_PROP_POS_MSEC, 1)
+                success, image = vidcap.read()
+                if success:
+                        cv2.imwrite(screenshot_path, image)
+                        print("Extracted a still from '{}' named '{}'".format(path, screenshot_path))
+                        return screenshot_path
+                else:
+                        print("Unable to extract a still from '{}'!".format(path))
+            except:
+                print("==========Couldn't do somethin to vid...")
+                return False
     else:
         return False
 
