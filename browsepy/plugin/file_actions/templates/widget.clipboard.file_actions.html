@@ -1,0 +1,13 @@
+<div class="clipboard">
+  <h3>Clipboard ({{ clipboard|length }})</h3>
+  {% if file.can_upload %}
+    <a
+        class="button text"
+        href="{{ url_for('file_actions.clipboard_paste', file=file) }}"
+        >Paste</a>
+  {% endif %}
+  <a
+    class="button text"
+    href="{{ url_for('file_actions.clipboard_clear', file=file) }}"
+    >Clear</a>
+</div>

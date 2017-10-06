@@ -1,0 +1,28 @@
+.clipboard {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.5em;
+  line-height: 1.5em;
+  border-radius: 0.25em;
+  box-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black;
+  color: white;
+  background: #000;
+}
+.clipboard a.button {
+  margin: 0 -1px 0 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.25em 1em;
+}
+.clipboard a.button:last-child {
+  border-top-right-radius: 0.25em;
+  border-bottom-right-radius: 0.25em;
+  margin-right: 0;
+}
+.clipboard h3 {
+  font-size: 1em;
+  font-weight: normal;
+  margin: 0 1px 0 0;
+  padding: 0 0.5em;
+  display: inline;
+}
