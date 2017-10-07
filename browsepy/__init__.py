@@ -320,4 +320,5 @@ def page_not_found_error(e):
 @app.errorhandler(500)
 def internal_server_error(e):  # pragma: no cover
     logger.exception(e)
+    print('aaaaaa')
     return getattr(e, 'message', 'Internal server error'), 500

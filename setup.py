@@ -84,6 +84,7 @@ setup(
         'browsepy.transform',
         'browsepy.plugin',
         'browsepy.plugin.player',
+        'browsepy.plugin.file_actions',
         ],
     entry_points={
         'console_scripts': (

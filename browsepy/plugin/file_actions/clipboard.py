@@ -48,10 +48,10 @@ class Clipboard(set):
         mode = cls._cookietext(cls.cookie_mode_name, request)
         if cls._signature(data, mode) == signature:
             try:
-                self.mode = mode
                 self.update(json.loads(base64.b64decode(data).decode('utf-8')))
-            except BaseException as e:
-                logger.warn('Bad cookie')
+                self.mode = mode
+            except:
+                pass
         return self
 
     @classmethod

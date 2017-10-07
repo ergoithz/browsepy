@@ -60,54 +60,41 @@ a:active {
   color: #666;
 }
 
-ul.main-menu {
-  padding: 0;
+form.autosubmit h3 {
+  font-size: 1em;
+  font-weight: normal;
   margin: 0;
-  list-style: none;
-  display: block;
+  display: none;
 }
-
-ul.main-menu > li {
-  font-size: 1.25em;
-}
-
-form.upload {
-  border: 1px solid #333;
+html.autosubmit-support form.autosubmit h3 {
   display: inline-block;
-  margin: 0 0 1em;
-  padding: 0;
 }
 
-form.upload:after {
-  content: '';
-  clear: both;
-}
-
-form.upload h2 {
+form.autosubmit label {
+  border-radius: 0.25em;
   display: inline-block;
-  padding: 1em 0;
+  vertical-align: middle;
+}
+
+form.autosubmit input{
   margin: 0;
 }
 
-form.upload label {
-  display: inline-block;
-  background: #333;
-  color: white;
-  padding: 0 1.5em;
+form.autosubmit label input[type=file] {
+  height: 2em;
+  line-height: 2em;
+  width: auto;
+  padding: 0;
+  margin: 0 1px 0 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-form.upload label input {
-  margin-right: 0;
-}
-
-form.upload input {
-  margin: 0.5em 1em;
-}
-
-html.autosubmit-support form.autosubmit{
-  border: 0;
-  background: transparent;
-  margin-bottom: 0;
+form.autosubmit input[type=submit] {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  vertical-align: middle;
+  margin: 0;
 }
 
 html.autosubmit-support form.autosubmit input{
@@ -159,7 +146,6 @@ table.browser td:nth-child(2) {
 table.browser td:nth-child(2) a {
   display: block;
   line-height: 1.5em;
-  vertical-align: middle;
   margin: -0.5em;
   padding: 0.5em;
 }
@@ -219,46 +205,6 @@ ol.path li:first-child *:before,
 ol.path li:last-child *:after,
 ol.path li *.root:after {
   content: '';
-}
-
-ul.navbar,
-ul.footer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: auto;
-  margin: 0;
-  padding: 0 1em;
-  display: block;
-  line-height: 2.5em;
-  background: #333;
-  color: white;
-}
-
-ul.navbar a,
-ul.footer a {
-  color: white;
-  font-weight: bold;
-}
-
-ul.navbar {
-  top: 0;
-}
-
-ul.footer {
-  bottom: 0;
-}
-
-ul.navbar a:hover {
-  color: gray;
-}
-
-ul.navbar > li,
-ul.footer > li {
-  list-style: none;
-  display: inline;
-  margin-right: 10px;
-  width: 100%;
 }
 
 .inode.icon:after,
@@ -334,14 +280,37 @@ a.sorting.numeric.desc.active:after {
 a.button,
 input.button,
 input.entry,
-html.autosubmit-support form.autosubmit label {
+form.autosubmit{
+  margin-right: 0.5em;
   font-size: 1em;
   display: inline-block;
   vertical-align: middle;
   line-height: 1.5em;
   border-radius: 0.25em;
+}
+
+a.button,
+input.button,
+input.entry,
+html.autosubmit-support form.autosubmit label {
   border: 1px solid gray;
   box-shadow: 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black;
+}
+
+header a.button,
+header input.button,
+header form.autosubmit,
+footer a.button,
+footer input.button,
+footer form.autosubmit {
+  margin: 0 0.5em 0.5em 0;
+}
+
+a.button:last-child,
+input.button:last-child,
+input.entry:last-child,
+form.autosubmit:last-child {
+  margin-right: 0;
 }
 
 a.button,
@@ -398,20 +367,6 @@ a.button.suggested:hover, input.button.suggested:hover {
 a.button.suggested:active, input.button.suggested:active {
   background: #16e;
   border-color: #16e;
-}
-
-a.button,
-input.button,
-input.entry,
-html.autosubmit-support form.autosubmit{
-  margin-left: 0.5em;
-}
-
-a.button:first-child,
-input.button:first-child,
-input.entry,
-html.autosubmit-support form.autosubmit:first-child {
-  margin-left: 0;
 }
 
 a.button, input.button {

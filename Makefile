@@ -37,13 +37,11 @@ showdoc: doc
 	xdg-open file://${CURDIR}/doc/.build/html/index.html >> /dev/null
 
 pep8:
-	find browsepy -type f -name "*.py" -exec pep8 --ignore=E123,E126,E121 {} +
+	pep8 --show-source browsepy
+	pep8 --show-source setup.py
 
 eslint:
-	eslint \
-		--ignore-path .gitignore \
-		--ignore-pattern *.min.js \
-		${CURDIR}/browsepy
+	eslint ${CURDIR}/browsepy
 
 flake8:
 	flake8 browsepy/

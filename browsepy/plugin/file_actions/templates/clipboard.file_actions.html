@@ -1,4 +1,4 @@
-{% extends "browse.html" %}
+{% extends "base.html" %}
 
 {% block styles %}
   {{ super() }}
@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block scripts %}
+  {{ super() }}
   <script src="{{ url_for('file_actions.static', filename='script.js') }}"></script>
 {% endblock %}
 
@@ -17,6 +18,7 @@
 {% block content %}
   <form method="post">
     <div class="group">
+      <a class="button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Cancel</a>
       {% if cut_support %}
         <input class="button text" type="submit" name="mode-cut" value="Cut selected">
       {% endif %}
@@ -29,10 +31,10 @@
         <thead>
           <tr>
             <th class="select-all-container"></th>
-            {{ th('Name') }}
-            {{ th('Mimetype') }}
-            {{ th('Modified') }}
-            {{ th('Size') }}
+            <th>Name</th>
+            <th>Mimetype</th>
+            <th>Modified</th>
+            <th>Size</th>
           </tr>
         </thead>
         <tbody>

@@ -161,7 +161,7 @@ class RegistrablePluginManager(PluginManagerBase):
         return module
 
 
-class BlueprintPluginManager(RegistrablePluginManager):
+class BlueprintPluginManager(PluginManagerBase):
     '''
     Manager for blueprint registration via :meth:`register_plugin` calls.
 
@@ -187,7 +187,7 @@ class BlueprintPluginManager(RegistrablePluginManager):
             self._blueprint_known.add(blueprint)
 
 
-class WidgetPluginManager(RegistrablePluginManager):
+class WidgetPluginManager(PluginManagerBase):
     '''
     Plugin manager for widget registration.
 
@@ -208,7 +208,7 @@ class WidgetPluginManager(RegistrablePluginManager):
                 'type': 'link',
                 'text': lambda f: f.name,
                 'icon': lambda f: f.category
-            }),
+                }),
         'button': defaultsnamedtuple(
             'Button',
             ('place', 'type', 'css', 'text', 'endpoint', 'href'),
@@ -229,7 +229,7 @@ class WidgetPluginManager(RegistrablePluginManager):
             'Html',
             ('place', 'type', 'html'),
             {'type': 'html'}),
-    }
+        }
 
     def clear(self):
         '''
@@ -382,7 +382,7 @@ class MimetypePluginManager(RegistrablePluginManager):
         mimetype.by_python,
         mimetype.by_file,
         mimetype.by_default,
-    )
+        )
 
     def clear(self):
         '''

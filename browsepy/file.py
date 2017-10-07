@@ -15,6 +15,7 @@ from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
 
 from . import compat
+from . import manager
 from .compat import range
 from .stream import TarFileStream
 from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
@@ -85,7 +86,10 @@ class Node(object):
 
         :returns: plugin manager instance
         '''
-        return self.app.extensions['plugin_manager']
+        return (
+            self.app.extensions.get('plugin_manager') or
+            manager.PluginManager(self.app)
+            )
 
     @cached_property
     def widgets(self):

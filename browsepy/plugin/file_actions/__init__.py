@@ -59,7 +59,7 @@ def create_directory(path):
 
     os.mkdir(os.path.join(directory.path, basename))
 
-    return redirect(url_for('browse', file=directory))
+    return redirect(url_for('browse', path=directory.urlpath))
 
 
 @actions.route('/clipboard', methods=('GET', 'POST'), defaults={'path': ''})
@@ -113,6 +113,7 @@ def clipboard_paste(path):
 
     response = redirect(url_for('browse', path=directory.urlpath))
     clipboard = Clipboard.from_request()
+    print(clipboard)
     cut = clipboard.mode == 'cut'
     clipboard.mode = 'paste'  # disables exclusion
 
@@ -148,17 +149,8 @@ def register_plugin(manager):
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
     '''
-    def detect_selection(directory):
-        return (
-            directory.is_directory and
-            Clipboard.from_request().mode == 'select'
-            )
-
     def detect_upload(directory):
         return directory.is_directory and directory.can_upload
-
-    def detect_target(directory):
-        return detect_upload(directory) and detect_clipboard(directory)
 
     def detect_clipboard(directory):
         return directory.is_directory and Clipboard.from_request()
@@ -169,7 +161,7 @@ def register_plugin(manager):
             base = manager.app.config['directory_base']
             return abspath_to_urlpath(path, base) in clipboard
 
-    excluded = manager.app.config.get('exclude_fnc')
+    excluded = manager.app.config['exclude_fnc']
     manager.app.config['exclude_fnc'] = (
         excluded_clipboard
         if not excluded else
@@ -180,15 +172,8 @@ def register_plugin(manager):
         place='styles',
         type='stylesheet',
         endpoint='file_actions.static',
-        filename='style.css',
-        filter=detect_selection,
-        )
-    manager.register_widget(
-        place='scripts',
-        type='script',
-        endpoint='file_actions.static',
-        filename='script.js',
-        filter=detect_selection,
+        filename='browse.css',
+        filter=detect_clipboard,
         )
     manager.register_widget(
         place='header',
@@ -202,23 +187,15 @@ def register_plugin(manager):
         type='button',
         endpoint='file_actions.clipboard',
         filter=lambda directory: directory.is_directory,
-        text=lambda directory: (
-            'Selection ({})...'.format(Clipboard.count())
-            if Clipboard.count() else
-            'Selection...'
+        text='Selection...',
+        )
+    manager.register_widget(
+        place='header',
+        type='html',
+        html=lambda file: render_template(
+            'widget.clipboard.file_actions.html',
+            file=file,
+            clipboard=Clipboard.from_request()
             ),
-        )
-    manager.register_widget(
-        place='header',
-        type='button',
-        endpoint='file_actions.clipboard_paste',
-        text='Paste here',
-        filter=detect_target,
-        )
-    manager.register_widget(
-        place='header',
-        type='button',
-        endpoint='file_actions.clipboard_clear',
-        text='Clear',
         filter=detect_clipboard,
         )

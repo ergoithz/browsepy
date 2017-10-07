@@ -7,6 +7,7 @@ import browsepy.manager
 import browsepy.tests.utils as test_utils
 
 from browsepy.plugin.player.tests import *  # noqa
+from browsepy.plugin.file_actions.tests import *  # noqa
 
 
 class FileMock(object):

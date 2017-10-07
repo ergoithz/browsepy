@@ -31,19 +31,6 @@ class AppMock(object):
 
 
 class Page(object):
-    @classmethod
-    def itertext(cls, element):
-        '''
-        Compatible element.itertext()
-        '''
-        if element.text:
-            yield element.text
-        for child in element:
-            for text in cls.itertext(child):
-                yield text
-            if child.tail:
-                yield child.tail
-
     def __init__(self, data, response=None):
         self.data = data
         self.response = response
@@ -346,31 +333,31 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'remove', path='start/testfile.txt'
-        )
+            )
 
         self.assertRaises(
             Page404Exception,
             self.post, 'remove', path='start/testfile.txt'
-        )
+            )
 
         self.app.config['directory_remove'] = None
 
         self.assertRaises(
             Page404Exception,
             self.get, 'remove', path='remove/testfile.txt'
-        )
+            )
 
         self.app.config['directory_remove'] = self.remove
 
         self.assertRaises(
             Page404Exception,
             self.get, 'remove', path='../shall_not_pass.txt'
-        )
+            )
 
         self.assertRaises(
             Page404Exception,
             self.get, 'remove', path='exclude/testfile.txt'
-        )
+            )
 
     def test_download_file(self):
         binfile = os.path.join(self.base, 'testfile.bin')
@@ -386,17 +373,17 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'download_file', path='../shall_not_pass.txt'
-        )
+            )
 
         self.assertRaises(
             Page404Exception,
             self.get, 'download_file', path='start'
-        )
+            )
 
         self.assertRaises(
             Page404Exception,
             self.get, 'download_file', path='exclude/testfile.txt'
-        )
+            )
 
     def test_download_directory(self):
         binfile = os.path.join(self.start, 'testfile.bin')
@@ -425,26 +412,26 @@ class TestApp(unittest.TestCase):
         self.assertEqual(
             tarball_files('start'),
             ['testfile.%s' % x for x in ('bin', 'exc', 'txt')]
-        )
+            )
 
         self.app.config['exclude_fnc'] = lambda p: p.endswith('.exc')
 
         self.assertEqual(
             tarball_files('start'),
             ['testfile.%s' % x for x in ('bin', 'txt')]
-        )
+            )
 
         self.app.config['exclude_fnc'] = exclude
 
         self.assertRaises(
             Page404Exception,
             self.get, 'download_directory', path='../../shall_not_pass'
-        )
+            )
 
         self.assertRaises(
             Page404Exception,
             self.get, 'download_directory', path='exclude'
-        )
+            )
 
     def test_upload(self):
         def genbytesio(nbytes, encoding):
@@ -454,7 +441,7 @@ class TestApp(unittest.TestCase):
         files = {
             'testfile.txt': genbytesio(127, 'ascii'),
             'testfile.bin': genbytesio(255, 'utf-8'),
-        }
+            }
         output = self.post(
             'upload',
             path='upload',
@@ -483,7 +470,7 @@ class TestApp(unittest.TestCase):
         files = (
             ('testfile.txt', 'something'),
             ('testfile.txt', 'something_new'),
-        )
+            )
         output = self.post(
             'upload',
             path='upload',
@@ -549,13 +536,13 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page404Exception,
             self.get, 'sort', property='text', path='exclude'
-        )
+            )
 
         files = {
             'a.txt': 'aaa',
             'b.png': 'aa',
             'c.zip': 'a'
-        }
+            }
         by_name = [
             self.url_for('open', path=name)
             for name in sorted(files)
@@ -586,7 +573,7 @@ class TestApp(unittest.TestCase):
         self.assertRaises(
             Page302Exception,
             self.get, 'sort', property='text', client=client
-        )
+            )
 
         page = self.get('browse', client=client)
         self.assertListEqual(page.files, by_name)
@@ -640,34 +627,34 @@ class TestApp(unittest.TestCase):
             self.assertIsInstance(
                 self.module.sort(property='name', path='..'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.browse(path='..'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.open_file(path='../something'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.download_file(path='../something'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.download_directory(path='..'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.remove(path='../something'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.upload(path='..'),
                 NotFound
-            )
+                )

@@ -24,10 +24,10 @@
           action="{{ widget.action or url_for(widget.endpoint, path=file.urlpath) }}"
           enctype="multipart/form-data">
       <label>
-        <h2>{{ widget.text or 'Upload' }}</h2>
+        <h3>{{ widget.text or 'Upload' }}</h3>
         <input class="button text suggested" type="file" name="file[]" multiple=""/>
       </label>
-      <input class="button text" type="submit"/>
+      <input class="button text" type="submit" value="{{ widget.text or 'Upload' }}"/>
     </form>
   {%- elif widget.type == 'html' -%}
     {{ widget.html|safe }}
@@ -85,7 +85,7 @@
 
 {% block content %}
 {% block content_header %}
-<div class="group">{{ draw_widgets(file, 'header') }}</div>
+<header>{{ draw_widgets(file, 'header') }}</header>
 {% endblock %}
 
 {% block content_table %}
@@ -123,6 +123,6 @@
 {% endblock %}
 
 {% block content_footer %}
-{{ draw_widgets(file, 'footer') }}
+<footer>{{ draw_widgets(file, 'footer') }}</footer>
 {% endblock %}
 {% endblock %}
