@@ -55,7 +55,7 @@ class TestPlayerBase(unittest.TestCase):
         return self.assertListEqual(
             list(map(os.path.normcase, a)),
             list(map(os.path.normcase, b))
-        )
+            )
 
     def setUp(self):
         self.base = 'c:\\base' if os.name == 'nt' else '/base'
@@ -134,7 +134,7 @@ class TestIntegration(TestIntegrationBase):
         self.app.config.update(
             plugin_modules=['player'],
             plugin_namespaces=['browsepy.plugin']
-        )
+            )
         manager = self.manager_module.PluginManager(self.app)
         manager.load_arguments(self.non_directory_args)
         manager.reload()
@@ -149,7 +149,7 @@ class TestPlayable(TestIntegrationBase):
 
     def setUp(self):
         super(TestPlayable, self).setUp()
-        self.manager = self.manager_module.MimetypePluginManager(
+        self.manager = self.manager_module.PluginManager(
             self.app
             )
         self.manager.register_mimetype_function(
@@ -184,10 +184,10 @@ class TestPlayable(TestIntegrationBase):
 
     def test_playablefile(self):
         exts = {
-         'mp3': 'mp3',
-         'wav': 'wav',
-         'ogg': 'ogg'
-        }
+            'mp3': 'mp3',
+            'wav': 'wav',
+            'ogg': 'ogg'
+            }
         for ext, media_format in exts.items():
             pf = self.module.PlayableFile(path='asdf.%s' % ext, app=self.app)
             self.assertEqual(pf.media_format, media_format)
@@ -291,7 +291,7 @@ class TestBlueprint(TestPlayerBase):
         self.app.config.update(
             directory_base=tempfile.mkdtemp(),
             SERVER_NAME='test'
-        )
+            )
         self.app.register_blueprint(self.module.player)
 
     def tearDown(self):
@@ -351,17 +351,17 @@ class TestBlueprint(TestPlayerBase):
             self.assertIsInstance(
                 self.module.audio(path='..'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.playlist(path='..'),
                 NotFound
-            )
+                )
 
             self.assertIsInstance(
                 self.module.directory(path='..'),
                 NotFound
-            )
+                )
 
 
 def p(*args):

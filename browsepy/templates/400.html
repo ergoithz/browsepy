@@ -4,6 +4,15 @@
   <p>The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).</p>
   <p>Please try other parameters or contact server administrator.</p>
 {% endset %}
+
+{% set buttons %}
+  {% if file %}
+    <a class="long button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Accept</a>
+  {% else %}
+    <a class="long button text" href="{{ url_for('index') }}" title="Go home">Accept</a>
+  {% endif %}
+{% endset %}
+
 {% if error and error.code %}
   {% if error.code == 'invalid-filename-length' or  error.code == 'invalid-path-length'%}
     {% set workaround %}
@@ -45,9 +54,5 @@
 
 {% block content %}
   {{ description }}
-  {% if file %}
-    <a class="long button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Accept</a>
-  {% else %}
-    <a class="long button text" href="{{ url_for('index') }}" title="Go home">Accept</a>
-  {% endif %}
+  {{ buttons }}
 {% endblock %}

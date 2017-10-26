@@ -176,7 +176,7 @@ class BlueprintPluginManager(PluginManagerBase):
         '''
         Register given blueprint on curren app.
 
-        This method is provided for using inside plugin's module-level
+        This method is intended to be used on plugin's module-level
         :func:`register_plugin` functions.
 
         :param blueprint: blueprint object with plugin endpoints
@@ -185,6 +185,49 @@ class BlueprintPluginManager(PluginManagerBase):
         if blueprint not in self._blueprint_known:
             self.app.register_blueprint(blueprint)
             self._blueprint_known.add(blueprint)
+
+
+class ExcludePluginManager(PluginManagerBase):
+    '''
+    Manager for exclude-function registration via :meth:`register_exclude_fnc`
+    calls.
+    '''
+    def __init__(self, app=None):
+        self._exclude_functions = set()
+        super(ExcludePluginManager, self).__init__(app=app)
+
+    def register_exclude_function(self, exclude_fnc):
+        '''
+        Register given exclude-function on curren app.
+
+        This method is intended to be used on plugin's module-level
+        :func:`register_plugin` functions.
+
+        :param blueprint: blueprint object with plugin endpoints
+        :type blueprint: flask.Blueprint
+        '''
+        self._exclude_functions.add(exclude_fnc)
+
+    def check_excluded(self, path):
+        '''
+        Check if given path is excluded.
+        '''
+        exclude_fnc = self.app.config.get('exclude_fnc')
+        if exclude_fnc and exclude_fnc(path):
+            return True
+        for fnc in self._exclude_functions:
+            if fnc(path):
+                return True
+        return False
+
+    def clear(self):
+        '''
+        Clear plugin manager state.
+
+        Registered exclude functions will be disposed.
+        '''
+        self._exclude_functions.clear()
+        super(ExcludePluginManager, self).clear()
 
 
 class WidgetPluginManager(PluginManagerBase):
@@ -680,8 +723,11 @@ class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
 
 
 class PluginManager(MimetypeActionPluginManager,
-                    BlueprintPluginManager, WidgetPluginManager,
-                    MimetypePluginManager, ArgumentPluginManager):
+                    BlueprintPluginManager,
+                    ExcludePluginManager,
+                    WidgetPluginManager,
+                    MimetypePluginManager,
+                    ArgumentPluginManager):
     '''
     Main plugin manager
 
@@ -690,6 +736,8 @@ class PluginManager(MimetypeActionPluginManager,
         * Plugin registration via :func:`register_plugin` functions at plugin
           module level.
         * Plugin blueprint registration via :meth:`register_plugin` calls.
+        * Plugin app-level file exclusion via exclude-function registration
+          via :meth:`register_exclude_fnc`.
         * Widget registration via :meth:`register_widget` method.
         * Mimetype function registration via :meth:`register_mimetype_function`
           method.

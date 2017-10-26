@@ -39,8 +39,17 @@ class TestFile(unittest.TestCase):
             f.write(text)
         return tmp_txt
 
+    def test_repr(self):
+        self.assertIsInstance(
+            repr(self.module.Node('a')),
+            browsepy.compat.basestring
+            )
+
     def test_iter_listdir(self):
-        directory = self.module.Directory(path=self.workbench)
+        directory = self.module.Directory(
+            path=self.workbench,
+            app=self.app
+            )
 
         tmp_txt = self.textfile('somefile.txt', 'a')
 

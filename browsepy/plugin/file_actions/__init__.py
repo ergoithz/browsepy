@@ -5,16 +5,20 @@ import os
 import os.path
 import shutil
 
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, \
+                  make_response
 from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
                           current_restricted_chars, common_path_separators
-from browsepy.compat import map, re_escape
+from browsepy.compat import map, re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase, InvalidFilenameError
 
 from .clipboard import Clipboard
+from .exceptions import FileActionsException, ClipboardException, \
+                        InvalidClipboardModeError, InvalidClipboardItemError, \
+                        MissingClipboardItemError
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
@@ -62,9 +66,9 @@ def create_directory(path):
     return redirect(url_for('browse', path=directory.urlpath))
 
 
-@actions.route('/clipboard', methods=('GET', 'POST'), defaults={'path': ''})
-@actions.route('/clipboard/<path:path>', methods=('GET', 'POST'))
-def clipboard(path):
+@actions.route('/selection', methods=('GET', 'POST'), defaults={'path': ''})
+@actions.route('/selection/<path:path>', methods=('GET', 'POST'))
+def selection(path):
     sort_property = get_cookie_browse_sorting(path, 'text')
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
 
@@ -77,16 +81,25 @@ def clipboard(path):
         return NotFound()
 
     if request.method == 'POST':
-        mode = 'cut' if request.form.get('mode-cut') else 'copy'
-        response = redirect(url_for('browse', path=directory.urlpath))
-        clipboard = Clipboard(request.form.getlist('path'), mode)
-        clipboard.to_response(response)
-        return response
+        action_fmt = 'action-{}'.format
+        mode = None
+        for action in ('cut', 'copy'):
+            if request.form.get(action_fmt(action)):
+                mode = action
+                break
+
+        if mode in ('cut', 'copy'):
+            response = redirect(url_for('browse', path=directory.urlpath))
+            clipboard = Clipboard(request.form.getlist('path'), mode)
+            clipboard.to_response(response)
+            return response
+
+        return redirect(request.path)
 
     clipboard = Clipboard.from_request()
     clipboard.mode = 'select'  # disables exclusion
     return render_template(
-        'clipboard.file_actions.html',
+        'selection.file_actions.html',
         file=directory,
         clipboard=clipboard,
         cut_support=any(node.can_remove for node in directory.listdir()),
@@ -99,6 +112,25 @@ def clipboard(path):
 @actions.route('/clipboard/paste', defaults={'path': ''})
 @actions.route('/clipboard/paste/<path:path>')
 def clipboard_paste(path):
+
+    def copy(target, node, join_fnc=os.path.join):
+        dest = join_fnc(
+            target.path,
+            target.choose_filename(node.name)
+            )
+        if node.is_directory:
+            shutil.copytree(node.path, dest)
+        else:
+            shutil.copy2(node.path, dest)
+
+    def cut(target, node, join_fnc=os.path.join):
+        if node.parent.path != target.path:
+            dest = join_fnc(
+                target.path,
+                target.choose_filename(node.name)
+                )
+            shutil.move(node.path, dest)
+
     try:
         directory = Node.from_urlpath(path)
     except OutsideDirectoryBase:
@@ -106,26 +138,45 @@ def clipboard_paste(path):
 
     if (
       not directory.is_directory or
-      directory.is_excluded or
-      not directory.can_upload
+      not directory.can_upload or
+      directory.is_excluded
       ):
         return NotFound()
 
     response = redirect(url_for('browse', path=directory.urlpath))
     clipboard = Clipboard.from_request()
-    print(clipboard)
-    cut = clipboard.mode == 'cut'
+    mode = clipboard.mode
     clipboard.mode = 'paste'  # disables exclusion
 
-    for node in map(Node.from_urlpath, clipboard):
-        if not node.is_excluded:
-            if not cut:
-                if node.is_directory:
-                    shutil.copytree(node.path, directory.path)
-                else:
-                    shutil.copy2(node.path, directory.path)
-            elif node.parent.can_remove:
-                shutil.move(node.path, directory.path)
+    nodes = [node for node in map(Node.from_urlpath, clipboard)]
+
+    if mode == 'cut':
+        paste_fnc = cut
+        for node in nodes:
+            if node.is_excluded or not node.can_remove:
+                raise InvalidClipboardItemError(
+                    path=directory.path,
+                    item=node.urlpath
+                    )
+    elif mode == 'copy':
+        paste_fnc = copy
+        for node in nodes:
+            if node.is_excluded:
+                raise InvalidClipboardItemError(
+                    path=directory.path,
+                    item=node.urlpath
+                    )
+    else:
+        raise InvalidClipboardModeError(path=directory.path, mode=mode)
+
+    for node in nodes:
+        try:
+            paste_fnc(directory, node)
+        except FileNotFoundError:
+            raise MissingClipboardItemError(
+                path=directory.path,
+                item=node.urlpath
+                )
 
     clipboard.clear()
     clipboard.to_response(response)
@@ -139,6 +190,24 @@ def clipboard_clear(path):
     clipboard = Clipboard.from_request()
     clipboard.clear()
     clipboard.to_response(response)
+    return response
+
+
+@actions.errorhandler(FileActionsException)
+def clipboard_error(e):
+    file = Node(e.path) if hasattr(e, 'path') else None
+    item = Node.from_urlpath(e.item) if hasattr(e, 'item') else None
+    response = make_response((
+        render_template(
+            '400.file_actions.html',
+            error=e, file=file, item=item
+            ),
+        400
+        ))
+    if isinstance(e, ClipboardException):
+        clipboard = Clipboard.from_request()
+        clipboard.clear()
+        clipboard.to_response(response)
     return response
 
 
@@ -161,12 +230,7 @@ def register_plugin(manager):
             base = manager.app.config['directory_base']
             return abspath_to_urlpath(path, base) in clipboard
 
-    excluded = manager.app.config['exclude_fnc']
-    manager.app.config['exclude_fnc'] = (
-        excluded_clipboard
-        if not excluded else
-        lambda path: excluded_clipboard(path) or excluded(path)
-        )
+    manager.register_exclude_function(excluded_clipboard)
     manager.register_blueprint(actions)
     manager.register_widget(
         place='styles',
@@ -185,7 +249,7 @@ def register_plugin(manager):
     manager.register_widget(
         place='header',
         type='button',
-        endpoint='file_actions.clipboard',
+        endpoint='file_actions.selection',
         filter=lambda directory: directory.is_directory,
         text='Selection...',
         )

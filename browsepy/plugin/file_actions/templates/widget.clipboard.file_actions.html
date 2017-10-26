@@ -4,12 +4,12 @@
     {% if file.can_upload %}
       <a
           class="button text"
-          href="{{ url_for('file_actions.clipboard_paste', file=file) }}"
+          href="{{ url_for('file_actions.clipboard_paste', path=file.urlpath) }}"
           >Paste</a>
     {% endif %}
     <a
       class="button text"
-      href="{{ url_for('file_actions.clipboard_clear', file=file) }}"
+      href="{{ url_for('file_actions.clipboard_clear', path=file.urlpath) }}"
       >Clear</a>
   </div>
 </div>

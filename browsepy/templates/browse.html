@@ -103,7 +103,7 @@
         </thead>
         <tbody>
             {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
-                <tr>
+                <tr{% if f.name %} name="row-{{ f.name }}"{% endif %}>
                     {% if f.link %}
                       <td class="icon {{ f.link.icon }}"></td>
                       <td>{{ draw_widget(f, f.link) }}</td>

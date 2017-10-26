@@ -76,8 +76,7 @@ class Node(object):
 
         :returns: True if excluded, False otherwise
         '''
-        exclude = self.app and self.app.config['exclude_fnc']
-        return exclude and exclude(self.path)
+        return self.plugin_manager.check_excluded(self.path)
 
     @cached_property
     def plugin_manager(self):
@@ -267,6 +266,15 @@ class Node(object):
         self.path = compat.fsdecode(path) if path else None
         self.app = current_app if app is None else app
         self.__dict__.update(defaults)  # only for attr and cached_property
+
+    def __repr__(self):
+        '''
+        Get str representation of instance.
+
+        :returns: instance representation
+        :rtype: str
+        '''
+        return '<{0.__class__.__name__}({0.path!r})>'.format(self)
 
     def remove(self):
         '''
@@ -628,11 +636,12 @@ class Directory(Node):
         :returns: Response object
         :rtype: flask.Response
         '''
+
         return self.app.response_class(
             TarFileStream(
                 self.path,
                 self.app.config['directory_tar_buffsize'],
-                self.app.config['exclude_fnc'],
+                self.plugin_manager.check_excluded,
                 ),
             mimetype="application/octet-stream"
             )
@@ -691,7 +700,12 @@ class Directory(Node):
         :yields: Directory or File instance for each entry in directory
         :ytype: Node
         '''
-        for entry in scandir(self.path, self.app):
+        directory_class = self.directory_class
+        file_class = self.file_class
+        exclude_fnc = self.plugin_manager.check_excluded
+        for entry in compat.scandir(self.path):
+            if exclude_fnc(entry.path):
+                continue
             kwargs = {
                 'path': entry.path,
                 'app': self.app,
@@ -702,9 +716,9 @@ class Directory(Node):
                 if precomputed_stats and not entry.is_symlink():
                     kwargs['stats'] = entry.stat()
                 if entry.is_dir(follow_symlinks=True):
-                    yield self.directory_class(**kwargs)
+                    yield directory_class(**kwargs)
                 else:
-                    yield self.file_class(**kwargs)
+                    yield file_class(**kwargs)
             except OSError as e:
                 logger.exception(e)
 
@@ -966,24 +980,3 @@ def alternative_filename(filename, attempt=None):
     else:
         extra = u' (%d)' % attempt
     return u'%s%s%s' % (name, extra, ext)
-
-
-def scandir(path, app=None):
-    '''
-    Config-aware scandir. Currently, only aware of ``exclude_fnc``.
-
-    :param path: absolute path
-    :type path: str
-    :param app: flask application
-    :type app: flask.Flask or None
-    :returns: filtered scandir entries
-    :rtype: iterator
-    '''
-    exclude = app and app.config.get('exclude_fnc')
-    if exclude:
-        return (
-            item
-            for item in compat.scandir(path)
-            if not exclude(item.path)
-            )
-    return compat.scandir(path)
