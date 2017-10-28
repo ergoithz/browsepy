@@ -13,12 +13,12 @@ from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
                           current_restricted_chars, common_path_separators
 from browsepy.compat import map, re_escape, FileNotFoundError
-from browsepy.exceptions import OutsideDirectoryBase, InvalidFilenameError
+from browsepy.exceptions import OutsideDirectoryBase
 
 from .clipboard import Clipboard
 from .exceptions import FileActionsException, ClipboardException, \
                         InvalidClipboardModeError, InvalidClipboardItemError, \
-                        MissingClipboardItemError
+                        MissingClipboardItemError, InvalidDirnameError
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
@@ -56,9 +56,9 @@ def create_directory(path):
 
     basename = request.form['name']
     if secure_filename(basename) != basename or not basename:
-        raise InvalidFilenameError(
+        raise InvalidDirnameError(
             path=directory.path,
-            filename=basename,
+            name=basename,
             )
 
     os.mkdir(os.path.join(directory.path, basename))

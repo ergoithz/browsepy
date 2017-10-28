@@ -3,6 +3,7 @@ import tempfile
 import shutil
 import os
 import os.path
+import sys
 import functools
 
 import bs4
@@ -12,8 +13,10 @@ from werkzeug.utils import cached_property
 
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.clipboard as file_actions_clipboard
+import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
 import browsepy.manager as browsepy_manager
 import browsepy.exceptions as browsepy_exceptions
+import browsepy.compat as compat
 import browsepy
 
 
@@ -30,6 +33,21 @@ class CookieProxy(object):
     def set_cookie(self, name, value, **kwargs):
         return self._client.set_cookie(
             self._client.environ_base['REMOTE_ADDR'], name, value, **kwargs)
+
+
+class RequestMock(object):
+    def __init__(self):
+        self.cookies = {}
+
+    def set_cookie(self, name, value, expires=sys.maxsize, **kwargs):
+        if isinstance(value, compat.bytes):
+            value = value.decode('utf-8')
+        if expires:
+            self.cookies[name] = value
+        elif name in self.cookies:
+            del self.cookies[name]
+        field = file_actions_clipboard.Clipboard.request_cache_field
+        setattr(self, field, None)
 
 
 class Page(object):
@@ -53,10 +71,6 @@ class Page(object):
     @cached_property
     def urlpath(self):
         return self.tree.h1.find('ol', class_='path').get_text().strip()
-
-    @cached_property
-    def action(self):
-        return self.tree.h2.get_text().strip()
 
     @cached_property
     def entries(self):
@@ -456,3 +470,49 @@ class TestAction(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             page = Page(response.data)
             self.assertFalse(page.selected)
+
+
+class TestClipboard(unittest.TestCase):
+    module = file_actions_clipboard
+
+    def test_count(self):
+        request = RequestMock()
+        self.assertEqual(self.module.Clipboard.count(request), 0)
+
+        clipboard = self.module.Clipboard()
+        clipboard.mode = 'test'
+        clipboard.add('item')
+        clipboard.to_response(request, request)
+
+        self.assertEqual(self.module.Clipboard.count(request), 1)
+
+    def test_oveflow(self):
+        class TinyClipboard(self.module.Clipboard):
+            max_pages = 2
+
+        request = RequestMock()
+        clipboard = TinyClipboard()
+        clipboard.mode = 'test'
+        clipboard.update('item-%04d' % i for i in range(4000))
+
+        self.assertRaises(
+            file_actions_exceptions.InvalidClipboardSizeError,
+            clipboard.to_response,
+            request,
+            request
+            )
+
+    def test_unreadable(self):
+        name = self.module.Clipboard.cookie_name.format(0)
+        request = RequestMock()
+        request.set_cookie(name, 'a')
+        clipboard = self.module.Clipboard.from_request(request)
+        self.assertFalse(clipboard)
+
+    def test_cookie_cleanup(self):
+        name = self.module.Clipboard.cookie_name.format(0)
+        request = RequestMock()
+        request.set_cookie(name, 'value')
+        clipboard = self.module.Clipboard()
+        clipboard.to_response(request, request)
+        self.assertNotIn(name, request.cookies)

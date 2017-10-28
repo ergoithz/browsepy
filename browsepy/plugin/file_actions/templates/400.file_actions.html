@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% set description %}
+  <p>The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).</p>
+  <p>Please try other parameters or contact server administrator.</p>
+{% endset %}
+
+{% set buttons %}
+  {% if file %}
+    <a class="long button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Accept</a>
+  {% else %}
+    <a class="long button text" href="{{ url_for('index') }}" title="Go home">Accept</a>
+  {% endif %}
+{% endset %}
+
+{% if error and error.code %}
+  {% if error.code.startswith('invalid-clipboard-') %}
+    {% set workaround %}
+      {% if item %}<p>Clipboard item: <span class="path">{{ item.urlpath }}</span></p>{% endif %}
+      <p>Please try again, if this problem persists contact server administrator.</p>
+    {% endset %}
+    {% if error.code == 'invalid-clipboard-item' %}
+      {% set description -%}
+        <h2>A clipboard item is not valid.</h2>
+        <p>File or directory is no longer available for given action.</p>
+        {{ workaround }}
+      {%- endset %}
+    {% elif error.code == 'invalid-clipboard-size' %}
+      {% set description -%}
+        <h2>Clipboard is too big.</h2>
+        <p>Clipboard became too big to be effectively stored in your browser cookies.</p>
+        <p>Please try again with fewer items.</p>
+      {%- endset %}
+    {% elif error.code == 'missing-clipboard-item' %}
+      {% set description -%}
+        <h2>A clipboard item is not found</h2>
+        <p>File or directory has been deleted, renamed or moved other to location.</p>
+        {{ workaround }}
+      {%- endset %}
+    {% else %}
+      {% set description %}
+        <h2>Clipboard state is corrupted.</h2>
+        <p>Saved clipboard state is no longer valid.</p>
+        {{ workaround }}
+      {% endset %}
+    {% endif %}
+  {% elif error.code == 'invalid-dirname' %}
+    {% set description %}
+      <h2>Directory name is not valid.</h2>
+      <p>Given directory name is not valid: incompatible name encoding or reserved name on filesystem.</p>
+      <p>Please try again with other directory name or contact server administrator.</p>
+    {%- endset %}
+  {% endif %}
+{% endif %}
+
+{% block title %}400 Bad Request{% endblock %}
+
+{% block header %}
+  <h1>Bad Request</h1>
+{% endblock %}
+
+{% block content %}
+  {{ description }}
+  {{ buttons }}
+{% endblock %}

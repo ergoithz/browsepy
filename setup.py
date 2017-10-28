@@ -101,6 +101,10 @@ setup(
             'templates/*',
             'static/*/*',
             ],
+        'browsepy.plugin.file_actions': [
+            'templates/*',
+            'static/*',
+            ],
         },
     install_requires=(
         ['flask', 'unicategories'] + extra_requires
