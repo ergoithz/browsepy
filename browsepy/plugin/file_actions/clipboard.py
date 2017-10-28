@@ -6,7 +6,22 @@ import json
 import base64
 import logging
 import hashlib
-import zlib
+import functools
+
+try:
+    import lzma
+    LZMA_OPTIONS = {
+        'format': lzma.FORMAT_RAW,
+        'filters': [
+            {'id': lzma.FILTER_DELTA, 'dist': 5},
+            {'id': lzma.FILTER_LZMA2, 'preset': lzma.PRESET_DEFAULT},
+            ]
+        }
+    compress = functools.partial(lzma.compress, **LZMA_OPTIONS)
+    decompress = functools.partial(lzma.decompress, **LZMA_OPTIONS)
+except ImportError:
+    from zlib import compress, decompress
+
 
 from flask import request
 from browsepy.compat import range
@@ -25,7 +40,7 @@ class Clipboard(set):
     cookie_name = 'clipboard-{:x}'
     cookie_path = '/'
     request_cache_field = '_browsepy_file_actions_clipboard_cache'
-    max_pages = 0xffffffff  # 2 ** 32 - 1
+    max_pages = 20
 
     @classmethod
     def count(cls, request=request):
@@ -76,12 +91,12 @@ class Clipboard(set):
                 chunks.append(cookie)
                 if len(cookie) < cls._paginated_cookie_length(i):
                     break
-        serialized = zlib.decompress(base64.b64decode(b''.join(chunks)))
+        serialized = decompress(base64.b64decode(b''.join(chunks)))
         return json.loads(serialized.decode('utf-8'))
 
     @classmethod
     def _write_paginated_cookie(cls, data, response):
-        serialized = zlib.compress(json.dumps(data).encode('utf-8'))
+        serialized = compress(json.dumps(data).encode('utf-8'))
         data = base64.b64encode(serialized)
         name_fnc = cls.cookie_name.format
         start = 0
