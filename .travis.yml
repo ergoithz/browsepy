@@ -20,7 +20,7 @@ matrix:
 
 install:
   - pip install --upgrade pip
-  - pip install travis-sphinx flake8 pep8 codecov coveralls .
+  - pip install travis-sphinx flake8 pycodestyle codecov coveralls .
   - |
     if [ "$eslint" = "yes" ]; then
       nvm install stable

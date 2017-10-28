@@ -72,7 +72,7 @@ class Clipboard(set):
         setattr(request, cls.request_cache_field, self)
         try:
             self.__setstate__(cls._read_paginated_cookie(request))
-        except:
+        except BaseException:
             pass
         return self
 

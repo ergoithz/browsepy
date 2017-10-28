@@ -37,8 +37,8 @@ showdoc: doc
 	xdg-open file://${CURDIR}/doc/.build/html/index.html >> /dev/null
 
 pep8:
-	pep8 --show-source browsepy
-	pep8 --show-source setup.py
+	pycodestyle --show-source browsepy
+	pycodestyle --show-source setup.py
 
 eslint:
 	eslint ${CURDIR}/browsepy

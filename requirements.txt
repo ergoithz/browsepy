@@ -12,7 +12,7 @@ setuptools
 wheel
 
 # for Makefile tasks (testing, coverage, docs)
-pep8
+pycodestyle
 flake8
 coverage
 pyaml
