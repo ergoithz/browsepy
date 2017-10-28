@@ -96,6 +96,32 @@ class PluginManagerBase(object):
         '''
         pass
 
+    def _expected_import_error(self, error, name):
+        '''
+        Check if error could be expected when importing given module by name.
+
+        :param error: exception
+        :type error: BaseException
+        :param name: module name
+        :type name: str
+        :returns: True if error corresponds to module name, False otherwise
+        :rtype: bool
+        '''
+        if error.args:
+            message = error.args[0]
+            components = (
+                name.split('.')
+                if isinstance(error, ImportError) else
+                (name,)
+                )
+            for finish in range(1, len(components) + 1):
+                for start in range(0, finish):
+                    part = '.'.join(components[start:finish])
+                    for fmt in (' \'%s\'', ' "%s"', ' %s'):
+                        if message.endswith(fmt % part):
+                            return True
+        return False
+
     def import_plugin(self, plugin):
         '''
         Import plugin by given name, looking at :attr:`namespaces`.
@@ -121,7 +147,7 @@ class PluginManagerBase(object):
                 __import__(name)
                 return sys.modules[name]
             except (ImportError, KeyError) as e:
-                if not (e.args and e.args[0].endswith('\'{}\''.format(name))):
+                if not self._expected_import_error(e, name):
                     raise e
 
         raise PluginNotFoundError(

@@ -4,6 +4,7 @@
 import os
 import os.path
 import sys
+import abc
 import itertools
 
 import warnings
@@ -317,7 +318,13 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
 
 
 if PY_LEGACY:
-    FileNotFoundError = OSError  # noqa
+
+    class FileNotFoundError(BaseException):
+        __metaclass__ = abc.ABCMeta
+
+    FileNotFoundError.register(OSError)
+    FileNotFoundError.register(IOError)
+
     range = xrange  # noqa
     filter = itertools.ifilter
     map = itertools.imap

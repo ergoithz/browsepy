@@ -85,7 +85,7 @@ class TestPlugins(unittest.TestCase):
         self.assertRaises(
             self.manager_module.InvalidArgumentError,
             self.manager.register_widget
-        )
+            )
 
     def test_namespace_prefix(self):
         self.assertTrue(self.manager.import_plugin(self.plugin_name))
