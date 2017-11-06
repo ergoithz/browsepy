@@ -36,7 +36,7 @@ app = Flask(
     )
 app.config.update(
     directory_base=compat.getcwd(),
-    directory_start=compat.getcwd(),
+    directory_start=None,
     directory_remove=None,
     directory_upload=None,
     directory_tar_buffsize=262144,
