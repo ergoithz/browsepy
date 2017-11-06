@@ -1,0 +1,138 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Test Utility Module &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Exceptions Module" href="exceptions.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="test-utility-module">
+<span id="test-utils"></span><h1>Test Utility Module<a class="headerlink" href="#test-utility-module" title="Permalink to this headline">¶</a></h1>
+<p>Convenience functions for unit testing.</p>
+<span class="target" id="module-browsepy.tests.utils"></span><dl class="function">
+<dt id="browsepy.tests.utils.clear_flask_context">
+<code class="descclassname">browsepy.tests.utils.</code><code class="descname">clear_flask_context</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/tests/utils.html#clear_flask_context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.tests.utils.clear_flask_context" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear flask current_app and request globals.</p>
+<p>When using <a class="reference external" href="http://flask.pocoo.org/docs/api/#flask.Flask.test_client" title="(in Flask v0.13-dev)"><code class="xref py py-meth docutils literal"><span class="pre">flask.Flask.test_client()</span></code></a>, even as context manager,
+the flask’s globals <code class="xref py py-attr docutils literal"><span class="pre">flask.current_app</span></code> and <a class="reference external" href="http://flask.pocoo.org/docs/api/#flask.request" title="(in Flask v0.13-dev)"><code class="xref py py-attr docutils literal"><span class="pre">flask.request</span></code></a>
+are left dirty, so testing code relying on them will probably fail.</p>
+<p>This function clean said globals, and should be called after testing
+with <a class="reference external" href="http://flask.pocoo.org/docs/api/#flask.Flask.test_client" title="(in Flask v0.13-dev)"><code class="xref py py-meth docutils literal"><span class="pre">flask.Flask.test_client()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.tests.utils.clear_localstack">
+<code class="descclassname">browsepy.tests.utils.</code><code class="descname">clear_localstack</code><span class="sig-paren">(</span><em>stack</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/tests/utils.html#clear_localstack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.tests.utils.clear_localstack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear given werkzeug LocalStack instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ctx</strong> (<a class="reference external" href="http://werkzeug.pocoo.org/docs/local/#werkzeug.local.LocalStack" title="(in Werkzeug v0.13-dev)"><em>werkzeug.local.LocalStack</em></a>) – local stack instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="exceptions.html" title="previous chapter">Exceptions Module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tests_utils.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/tests_utils.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

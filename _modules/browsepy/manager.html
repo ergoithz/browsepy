@@ -1,0 +1,816 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>browsepy.manager &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for browsepy.manager</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: UTF-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">current_app</span>
+<span class="kn">from</span> <span class="nn">werkzeug.utils</span> <span class="k">import</span> <span class="n">cached_property</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">mimetype</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">compat</span>
+<span class="kn">from</span> <span class="nn">.compat</span> <span class="k">import</span> <span class="n">deprecated</span><span class="p">,</span> <span class="n">usedoc</span>
+
+
+<div class="viewcode-block" id="defaultsnamedtuple"><a class="viewcode-back" href="../../manager.html#browsepy.manager.defaultsnamedtuple">[docs]</a><span class="k">def</span> <span class="nf">defaultsnamedtuple</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Generate namedtuple with default values.</span>
+
+<span class="sd">    :param name: name</span>
+<span class="sd">    :param fields: iterable with field names</span>
+<span class="sd">    :param defaults: iterable or mapping with field defaults</span>
+<span class="sd">    :returns: defaultdict with given fields and given defaults</span>
+<span class="sd">    :rtype: collections.defaultdict</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">nt</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+    <span class="n">nt</span><span class="o">.</span><span class="fm">__new__</span><span class="o">.</span><span class="vm">__defaults__</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">nt</span><span class="o">.</span><span class="n">_fields</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">nt</span><span class="o">.</span><span class="fm">__new__</span><span class="o">.</span><span class="vm">__defaults__</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nt</span><span class="p">(</span><span class="o">**</span><span class="n">defaults</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">defaults</span><span class="p">:</span>
+        <span class="n">nt</span><span class="o">.</span><span class="fm">__new__</span><span class="o">.</span><span class="vm">__defaults__</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nt</span><span class="p">(</span><span class="o">*</span><span class="n">defaults</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">nt</span></div>
+
+
+<span class="k">class</span> <span class="nc">PluginNotFoundError</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">WidgetException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">WidgetParameterException</span><span class="p">(</span><span class="n">WidgetException</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">InvalidArgumentError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">PluginManagerBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Base plugin manager for plugin module loading and Flask extension logic.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">namespaces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        List of plugin namespaces taken from app config.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;plugin_namespaces&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="k">else</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">app</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">init_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Initialize this Flask extension for given app.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s1">&#39;extensions&#39;</span><span class="p">):</span>
+            <span class="n">app</span><span class="o">.</span><span class="n">extensions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">app</span><span class="o">.</span><span class="n">extensions</span><span class="p">[</span><span class="s1">&#39;plugin_manager&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clear plugin manager state and reload plugins.</span>
+
+<span class="sd">        This method will make use of :meth:`clear` and :meth:`load_plugin`,</span>
+<span class="sd">        so all internal state will be cleared, and all plugins defined in</span>
+<span class="sd">        :data:`self.app.config[&#39;plugin_modules&#39;]` will be loaded.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;plugin_modules&#39;</span><span class="p">,</span> <span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_plugin</span><span class="p">(</span><span class="n">plugin</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clear plugin manager state.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">import_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Import plugin by given name, looking at :attr:`namespaces`.</span>
+
+<span class="sd">        :param plugin: plugin module name</span>
+<span class="sd">        :type plugin: str</span>
+<span class="sd">        :raises PluginNotFoundError: if not found on any namespace</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;</span><span class="si">%s%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">namespace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;_&#39;</span> <span class="k">else</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">plugin</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">namespace</span> <span class="k">else</span>
+            <span class="n">plugin</span>
+            <span class="k">for</span> <span class="n">namespace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span>
+            <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">__import__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+        <span class="k">raise</span> <span class="n">PluginNotFoundError</span><span class="p">(</span>
+            <span class="s1">&#39;No plugin module </span><span class="si">%r</span><span class="s1"> found, tried </span><span class="si">%r</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">plugin</span><span class="p">,</span> <span class="n">names</span><span class="p">),</span>
+            <span class="n">plugin</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">load_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Import plugin (see :meth:`import_plugin`) and load related data.</span>
+
+<span class="sd">        :param plugin: plugin module name</span>
+<span class="sd">        :type plugin: str</span>
+<span class="sd">        :raises PluginNotFoundError: if not found on any namespace</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">import_plugin</span><span class="p">(</span><span class="n">plugin</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">RegistrablePluginManager</span><span class="p">(</span><span class="n">PluginManagerBase</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Base plugin manager for plugin registration via :func:`register_plugin`</span>
+<span class="sd">    functions at plugin module level.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">load_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Import plugin (see :meth:`import_plugin`) and load related data.</span>
+
+<span class="sd">        If available, plugin&#39;s module-level :func:`register_plugin` function</span>
+<span class="sd">        will be called with current plugin manager instance as first argument.</span>
+
+<span class="sd">        :param plugin: plugin module name</span>
+<span class="sd">        :type plugin: str</span>
+<span class="sd">        :raises PluginNotFoundError: if not found on any namespace</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">RegistrablePluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">load_plugin</span><span class="p">(</span><span class="n">plugin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s1">&#39;register_plugin&#39;</span><span class="p">):</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">register_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">module</span>
+
+
+<span class="k">class</span> <span class="nc">BlueprintPluginManager</span><span class="p">(</span><span class="n">RegistrablePluginManager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Manager for blueprint registration via :meth:`register_plugin` calls.</span>
+
+<span class="sd">    Note: blueprints are not removed on `clear` nor reloaded on `reload`</span>
+<span class="sd">    as flask does not allow it.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blueprint_known</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BlueprintPluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">register_blueprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blueprint</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Register given blueprint on curren app.</span>
+
+<span class="sd">        This method is provided for using inside plugin&#39;s module-level</span>
+<span class="sd">        :func:`register_plugin` functions.</span>
+
+<span class="sd">        :param blueprint: blueprint object with plugin endpoints</span>
+<span class="sd">        :type blueprint: flask.Blueprint</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">blueprint</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blueprint_known</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">register_blueprint</span><span class="p">(</span><span class="n">blueprint</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_blueprint_known</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">blueprint</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">WidgetPluginManager</span><span class="p">(</span><span class="n">RegistrablePluginManager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Plugin manager for widget registration.</span>
+
+<span class="sd">    This class provides a dictionary of widget types at its</span>
+<span class="sd">    :attr:`widget_types` attribute. They can be referenced by their keys on</span>
+<span class="sd">    both :meth:`create_widget` and :meth:`register_widget` methods&#39; `type`</span>
+<span class="sd">    parameter, or instantiated directly and passed to :meth:`register_widget`</span>
+<span class="sd">    via `widget` parameter.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">widget_types</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;base&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Widget&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">)),</span>
+        <span class="s1">&#39;link&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Link&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;css&#39;</span><span class="p">,</span> <span class="s1">&#39;icon&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;href&#39;</span><span class="p">),</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;link&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s1">&#39;icon&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">category</span>
+            <span class="p">}),</span>
+        <span class="s1">&#39;button&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Button&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;css&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;href&#39;</span><span class="p">),</span>
+            <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;button&#39;</span><span class="p">}),</span>
+        <span class="s1">&#39;upload&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Upload&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;css&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;action&#39;</span><span class="p">),</span>
+            <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;upload&#39;</span><span class="p">}),</span>
+        <span class="s1">&#39;stylesheet&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Stylesheet&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="s1">&#39;href&#39;</span><span class="p">),</span>
+            <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;stylesheet&#39;</span><span class="p">}),</span>
+        <span class="s1">&#39;script&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Script&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">),</span>
+            <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;script&#39;</span><span class="p">}),</span>
+        <span class="s1">&#39;html&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Html&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;html&#39;</span><span class="p">),</span>
+            <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;html&#39;</span><span class="p">}),</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clear plugin manager state.</span>
+
+<span class="sd">        Registered widgets will be disposed after calling this method.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_widgets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WidgetPluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_widgets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        List registered widgets, optionally matching given criteria.</span>
+
+<span class="sd">        :param file: optional file object will be passed to widgets&#39; filter</span>
+<span class="sd">                     functions.</span>
+<span class="sd">        :type file: browsepy.file.Node or None</span>
+<span class="sd">        :param place: optional template place hint.</span>
+<span class="sd">        :type place: str</span>
+<span class="sd">        :returns: list of widget instances</span>
+<span class="sd">        :rtype: list of objects</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iter_widgets</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">place</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_resolve_widget</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">widget</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Resolve widget callable properties into static ones.</span>
+
+<span class="sd">        :param file: file will be used to resolve callable properties.</span>
+<span class="sd">        :type file: browsepy.file.Node</span>
+<span class="sd">        :param widget: widget instance optionally with callable properties</span>
+<span class="sd">        :type widget: object</span>
+<span class="sd">        :returns: a new widget instance of the same type as widget parameter</span>
+<span class="sd">        :rtype: object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">widget</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
+            <span class="n">value</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">else</span> <span class="n">value</span>
+            <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">widget</span>
+            <span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">iter_widgets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Iterate registered widgets, optionally matching given criteria.</span>
+
+<span class="sd">        :param file: optional file object will be passed to widgets&#39; filter</span>
+<span class="sd">                     functions.</span>
+<span class="sd">        :type file: browsepy.file.Node or None</span>
+<span class="sd">        :param place: optional template place hint.</span>
+<span class="sd">        :type place: str</span>
+<span class="sd">        :yields: widget instances</span>
+<span class="sd">        :ytype: object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="nb">filter</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">cwidget</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widgets</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">file</span> <span class="ow">and</span> <span class="nb">filter</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">filter</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+                    <span class="k">continue</span>
+            <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># Exception is handled  as this method execution is deffered,</span>
+                <span class="c1"># making hard to debug for plugin developers.</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s1">&#39;Plugin action filtering failed with error: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">e</span><span class="p">,</span>
+                    <span class="ne">RuntimeWarning</span>
+                    <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">place</span> <span class="ow">and</span> <span class="n">place</span> <span class="o">!=</span> <span class="n">cwidget</span><span class="o">.</span><span class="n">place</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">file</span> <span class="ow">and</span> <span class="n">dynamic</span><span class="p">:</span>
+                <span class="n">cwidget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_widget</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">cwidget</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">cwidget</span>
+
+    <span class="k">def</span> <span class="nf">create_widget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create a widget object based on given arguments.</span>
+
+<span class="sd">        If file object is provided, callable arguments will be resolved:</span>
+<span class="sd">        its return value will be used after calling them with file as first</span>
+<span class="sd">        parameter.</span>
+
+<span class="sd">        All extra `kwargs` parameters will be passed to widget constructor.</span>
+
+<span class="sd">        :param place: place hint where widget should be shown.</span>
+<span class="sd">        :type place: str</span>
+<span class="sd">        :param type: widget type name as taken from :attr:`widget_types` dict</span>
+<span class="sd">                     keys.</span>
+<span class="sd">        :type type: str</span>
+<span class="sd">        :param file: optional file object for widget attribute resolving</span>
+<span class="sd">        :type type: browsepy.files.Node or None</span>
+<span class="sd">        :returns: widget instance</span>
+<span class="sd">        :rtype: object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">widget_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">widget_types</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">widget_types</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">])</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">place</span><span class="o">=</span><span class="n">place</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">element</span> <span class="o">=</span> <span class="n">widget_class</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+            <span class="k">if</span> <span class="p">(</span>
+              <span class="s1">&#39;unexpected keyword argument&#39;</span> <span class="ow">in</span> <span class="n">message</span> <span class="ow">or</span>
+              <span class="s1">&#39;required positional argument&#39;</span> <span class="ow">in</span> <span class="n">message</span>
+              <span class="p">):</span>
+                <span class="k">raise</span> <span class="n">WidgetParameterException</span><span class="p">(</span>
+                    <span class="s1">&#39;type </span><span class="si">%s</span><span class="s1">; </span><span class="si">%s</span><span class="s1">; available: </span><span class="si">%r</span><span class="s1">&#39;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">widget_class</span><span class="o">.</span><span class="n">_fields</span><span class="p">)</span>
+                    <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="n">file</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">callable</span><span class="p">,</span> <span class="n">element</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_widget</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">element</span>
+
+    <span class="k">def</span> <span class="nf">register_widget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">widget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create (see :meth:`create_widget`) or use provided widget and register</span>
+<span class="sd">        it.</span>
+
+<span class="sd">        This method provides this dual behavior in order to simplify widget</span>
+<span class="sd">        creation-registration on an functional single step without sacrifycing</span>
+<span class="sd">        the reusability of a object-oriented approach.</span>
+
+<span class="sd">        :param place: where widget should be placed. This param conflicts</span>
+<span class="sd">                      with `widget` argument.</span>
+<span class="sd">        :type place: str or None</span>
+<span class="sd">        :param type: widget type name as taken from :attr:`widget_types` dict</span>
+<span class="sd">                     keys. This param conflicts with `widget` argument.</span>
+<span class="sd">        :type type: str or None</span>
+<span class="sd">        :param widget: optional widget object will be used as is. This param</span>
+<span class="sd">                       conflicts with both place and type arguments.</span>
+<span class="sd">        :type widget: object or None</span>
+<span class="sd">        :raises TypeError: if both widget and place or type are provided at</span>
+<span class="sd">                           the same time (they&#39;re mutually exclusive).</span>
+<span class="sd">        :returns: created or given widget object</span>
+<span class="sd">        :rtype: object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">widget</span><span class="p">)</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">(</span><span class="n">place</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidArgumentError</span><span class="p">(</span>
+                <span class="s1">&#39;register_widget takes either place and type or widget&#39;</span>
+                <span class="p">)</span>
+        <span class="n">widget</span> <span class="o">=</span> <span class="n">widget</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">dynamic</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">callable</span><span class="p">,</span> <span class="n">widget</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_widgets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">filter</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">widget</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">widget</span>
+
+
+<span class="k">class</span> <span class="nc">MimetypePluginManager</span><span class="p">(</span><span class="n">RegistrablePluginManager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Plugin manager for mimetype-function registration.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_default_mimetype_functions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">mimetype</span><span class="o">.</span><span class="n">by_python</span><span class="p">,</span>
+        <span class="n">mimetype</span><span class="o">.</span><span class="n">by_file</span><span class="p">,</span>
+        <span class="n">mimetype</span><span class="o">.</span><span class="n">by_default</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clear plugin manager state.</span>
+
+<span class="sd">        Registered mimetype functions will be disposed after calling this</span>
+<span class="sd">        method.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mimetype_functions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_default_mimetype_functions</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MimetypePluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_mimetype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get mimetype of given path calling all registered mime functions (and</span>
+<span class="sd">        default ones).</span>
+
+<span class="sd">        :param path: filesystem path of file</span>
+<span class="sd">        :type path: str</span>
+<span class="sd">        :returns: mimetype</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">fnc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mimetype_functions</span><span class="p">:</span>
+            <span class="n">mime</span> <span class="o">=</span> <span class="n">fnc</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mime</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">mime</span>
+        <span class="k">return</span> <span class="n">mimetype</span><span class="o">.</span><span class="n">by_default</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">register_mimetype_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fnc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Register mimetype function.</span>
+
+<span class="sd">        Given function must accept a filesystem path as string and return</span>
+<span class="sd">        a mimetype string or None.</span>
+
+<span class="sd">        :param fnc: callable accepting a path string</span>
+<span class="sd">        :type fnc: callable</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mimetype_functions</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">fnc</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ArgumentPluginManager"><a class="viewcode-back" href="../../manager.html#browsepy.manager.ArgumentPluginManager">[docs]</a><span class="k">class</span> <span class="nc">ArgumentPluginManager</span><span class="p">(</span><span class="n">PluginManagerBase</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Plugin manager for command-line argument registration.</span>
+
+<span class="sd">    This function is used by browsepy&#39;s :mod:`__main__` module in order</span>
+<span class="sd">    to attach extra arguments at argument-parsing time.</span>
+
+<span class="sd">    This is done by :meth:`load_arguments` which imports all plugin modules</span>
+<span class="sd">    and calls their respective :func:`register_arguments` module-level</span>
+<span class="sd">    function.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_argparse_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;add_help&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+    <span class="n">_argparse_arguments</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ArgumentPluginManager.extract_plugin_arguments"><a class="viewcode-back" href="../../manager.html#browsepy.manager.ArgumentPluginManager.extract_plugin_arguments">[docs]</a>    <span class="k">def</span> <span class="nf">extract_plugin_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given a plugin name, extracts its registered_arguments as an</span>
+<span class="sd">        iterable of (args, kwargs) tuples.</span>
+
+<span class="sd">        :param plugin: plugin name</span>
+<span class="sd">        :type plugin: str</span>
+<span class="sd">        :returns: iterable if (args, kwargs) tuples.</span>
+<span class="sd">        :rtype: iterable</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">import_plugin</span><span class="p">(</span><span class="n">plugin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s1">&#39;register_arguments&#39;</span><span class="p">):</span>
+            <span class="n">manager</span> <span class="o">=</span> <span class="n">ArgumentPluginManager</span><span class="p">()</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">register_arguments</span><span class="p">(</span><span class="n">manager</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">manager</span><span class="o">.</span><span class="n">_argparse_argkwargs</span>
+        <span class="k">return</span> <span class="p">()</span></div>
+
+<div class="viewcode-block" id="ArgumentPluginManager.load_arguments"><a class="viewcode-back" href="../../manager.html#browsepy.manager.ArgumentPluginManager.load_arguments">[docs]</a>    <span class="k">def</span> <span class="nf">load_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Process given argument list based on registered arguments and given</span>
+<span class="sd">        optional base :class:`argparse.ArgumentParser` instance.</span>
+
+<span class="sd">        This method saves processed arguments on itself, and this state won&#39;t</span>
+<span class="sd">        be lost after :meth:`clean` calls.</span>
+
+<span class="sd">        Processed argument state will be available via :meth:`get_argument`</span>
+<span class="sd">        method.</span>
+
+<span class="sd">        :param argv: command-line arguments (without command itself)</span>
+<span class="sd">        :type argv: iterable of str</span>
+<span class="sd">        :param base: optional base :class:`argparse.ArgumentParser` instance.</span>
+<span class="sd">        :type base: argparse.ArgumentParser or None</span>
+<span class="sd">        :returns: argparse.Namespace instance with processed arguments as</span>
+<span class="sd">                  given by :meth:`argparse.ArgumentParser.parse_args`.</span>
+<span class="sd">        :rtype: argparse.Namespace</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">plugin_parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">plugin_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--plugin&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">base</span> <span class="ow">or</span> <span class="n">plugin_parser</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+            <span class="n">parents</span><span class="o">=</span><span class="p">(</span><span class="n">parent</span><span class="p">,),</span>
+            <span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="nb">getattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="s1">&#39;defaults&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="p">)</span>
+        <span class="n">plugins</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">plugin</span>
+            <span class="k">for</span> <span class="n">plugins</span> <span class="ow">in</span> <span class="n">plugin_parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plugin</span>
+            <span class="k">for</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="n">plugins</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">for</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">plugins</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">plugins</span><span class="o">.</span><span class="n">index</span><span class="p">):</span>
+            <span class="n">arguments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_plugin_arguments</span><span class="p">(</span><span class="n">plugin</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">arguments</span><span class="p">:</span>
+                <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> arguments&#39;</span> <span class="o">%</span> <span class="n">plugin</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">argargs</span><span class="p">,</span> <span class="n">argkwargs</span> <span class="ow">in</span> <span class="n">arguments</span><span class="p">:</span>
+                    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="o">*</span><span class="n">argargs</span><span class="p">,</span> <span class="o">**</span><span class="n">argkwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argparse_arguments</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argparse_arguments</span></div>
+
+<div class="viewcode-block" id="ArgumentPluginManager.clear"><a class="viewcode-back" href="../../manager.html#browsepy.manager.ArgumentPluginManager.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clear plugin manager state.</span>
+
+<span class="sd">        Registered command-line arguments will be disposed after calling this</span>
+<span class="sd">        method.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argparse_argkwargs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ArgumentPluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ArgumentPluginManager.register_argument"><a class="viewcode-back" href="../../manager.html#browsepy.manager.ArgumentPluginManager.register_argument">[docs]</a>    <span class="k">def</span> <span class="nf">register_argument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Register command-line argument.</span>
+
+<span class="sd">        All given arguments will be passed directly to</span>
+<span class="sd">        :meth:`argparse.ArgumentParser.add_argument` calls by</span>
+<span class="sd">        :meth:`load_arguments` method.</span>
+
+<span class="sd">        See :meth:`argparse.ArgumentParser.add_argument` documentation for</span>
+<span class="sd">        further information.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argparse_argkwargs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ArgumentPluginManager.get_argument"><a class="viewcode-back" href="../../manager.html#browsepy.manager.ArgumentPluginManager.get_argument">[docs]</a>    <span class="k">def</span> <span class="nf">get_argument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get argument value from last :meth:`load_arguments` call.</span>
+
+<span class="sd">        Keep in mind :meth:`argparse.ArgumentParser.parse_args` generates</span>
+<span class="sd">        its own command-line arguments if `dest` kwarg is not provided,</span>
+<span class="sd">        so ie. `--my-option` became available as `my_option`.</span>
+
+<span class="sd">        :param name: command-line argument name</span>
+<span class="sd">        :type name: str</span>
+<span class="sd">        :param default: default value if parameter is not found</span>
+<span class="sd">        :returns: command-line argument or default value</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argparse_arguments</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">MimetypeActionPluginManager</span><span class="p">(</span><span class="n">WidgetPluginManager</span><span class="p">,</span> <span class="n">MimetypePluginManager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Deprecated plugin API</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">_deprecated_places</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;javascript&#39;</span><span class="p">:</span> <span class="s1">&#39;scripts&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;style&#39;</span><span class="p">:</span> <span class="s1">&#39;styles&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;button&#39;</span><span class="p">:</span> <span class="s1">&#39;entry-actions&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;link&#39;</span><span class="p">:</span> <span class="s1">&#39;entry-link&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_mimetype_filter</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">mimetypes</span><span class="p">):</span>
+        <span class="n">widget_mimetype_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="s1">&#39;^</span><span class="si">%s</span><span class="s1">$&#39;</span> <span class="o">%</span> <span class="s1">&#39;$|^&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="nb">map</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">,</span> <span class="n">mimetypes</span><span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">*&#39;</span><span class="p">,</span> <span class="s1">&#39;[^/]+&#39;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">widget_mimetype_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">type</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">handler</span>
+
+    <span class="k">def</span> <span class="nf">_widget_attrgetter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="n">app</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">app</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="ow">or</span> <span class="n">current_app</span>
+            <span class="k">with</span> <span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">widget</span><span class="o">.</span><span class="n">for_file</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span>
+
+    <span class="k">def</span> <span class="nf">_widget_props</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mimetypes</span><span class="o">=</span><span class="p">(),</span>
+                      <span class="n">dynamic</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="s1">&#39;_type&#39;</span><span class="p">,</span> <span class="s1">&#39;base&#39;</span><span class="p">)</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">widget_types</span><span class="p">[</span><span class="nb">type</span><span class="p">]</span><span class="o">.</span><span class="n">_fields</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">props</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget_attrgetter</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">fields</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="p">}</span>
+        <span class="n">props</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">,</span>
+            <span class="n">place</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_deprecated_places</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">widget</span><span class="o">.</span><span class="n">place</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">dynamic</span><span class="p">:</span>
+            <span class="n">props</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mimetype_filter</span><span class="p">(</span><span class="n">mimetypes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;endpoint&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="n">props</span><span class="p">[</span><span class="s1">&#39;endpoint&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">endpoint</span>
+        <span class="k">return</span> <span class="n">props</span>
+
+    <span class="nd">@usedoc</span><span class="p">(</span><span class="n">WidgetPluginManager</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_action_widgets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MimetypeActionPluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="nd">@usedoc</span><span class="p">(</span><span class="n">WidgetPluginManager</span><span class="o">.</span><span class="n">clear</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_action_widgets</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MimetypeActionPluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">_widget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">)</span>
+            <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">widget</span>
+        <span class="k">return</span> <span class="n">widget</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;Deprecated attribute action_class&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">action_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;MimetypeAction&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;widget&#39;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;Deprecated attribute style_class&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">style_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget</span><span class="o">.</span><span class="n">StyleWidget</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;Deprecated attribute button_class&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">button_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget</span><span class="o">.</span><span class="n">ButtonWidget</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;Deprecated attribute javascript_class&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">javascript_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget</span><span class="o">.</span><span class="n">JavascriptWidget</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;Deprecated attribute link_class&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">link_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget</span><span class="o">.</span><span class="n">LinkWidget</span>
+
+    <span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;Deprecated method register_action&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">register_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">widget</span><span class="p">,</span> <span class="n">mimetypes</span><span class="o">=</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">props</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget_props</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">mimetypes</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span><span class="o">**</span><span class="n">props</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_action_widgets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">widget</span><span class="p">,</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">],</span> <span class="n">endpoint</span><span class="p">))</span>
+
+    <span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;Deprecated method get_actions&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">action_class</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">.</span><span class="n">for_file</span><span class="p">(</span><span class="n">file</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">deprecated</span><span class="p">,</span> <span class="nb">filter</span><span class="p">,</span> <span class="n">endpoint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_action_widgets</span>
+            <span class="k">if</span> <span class="n">endpoint</span> <span class="ow">and</span> <span class="nb">filter</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+            <span class="p">]</span>
+
+    <span class="nd">@usedoc</span><span class="p">(</span><span class="n">WidgetPluginManager</span><span class="o">.</span><span class="n">register_widget</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">register_widget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">widget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">place</span> <span class="ow">or</span> <span class="n">widget</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget</span><span class="o">.</span><span class="n">WidgetBase</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s1">&#39;Deprecated use of register_widget&#39;</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span>
+                <span class="p">)</span>
+            <span class="n">widget</span> <span class="o">=</span> <span class="n">place</span> <span class="ow">or</span> <span class="n">widget</span>
+            <span class="n">props</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widget_props</span><span class="p">(</span><span class="n">widget</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span><span class="o">**</span><span class="n">props</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_action_widgets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">widget</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">MimetypeActionPluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span>
+            <span class="n">place</span><span class="o">=</span><span class="n">place</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">,</span> <span class="n">widget</span><span class="o">=</span><span class="n">widget</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@usedoc</span><span class="p">(</span><span class="n">WidgetPluginManager</span><span class="o">.</span><span class="n">get_widgets</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_widgets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">compat</span><span class="o">.</span><span class="n">basestring</span><span class="p">)</span> <span class="ow">or</span> \
+          <span class="n">place</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deprecated_places</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s1">&#39;Deprecated use of get_widgets&#39;</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span>
+                <span class="p">)</span>
+            <span class="n">place</span> <span class="o">=</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">place</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">widget</span>
+                <span class="k">for</span> <span class="n">widget</span><span class="p">,</span> <span class="nb">filter</span><span class="p">,</span> <span class="n">endpoint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_action_widgets</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">filter</span> <span class="ow">or</span> <span class="n">endpoint</span><span class="p">)</span> <span class="ow">and</span> <span class="n">place</span> <span class="o">==</span> <span class="n">widget</span><span class="o">.</span><span class="n">place</span>
+                <span class="p">]</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">MimetypeActionPluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_widgets</span><span class="p">(</span>
+            <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="n">place</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PluginManager"><a class="viewcode-back" href="../../manager.html#browsepy.manager.PluginManager">[docs]</a><span class="k">class</span> <span class="nc">PluginManager</span><span class="p">(</span><span class="n">MimetypeActionPluginManager</span><span class="p">,</span>
+                    <span class="n">BlueprintPluginManager</span><span class="p">,</span> <span class="n">WidgetPluginManager</span><span class="p">,</span>
+                    <span class="n">MimetypePluginManager</span><span class="p">,</span> <span class="n">ArgumentPluginManager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Main plugin manager</span>
+
+<span class="sd">    Provides:</span>
+<span class="sd">        * Plugin module loading and Flask extension logic.</span>
+<span class="sd">        * Plugin registration via :func:`register_plugin` functions at plugin</span>
+<span class="sd">          module level.</span>
+<span class="sd">        * Plugin blueprint registration via :meth:`register_plugin` calls.</span>
+<span class="sd">        * Widget registration via :meth:`register_widget` method.</span>
+<span class="sd">        * Mimetype function registration via :meth:`register_mimetype_function`</span>
+<span class="sd">          method.</span>
+<span class="sd">        * Command-line argument registration calling :func:`register_arguments`</span>
+<span class="sd">          at plugin module level and providing :meth:`register_argument`</span>
+<span class="sd">          method.</span>
+
+<span class="sd">    This class also provides a dictionary of widget types at its</span>
+<span class="sd">    :attr:`widget_types` attribute. They can be referenced by their keys on</span>
+<span class="sd">    both :meth:`create_widget` and :meth:`register_widget` methods&#39; `type`</span>
+<span class="sd">    parameter, or instantiated directly and passed to :meth:`register_widget`</span>
+<span class="sd">    via `widget` parameter.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+<div class="viewcode-block" id="PluginManager.clear"><a class="viewcode-back" href="../../manager.html#browsepy.manager.PluginManager.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clear plugin manager state.</span>
+
+<span class="sd">        Registered widgets will be disposed after calling this method.</span>
+
+<span class="sd">        Registered mimetype functions will be disposed after calling this</span>
+<span class="sd">        method.</span>
+
+<span class="sd">        Registered command-line arguments will be disposed after calling this</span>
+<span class="sd">        method.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PluginManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="../../index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

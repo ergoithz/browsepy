@@ -1,0 +1,1739 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>File Module &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Stream Module" href="stream.html" />
+    <link rel="prev" title="Manager Module" href="manager.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="file-module">
+<span id="file"></span><h1>File Module<a class="headerlink" href="#file-module" title="Permalink to this headline">¶</a></h1>
+<p>For more advanced use-cases dealing with the filesystem, the browsepy’s own
+classes (<a class="reference internal" href="#browsepy.file.Node" title="browsepy.file.Node"><code class="xref py py-class docutils literal"><span class="pre">Node</span></code></a>, <a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File"><code class="xref py py-class docutils literal"><span class="pre">File</span></code></a> and <a class="reference internal" href="#browsepy.file.Directory" title="browsepy.file.Directory"><code class="xref py py-class docutils literal"><span class="pre">Directory</span></code></a>) can be
+instantiated and inherited.</p>
+<p><a class="reference internal" href="#browsepy.file.Node" title="browsepy.file.Node"><code class="xref py py-class docutils literal"><span class="pre">Node</span></code></a> class is meant for implementing your own special filesystem
+nodes, via inheritance (it’s abstract so shouldn’t be instantiated directly).
+Just remember to overload its <a class="reference internal" href="#browsepy.file.Node.generic" title="browsepy.file.Node.generic"><code class="xref py py-attr docutils literal"><span class="pre">Node.generic</span></code></a> attribute value to False.</p>
+<p>Both <a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File"><code class="xref py py-class docutils literal"><span class="pre">File</span></code></a> and <a class="reference internal" href="#browsepy.file.Directory" title="browsepy.file.Directory"><code class="xref py py-class docutils literal"><span class="pre">Directory</span></code></a> classes can be instantiated or
+extended, via inheritance, with logic like different default widgets, virtual data (see player plugin code).</p>
+<div class="section" id="node">
+<span id="file-node"></span><h2>Node<a class="headerlink" href="#node" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="browsepy.file.Node">
+<em class="property">class </em><code class="descclassname">browsepy.file.</code><code class="descname">Node</code><span class="sig-paren">(</span><em>path=None</em>, <em>app=None</em>, <em>**defaults</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract filesystem node class.</p>
+<p>This represents an unspecified entity with a filesystem’s path suitable for
+being inherited by plugins.</p>
+<p>When inheriting, the following attributes should be overwritten in order
+to specify <a class="reference internal" href="#browsepy.file.Node.from_urlpath" title="browsepy.file.Node.from_urlpath"><code class="xref py py-meth docutils literal"><span class="pre">from_urlpath()</span></code></a> classmethod behavior:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#browsepy.file.Node.generic" title="browsepy.file.Node.generic"><code class="xref py py-attr docutils literal"><span class="pre">generic</span></code></a>, if true, an instance of directory_class or file_class
+will be created instead of an instance of this class tself.</li>
+<li><a class="reference internal" href="#browsepy.file.Node.directory_class" title="browsepy.file.Node.directory_class"><code class="xref py py-attr docutils literal"><span class="pre">directory_class</span></code></a>, class will be used for directory nodes,</li>
+<li><a class="reference internal" href="#browsepy.file.Node.file_class" title="browsepy.file.Node.file_class"><code class="xref py py-attr docutils literal"><span class="pre">file_class</span></code></a>, class will be used for file nodes.</li>
+</ul>
+<dl class="attribute">
+<dt id="browsepy.file.Node.ancestors">
+<code class="descname">ancestors</code><a class="reference internal" href="_modules/browsepy/file.html#Node.ancestors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.ancestors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get list of ancestors until app config’s directory_base is reached.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of ancestors starting from nearest.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of Node objects</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.can_download">
+<code class="descname">can_download</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.Node.can_download" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.can_remove">
+<code class="descname">can_remove</code><a class="reference internal" href="_modules/browsepy/file.html#Node.can_remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.can_remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if current node can be removed based on app config’s
+directory_remove.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if current node can be removed, False otherwise.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.category">
+<code class="descname">category</code><a class="headerlink" href="#browsepy.file.Node.category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get mimetype category (first portion of mimetype before the slash).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">mimetype category</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+<p>As of 2016-11-03’s revision of RFC2046 it could be one of the
+following:</p>
+<blockquote>
+<div><ul class="simple">
+<li>application</li>
+<li>audio</li>
+<li>example</li>
+<li>image</li>
+<li>message</li>
+<li>model</li>
+<li>multipart</li>
+<li>text</li>
+<li>video</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.directory_class">
+<code class="descname">directory_class</code><a class="headerlink" href="#browsepy.file.Node.directory_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#browsepy.file.Directory" title="browsepy.file.Directory"><code class="xref py py-class docutils literal"><span class="pre">Directory</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.file_class">
+<code class="descname">file_class</code><a class="headerlink" href="#browsepy.file.Node.file_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File"><code class="xref py py-class docutils literal"><span class="pre">File</span></code></a></p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="browsepy.file.Node.from_urlpath">
+<em class="property">classmethod </em><code class="descname">from_urlpath</code><span class="sig-paren">(</span><em>path</em>, <em>app=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Node.from_urlpath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.from_urlpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alternative constructor which accepts a path as taken from URL and uses
+the given app or the current app config to get the real path.</p>
+<p>If class has attribute <cite>generic</cite> set to True, <cite>directory_class</cite> or
+<cite>file_class</cite> will be used as type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> – relative path as from URL</li>
+<li><strong>app</strong> – optional, flask application</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">file object pointing to path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File">File</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.generic">
+<code class="descname">generic</code><em class="property"> = True</em><a class="headerlink" href="#browsepy.file.Node.generic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.is_excluded">
+<code class="descname">is_excluded</code><a class="reference internal" href="_modules/browsepy/file.html#Node.is_excluded"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.is_excluded" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if current node shouldn’t be shown, using <a href="#id1"><span class="problematic" id="id2">:attt:`app`</span></a> config’s
+exclude_fnc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if excluded, False otherwise</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.is_root">
+<code class="descname">is_root</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.Node.is_root" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.link">
+<code class="descname">link</code><a class="reference internal" href="_modules/browsepy/file.html#Node.link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get last widget with place “entry-link”.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">widget on entry-link (ideally a link one)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">namedtuple instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.modified">
+<code class="descname">modified</code><a class="headerlink" href="#browsepy.file.Node.modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get human-readable last modification date-time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">iso9008-like date-time string (without timezone)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.name">
+<code class="descname">name</code><a class="headerlink" href="#browsepy.file.Node.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the basename portion of node’s path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">filename</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.parent">
+<code class="descname">parent</code><a class="reference internal" href="_modules/browsepy/file.html#Node.parent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get parent node if available based on app config’s directory_base.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">parent object if available</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Node instance or <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.6)">None</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.pathconf">
+<code class="descname">pathconf</code><a class="reference internal" href="_modules/browsepy/file.html#Node.pathconf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.pathconf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get filesystem config for current path.
+See <code class="xref py py-func docutils literal"><span class="pre">compat.pathconf()</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">fs config</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.plugin_manager">
+<code class="descname">plugin_manager</code><a class="reference internal" href="_modules/browsepy/file.html#Node.plugin_manager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.plugin_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current app’s plugin manager.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">plugin manager instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.re_charset">
+<code class="descname">re_charset</code><em class="property"> = re.compile('; charset=(?P&lt;charset&gt;[^;]+)')</em><a class="headerlink" href="#browsepy.file.Node.re_charset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="browsepy.file.Node.register_directory_class">
+<em class="property">classmethod </em><code class="descname">register_directory_class</code><span class="sig-paren">(</span><em>kls</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Node.register_directory_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.register_directory_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for setting current class directory_class property.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kls</strong> (<a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type"><em>type</em></a>) – class to set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">given class (enabling using this as decorator)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type">type</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="browsepy.file.Node.register_file_class">
+<em class="property">classmethod </em><code class="descname">register_file_class</code><span class="sig-paren">(</span><em>kls</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Node.register_file_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.register_file_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for setting current class file_class property.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kls</strong> (<a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type"><em>type</em></a>) – class to set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">given class (enabling using this as decorator)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type">type</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Node.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Node.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does nothing except raising if can_remove property returns False.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body">OutsideRemovableBase if <a href="#id3"><span class="problematic" id="id4">:property:`can_remove`</span></a> returns false</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.stats">
+<code class="descname">stats</code><a class="reference internal" href="_modules/browsepy/file.html#Node.stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current stats object as returned by os.stat function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">stats object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">posix.stat_result or nt.stat_result</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.type">
+<code class="descname">type</code><a class="headerlink" href="#browsepy.file.Node.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mime portion of node’s mimetype (without the encoding part).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">mimetype</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.urlpath">
+<code class="descname">urlpath</code><a class="headerlink" href="#browsepy.file.Node.urlpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the url substring corresponding to this node for those endpoints
+accepting a ‘path’ parameter, suitable for <a class="reference internal" href="#browsepy.file.Node.from_urlpath" title="browsepy.file.Node.from_urlpath"><code class="xref py py-meth docutils literal"><span class="pre">from_urlpath()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">relative-url-like for node’s path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Node.widgets">
+<code class="descname">widgets</code><a class="reference internal" href="_modules/browsepy/file.html#Node.widgets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Node.widgets" title="Permalink to this definition">¶</a></dt>
+<dd><p>List widgets with filter return True for this node (or without filter).</p>
+<p>Remove button is prepended if :property:can_remove returns true.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of widgets</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of namedtuple instances</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="directory">
+<span id="file-directory"></span><h2>Directory<a class="headerlink" href="#directory" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="browsepy.file.Directory">
+<em class="property">class </em><code class="descclassname">browsepy.file.</code><code class="descname">Directory</code><span class="sig-paren">(</span><em>path=None</em>, <em>app=None</em>, <em>**defaults</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#browsepy.file.Node" title="browsepy.file.Node"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.Node</span></code></a></p>
+<p>Filesystem directory class.</p>
+<p>Some notes:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#browsepy.file.Directory.mimetype" title="browsepy.file.Directory.mimetype"><code class="xref py py-attr docutils literal"><span class="pre">mimetype</span></code></a> is fixed to ‘inode/directory’, so mimetype detection
+functions won’t be called in this case.</li>
+<li><a class="reference internal" href="#browsepy.file.Directory.is_file" title="browsepy.file.Directory.is_file"><code class="xref py py-attr docutils literal"><span class="pre">is_file</span></code></a> is fixed to False, so no further checks are needed.</li>
+<li><a class="reference internal" href="#browsepy.file.Directory.size" title="browsepy.file.Directory.size"><code class="xref py py-attr docutils literal"><span class="pre">size</span></code></a> is fixed to 0 (zero), so stats are not required for this.</li>
+<li><a class="reference internal" href="#browsepy.file.Directory.encoding" title="browsepy.file.Directory.encoding"><code class="xref py py-attr docutils literal"><span class="pre">encoding</span></code></a> is fixed to ‘default’.</li>
+<li><a class="reference internal" href="#browsepy.file.Directory.generic" title="browsepy.file.Directory.generic"><code class="xref py py-attr docutils literal"><span class="pre">generic</span></code></a> is set to False, so static method <a class="reference internal" href="#browsepy.file.Directory.from_urlpath" title="browsepy.file.Directory.from_urlpath"><code class="xref py py-meth docutils literal"><span class="pre">from_urlpath()</span></code></a>
+will always return instances of this class.</li>
+</ul>
+<dl class="attribute">
+<dt id="browsepy.file.Directory.ancestors">
+<code class="descname">ancestors</code><a class="headerlink" href="#browsepy.file.Directory.ancestors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get list of ancestors until app config’s directory_base is reached.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of ancestors starting from nearest.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of Node objects</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.can_download">
+<code class="descname">can_download</code><a class="reference internal" href="_modules/browsepy/file.html#Directory.can_download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.can_download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if path is downloadable (if app’s <cite>directory_downloadable</cite> config
+property is True).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if downloadable, False otherwise</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.can_remove">
+<code class="descname">can_remove</code><a class="reference internal" href="_modules/browsepy/file.html#Directory.can_remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.can_remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if current node can be removed based on app config’s
+directory_remove.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if current node can be removed, False otherwise.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.can_upload">
+<code class="descname">can_upload</code><a class="reference internal" href="_modules/browsepy/file.html#Directory.can_upload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.can_upload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if a file can be uploaded to path (if directory path is under app’s
+<cite>directory_upload</cite> config property).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if a file can be upload to directory, False otherwise</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.category">
+<code class="descname">category</code><a class="headerlink" href="#browsepy.file.Directory.category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get mimetype category (first portion of mimetype before the slash).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">mimetype category</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+<p>As of 2016-11-03’s revision of RFC2046 it could be one of the
+following:</p>
+<blockquote>
+<div><ul class="simple">
+<li>application</li>
+<li>audio</li>
+<li>example</li>
+<li>image</li>
+<li>message</li>
+<li>model</li>
+<li>multipart</li>
+<li>text</li>
+<li>video</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.choose_filename">
+<code class="descname">choose_filename</code><span class="sig-paren">(</span><em>filename</em>, <em>attempts=999</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Directory.choose_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.choose_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a new filename which does not colide with any entry on directory,
+based on given filename.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – base filename</li>
+<li><strong>attempts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – number of attempts, defaults to 999</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">filename</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><strong>FilenameTooLong</strong> – when filesystem filename size limit is reached</li>
+<li><strong>PathTooLong</strong> – when OS or filesystem path size limit is reached</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.contains">
+<code class="descname">contains</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Directory.contains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.contains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if directory contains an entry with given filename.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – filename will be check</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if exists, False otherwise.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.directory_class">
+<code class="descname">directory_class</code><a class="headerlink" href="#browsepy.file.Directory.directory_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#browsepy.file.Directory" title="browsepy.file.Directory"><code class="xref py py-class docutils literal"><span class="pre">Directory</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.download">
+<code class="descname">download</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Directory.download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a Flask Response object streaming a tarball of this directory.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Response object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="http://flask.pocoo.org/docs/api/#flask.Response" title="(in Flask v0.13-dev)">flask.Response</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.encoding">
+<code class="descname">encoding</code><em class="property"> = 'default'</em><a class="headerlink" href="#browsepy.file.Directory.encoding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.file_class">
+<code class="descname">file_class</code><a class="headerlink" href="#browsepy.file.Directory.file_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File"><code class="xref py py-class docutils literal"><span class="pre">File</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.from_urlpath">
+<code class="descname">from_urlpath</code><span class="sig-paren">(</span><em>path</em>, <em>app=None</em><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.file.Directory.from_urlpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alternative constructor which accepts a path as taken from URL and uses
+the given app or the current app config to get the real path.</p>
+<p>If class has attribute <cite>generic</cite> set to True, <cite>directory_class</cite> or
+<cite>file_class</cite> will be used as type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> – relative path as from URL</li>
+<li><strong>app</strong> – optional, flask application</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">file object pointing to path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File">File</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.generic">
+<code class="descname">generic</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.Directory.generic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.is_directory">
+<code class="descname">is_directory</code><a class="reference internal" href="_modules/browsepy/file.html#Directory.is_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.is_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if path points to a real directory.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if real directory, False otherwise</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.is_empty">
+<code class="descname">is_empty</code><a class="reference internal" href="_modules/browsepy/file.html#Directory.is_empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.is_empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if directory is empty (based on <code class="xref py py-meth docutils literal"><span class="pre">_listdir()</span></code>).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if this directory has no entries, False otherwise.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.is_excluded">
+<code class="descname">is_excluded</code><a class="headerlink" href="#browsepy.file.Directory.is_excluded" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if current node shouldn’t be shown, using <a href="#id5"><span class="problematic" id="id6">:attt:`app`</span></a> config’s
+exclude_fnc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if excluded, False otherwise</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.is_file">
+<code class="descname">is_file</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.Directory.is_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.is_root">
+<code class="descname">is_root</code><a class="reference internal" href="_modules/browsepy/file.html#Directory.is_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.is_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if directory is filesystem’s root</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if FS root, False otherwise</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.link">
+<code class="descname">link</code><a class="headerlink" href="#browsepy.file.Directory.link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get last widget with place “entry-link”.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">widget on entry-link (ideally a link one)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">namedtuple instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.listdir">
+<code class="descname">listdir</code><span class="sig-paren">(</span><em>sortkey=None</em>, <em>reverse=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Directory.listdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.listdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get sorted list (by given sortkey and reverse params) of File objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">sorted list of File instances</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of File instances</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.mimetype">
+<code class="descname">mimetype</code><em class="property"> = 'inode/directory'</em><a class="headerlink" href="#browsepy.file.Directory.mimetype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.modified">
+<code class="descname">modified</code><a class="headerlink" href="#browsepy.file.Directory.modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get human-readable last modification date-time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">iso9008-like date-time string (without timezone)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.name">
+<code class="descname">name</code><a class="headerlink" href="#browsepy.file.Directory.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the basename portion of directory’s path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">filename</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.parent">
+<code class="descname">parent</code><a class="headerlink" href="#browsepy.file.Directory.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get parent node if available based on app config’s directory_base.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">parent object if available</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Node instance or <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.6)">None</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.pathconf">
+<code class="descname">pathconf</code><a class="headerlink" href="#browsepy.file.Directory.pathconf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get filesystem config for current path.
+See <code class="xref py py-func docutils literal"><span class="pre">compat.pathconf()</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">fs config</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.plugin_manager">
+<code class="descname">plugin_manager</code><a class="headerlink" href="#browsepy.file.Directory.plugin_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current app’s plugin manager.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">plugin manager instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.re_charset">
+<code class="descname">re_charset</code><em class="property"> = re.compile('; charset=(?P&lt;charset&gt;[^;]+)')</em><a class="headerlink" href="#browsepy.file.Directory.re_charset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.register_directory_class">
+<code class="descname">register_directory_class</code><span class="sig-paren">(</span><em>kls</em><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.file.Directory.register_directory_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for setting current class directory_class property.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kls</strong> (<a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type"><em>type</em></a>) – class to set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">given class (enabling using this as decorator)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type">type</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.register_file_class">
+<code class="descname">register_file_class</code><span class="sig-paren">(</span><em>kls</em><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.file.Directory.register_file_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for setting current class file_class property.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kls</strong> (<a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type"><em>type</em></a>) – class to set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">given class (enabling using this as decorator)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type">type</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.Directory.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#Directory.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove directory tree.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference internal" href="exceptions.html#browsepy.exceptions.OutsideRemovableBase" title="browsepy.exceptions.OutsideRemovableBase"><strong>OutsideRemovableBase</strong></a> – when not under removable base directory</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.size">
+<code class="descname">size</code><em class="property"> = None</em><a class="headerlink" href="#browsepy.file.Directory.size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.stats">
+<code class="descname">stats</code><a class="headerlink" href="#browsepy.file.Directory.stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current stats object as returned by os.stat function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">stats object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">posix.stat_result or nt.stat_result</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.type">
+<code class="descname">type</code><a class="headerlink" href="#browsepy.file.Directory.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mime portion of node’s mimetype (without the encoding part).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">mimetype</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.urlpath">
+<code class="descname">urlpath</code><a class="headerlink" href="#browsepy.file.Directory.urlpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the url substring corresponding to this node for those endpoints
+accepting a ‘path’ parameter, suitable for <a class="reference internal" href="#browsepy.file.Directory.from_urlpath" title="browsepy.file.Directory.from_urlpath"><code class="xref py py-meth docutils literal"><span class="pre">from_urlpath()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">relative-url-like for node’s path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.Directory.widgets">
+<code class="descname">widgets</code><a class="reference internal" href="_modules/browsepy/file.html#Directory.widgets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.Directory.widgets" title="Permalink to this definition">¶</a></dt>
+<dd><p>List widgets with filter return True for this dir (or without filter).</p>
+<p>Entry link is prepended.
+Upload scripts and widget are added if :property:can_upload is true.
+Download button is prepended if :property:can_download returns true.
+Remove button is prepended if :property:can_remove returns true.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of widgets</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of namedtuple instances</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="file-file">
+<span id="id7"></span><h2>File<a class="headerlink" href="#file-file" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="browsepy.file.File">
+<em class="property">class </em><code class="descclassname">browsepy.file.</code><code class="descname">File</code><span class="sig-paren">(</span><em>path=None</em>, <em>app=None</em>, <em>**defaults</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#File"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#browsepy.file.Node" title="browsepy.file.Node"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.Node</span></code></a></p>
+<p>Filesystem file class.</p>
+<p>Some notes:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#browsepy.file.File.can_download" title="browsepy.file.File.can_download"><code class="xref py py-attr docutils literal"><span class="pre">can_download</span></code></a> is fixed to True, so Files can be downloaded
+inconditionaly.</li>
+<li><a class="reference internal" href="#browsepy.file.File.can_upload" title="browsepy.file.File.can_upload"><code class="xref py py-attr docutils literal"><span class="pre">can_upload</span></code></a> is fixed to False, so nothing can be uploaded to
+file path.</li>
+<li><a class="reference internal" href="#browsepy.file.File.is_directory" title="browsepy.file.File.is_directory"><code class="xref py py-attr docutils literal"><span class="pre">is_directory</span></code></a> is fixed to False, so no further checks are
+performed.</li>
+<li><a class="reference internal" href="#browsepy.file.File.generic" title="browsepy.file.File.generic"><code class="xref py py-attr docutils literal"><span class="pre">generic</span></code></a> is set to False, so static method <a class="reference internal" href="#browsepy.file.File.from_urlpath" title="browsepy.file.File.from_urlpath"><code class="xref py py-meth docutils literal"><span class="pre">from_urlpath()</span></code></a>
+will always return instances of this class.</li>
+</ul>
+<dl class="attribute">
+<dt id="browsepy.file.File.ancestors">
+<code class="descname">ancestors</code><a class="headerlink" href="#browsepy.file.File.ancestors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get list of ancestors until app config’s directory_base is reached.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of ancestors starting from nearest.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of Node objects</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.can_download">
+<code class="descname">can_download</code><em class="property"> = True</em><a class="headerlink" href="#browsepy.file.File.can_download" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.can_remove">
+<code class="descname">can_remove</code><a class="headerlink" href="#browsepy.file.File.can_remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if current node can be removed based on app config’s
+directory_remove.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if current node can be removed, False otherwise.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.can_upload">
+<code class="descname">can_upload</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.File.can_upload" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.category">
+<code class="descname">category</code><a class="headerlink" href="#browsepy.file.File.category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get mimetype category (first portion of mimetype before the slash).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">mimetype category</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+<p>As of 2016-11-03’s revision of RFC2046 it could be one of the
+following:</p>
+<blockquote>
+<div><ul class="simple">
+<li>application</li>
+<li>audio</li>
+<li>example</li>
+<li>image</li>
+<li>message</li>
+<li>model</li>
+<li>multipart</li>
+<li>text</li>
+<li>video</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.directory_class">
+<code class="descname">directory_class</code><a class="headerlink" href="#browsepy.file.File.directory_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#browsepy.file.Directory" title="browsepy.file.Directory"><code class="xref py py-class docutils literal"><span class="pre">Directory</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.File.download">
+<code class="descname">download</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#File.download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.File.download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a Flask’s send_file Response object pointing to this file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Response object as returned by flask’s send_file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="http://flask.pocoo.org/docs/api/#flask.Response" title="(in Flask v0.13-dev)">flask.Response</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.encoding">
+<code class="descname">encoding</code><a class="headerlink" href="#browsepy.file.File.encoding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get encoding part of mimetype, or “default” if not available.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">file conding as returned by mimetype function or “default”</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.file_class">
+<code class="descname">file_class</code><a class="headerlink" href="#browsepy.file.File.file_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File"><code class="xref py py-class docutils literal"><span class="pre">File</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.File.from_urlpath">
+<code class="descname">from_urlpath</code><span class="sig-paren">(</span><em>path</em>, <em>app=None</em><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.file.File.from_urlpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alternative constructor which accepts a path as taken from URL and uses
+the given app or the current app config to get the real path.</p>
+<p>If class has attribute <cite>generic</cite> set to True, <cite>directory_class</cite> or
+<cite>file_class</cite> will be used as type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> – relative path as from URL</li>
+<li><strong>app</strong> – optional, flask application</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">file object pointing to path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#browsepy.file.File" title="browsepy.file.File">File</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.generic">
+<code class="descname">generic</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.File.generic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.is_directory">
+<code class="descname">is_directory</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.File.is_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.is_excluded">
+<code class="descname">is_excluded</code><a class="headerlink" href="#browsepy.file.File.is_excluded" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if current node shouldn’t be shown, using <a href="#id8"><span class="problematic" id="id9">:attt:`app`</span></a> config’s
+exclude_fnc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if excluded, False otherwise</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.is_file">
+<code class="descname">is_file</code><a class="reference internal" href="_modules/browsepy/file.html#File.is_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.File.is_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if node is file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if file, False otherwise</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.is_root">
+<code class="descname">is_root</code><em class="property"> = False</em><a class="headerlink" href="#browsepy.file.File.is_root" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.link">
+<code class="descname">link</code><a class="headerlink" href="#browsepy.file.File.link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get last widget with place “entry-link”.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">widget on entry-link (ideally a link one)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">namedtuple instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.mimetype">
+<code class="descname">mimetype</code><a class="reference internal" href="_modules/browsepy/file.html#File.mimetype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.File.mimetype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get full mimetype, with encoding if available.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">mimetype</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.modified">
+<code class="descname">modified</code><a class="headerlink" href="#browsepy.file.File.modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get human-readable last modification date-time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">iso9008-like date-time string (without timezone)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.name">
+<code class="descname">name</code><a class="headerlink" href="#browsepy.file.File.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the basename portion of node’s path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">filename</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.parent">
+<code class="descname">parent</code><a class="headerlink" href="#browsepy.file.File.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get parent node if available based on app config’s directory_base.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">parent object if available</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Node instance or <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.6)">None</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.pathconf">
+<code class="descname">pathconf</code><a class="headerlink" href="#browsepy.file.File.pathconf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get filesystem config for current path.
+See <code class="xref py py-func docutils literal"><span class="pre">compat.pathconf()</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">fs config</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.plugin_manager">
+<code class="descname">plugin_manager</code><a class="headerlink" href="#browsepy.file.File.plugin_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current app’s plugin manager.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">plugin manager instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.re_charset">
+<code class="descname">re_charset</code><em class="property"> = re.compile('; charset=(?P&lt;charset&gt;[^;]+)')</em><a class="headerlink" href="#browsepy.file.File.re_charset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.File.register_directory_class">
+<code class="descname">register_directory_class</code><span class="sig-paren">(</span><em>kls</em><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.file.File.register_directory_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for setting current class directory_class property.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kls</strong> (<a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type"><em>type</em></a>) – class to set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">given class (enabling using this as decorator)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type">type</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.File.register_file_class">
+<code class="descname">register_file_class</code><span class="sig-paren">(</span><em>kls</em><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.file.File.register_file_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for setting current class file_class property.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kls</strong> (<a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type"><em>type</em></a>) – class to set</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">given class (enabling using this as decorator)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#browsepy.file.Node.type" title="browsepy.file.Node.type">type</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.file.File.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#File.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.File.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove file.
+:raises OutsideRemovableBase: when not under removable base directory</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.size">
+<code class="descname">size</code><a class="headerlink" href="#browsepy.file.File.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get human-readable node size in bytes.
+If directory, this will corresponds with own inode size.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">fuzzy size with unit</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.stats">
+<code class="descname">stats</code><a class="headerlink" href="#browsepy.file.File.stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current stats object as returned by os.stat function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">stats object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">posix.stat_result or nt.stat_result</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.type">
+<code class="descname">type</code><a class="headerlink" href="#browsepy.file.File.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mime portion of node’s mimetype (without the encoding part).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">mimetype</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.urlpath">
+<code class="descname">urlpath</code><a class="headerlink" href="#browsepy.file.File.urlpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the url substring corresponding to this node for those endpoints
+accepting a ‘path’ parameter, suitable for <a class="reference internal" href="#browsepy.file.File.from_urlpath" title="browsepy.file.File.from_urlpath"><code class="xref py py-meth docutils literal"><span class="pre">from_urlpath()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">relative-url-like for node’s path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.file.File.widgets">
+<code class="descname">widgets</code><a class="reference internal" href="_modules/browsepy/file.html#File.widgets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.File.widgets" title="Permalink to this definition">¶</a></dt>
+<dd><p>List widgets with filter return True for this file (or without filter).</p>
+<p>Entry link is prepended.
+Download button is prepended if :property:can_download returns true.
+Remove button is prepended if :property:can_remove returns true.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of widgets</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of namedtuple instances</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="utility-functions">
+<span id="file-util"></span><h2>Utility functions<a class="headerlink" href="#utility-functions" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="browsepy.file.fmt_size">
+<code class="descclassname">browsepy.file.</code><code class="descname">fmt_size</code><span class="sig-paren">(</span><em>size</em>, <em>binary=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#fmt_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.fmt_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get size and unit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – size in bytes</li>
+<li><strong>binary</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – whether use binary or standard units, defaults to True</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">size and unit</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">tuple of int and unit as str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.abspath_to_urlpath">
+<code class="descclassname">browsepy.file.</code><code class="descname">abspath_to_urlpath</code><span class="sig-paren">(</span><em>path</em>, <em>base</em>, <em>os_sep='/'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#abspath_to_urlpath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.abspath_to_urlpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make filesystem absolute path uri relative using given absolute base path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> – absolute path</li>
+<li><strong>base</strong> – absolute base path</li>
+<li><strong>os_sep</strong> – path component separator, defaults to current OS separator</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">relative uri</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a> or <a class="reference internal" href="compat.html#browsepy.compat.unicode" title="browsepy.compat.unicode">unicode</a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference internal" href="exceptions.html#browsepy.exceptions.OutsideDirectoryBase" title="browsepy.exceptions.OutsideDirectoryBase"><strong>OutsideDirectoryBase</strong></a> – if resulting path is not below base</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.urlpath_to_abspath">
+<code class="descclassname">browsepy.file.</code><code class="descname">urlpath_to_abspath</code><span class="sig-paren">(</span><em>path</em>, <em>base</em>, <em>os_sep='/'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#urlpath_to_abspath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.urlpath_to_abspath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make uri relative path fs absolute using a given absolute base path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> – relative path</li>
+<li><strong>base</strong> – absolute base path</li>
+<li><strong>os_sep</strong> – path component separator, defaults to current OS separator</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">absolute path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a> or <a class="reference internal" href="compat.html#browsepy.compat.unicode" title="browsepy.compat.unicode">unicode</a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference internal" href="exceptions.html#browsepy.exceptions.OutsideDirectoryBase" title="browsepy.exceptions.OutsideDirectoryBase"><strong>OutsideDirectoryBase</strong></a> – if resulting path is not below base</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.check_under_base">
+<code class="descclassname">browsepy.file.</code><code class="descname">check_under_base</code><span class="sig-paren">(</span><em>path</em>, <em>base</em>, <em>os_sep='/'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#check_under_base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.check_under_base" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if given absolute path is under given base.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute path</li>
+<li><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute base path</li>
+<li><strong>os_sep</strong> – path separator, defaults to os.sep</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">wether file is under given base or not</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.check_base">
+<code class="descclassname">browsepy.file.</code><code class="descname">check_base</code><span class="sig-paren">(</span><em>path</em>, <em>base</em>, <em>os_sep='/'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#check_base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.check_base" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if given absolute path is under or given base.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute path</li>
+<li><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute base path</li>
+<li><strong>os_sep</strong> – path separator, defaults to os.sep</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">wether path is under given base or not</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.check_path">
+<code class="descclassname">browsepy.file.</code><code class="descname">check_path</code><span class="sig-paren">(</span><em>path</em>, <em>base</em>, <em>os_sep='/'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#check_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.check_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if both given paths are equal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute path</li>
+<li><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute base path</li>
+<li><strong>os_sep</strong> – path separator, defaults to os.sep</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">wether two path are equal or not</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.secure_filename">
+<code class="descclassname">browsepy.file.</code><code class="descname">secure_filename</code><span class="sig-paren">(</span><em>path</em>, <em>destiny_os='posix'</em>, <em>fs_encoding='utf-8'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#secure_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.secure_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get rid of parent path components and special filenames.</p>
+<p>If path is invalid or protected, return empty string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> – unsafe path, only basename will be used</li>
+<li><strong>destiny_os</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – destination operative system (defaults to os.name)</li>
+<li><strong>fs_encoding</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – fs path encoding (defaults to detected)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">str</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">filename or empty string</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.alternative_filename">
+<code class="descclassname">browsepy.file.</code><code class="descname">alternative_filename</code><span class="sig-paren">(</span><em>filename</em>, <em>attempt=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#alternative_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.alternative_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates an alternative version of given filename.</p>
+<p>If an number attempt parameter is given, will be used on the alternative
+name, a random value will be used otherwise.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> – original filename</li>
+<li><strong>attempt</strong> – optional attempt number, defaults to null</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">new filename</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a> or <a class="reference internal" href="compat.html#browsepy.compat.unicode" title="browsepy.compat.unicode">unicode</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.file.scandir">
+<code class="descclassname">browsepy.file.</code><code class="descname">scandir</code><span class="sig-paren">(</span><em>path</em>, <em>app=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/file.html#scandir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.file.scandir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Config-aware scandir. Currently, only aware of <code class="docutils literal"><span class="pre">exclude_fnc</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute path</li>
+<li><strong>app</strong> (<a class="reference external" href="http://flask.pocoo.org/docs/api/#flask.Flask" title="(in Flask v0.13-dev)"><em>flask.Flask</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.6)"><em>None</em></a>) – flask application</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">filtered scandir entries</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">iterator</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">File Module</a><ul>
+<li><a class="reference internal" href="#node">Node</a></li>
+<li><a class="reference internal" href="#directory">Directory</a></li>
+<li><a class="reference internal" href="#file-file">File</a></li>
+<li><a class="reference internal" href="#utility-functions">Utility functions</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="manager.html" title="previous chapter">Manager Module</a></li>
+      <li>Next: <a href="stream.html" title="next chapter">Stream Module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/file.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/file.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

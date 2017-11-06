@@ -1,0 +1,226 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Exceptions Module &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Test Utility Module" href="tests_utils.html" />
+    <link rel="prev" title="Compat Module" href="compat.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="exceptions-module">
+<span id="exceptions"></span><h1>Exceptions Module<a class="headerlink" href="#exceptions-module" title="Permalink to this headline">¶</a></h1>
+<p>Exceptions raised by browsepy classes.</p>
+<span class="target" id="module-browsepy.exceptions"></span><dl class="exception">
+<dt id="browsepy.exceptions.FilenameTooLongError">
+<em class="property">exception </em><code class="descclassname">browsepy.exceptions.</code><code class="descname">FilenameTooLongError</code><span class="sig-paren">(</span><em>message=None</em>, <em>path=None</em>, <em>filename=None</em>, <em>limit=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/exceptions.html#FilenameTooLongError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.exceptions.FilenameTooLongError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#browsepy.exceptions.InvalidFilenameError" title="browsepy.exceptions.InvalidFilenameError"><code class="xref py py-class docutils literal"><span class="pre">browsepy.exceptions.InvalidFilenameError</span></code></a></p>
+<p>Exception raised when maximum filesystem filename length is reached.</p>
+<dl class="method">
+<dt id="browsepy.exceptions.FilenameTooLongError.with_traceback">
+<code class="descname">with_traceback</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.exceptions.FilenameTooLongError.with_traceback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception.with_traceback(tb) –
+set self.__traceback__ to tb and return self.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="browsepy.exceptions.InvalidFilenameError">
+<em class="property">exception </em><code class="descclassname">browsepy.exceptions.</code><code class="descname">InvalidFilenameError</code><span class="sig-paren">(</span><em>message=None</em>, <em>path=None</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/exceptions.html#InvalidFilenameError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.exceptions.InvalidFilenameError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#browsepy.exceptions.InvalidPathError" title="browsepy.exceptions.InvalidPathError"><code class="xref py py-class docutils literal"><span class="pre">browsepy.exceptions.InvalidPathError</span></code></a></p>
+<p>Exception raised when a filename is not valid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Property filename:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">value whose length raised this Exception</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="browsepy.exceptions.InvalidFilenameError.with_traceback">
+<code class="descname">with_traceback</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.exceptions.InvalidFilenameError.with_traceback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception.with_traceback(tb) –
+set self.__traceback__ to tb and return self.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="browsepy.exceptions.InvalidPathError">
+<em class="property">exception </em><code class="descclassname">browsepy.exceptions.</code><code class="descname">InvalidPathError</code><span class="sig-paren">(</span><em>message=None</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/exceptions.html#InvalidPathError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.exceptions.InvalidPathError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">ValueError</span></code></a></p>
+<p>Exception raised when a path is not valid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Property path:</th><td class="field-body">value whose length raised this Exception</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="browsepy.exceptions.InvalidPathError.with_traceback">
+<code class="descname">with_traceback</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.exceptions.InvalidPathError.with_traceback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception.with_traceback(tb) –
+set self.__traceback__ to tb and return self.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="browsepy.exceptions.OutsideDirectoryBase">
+<em class="property">exception </em><code class="descclassname">browsepy.exceptions.</code><code class="descname">OutsideDirectoryBase</code><a class="reference internal" href="_modules/browsepy/exceptions.html#OutsideDirectoryBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.exceptions.OutsideDirectoryBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></a></p>
+<p>Exception raised when trying to access to a file outside path defined on
+<cite>directory_base</cite> config property.</p>
+<dl class="method">
+<dt id="browsepy.exceptions.OutsideDirectoryBase.with_traceback">
+<code class="descname">with_traceback</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.exceptions.OutsideDirectoryBase.with_traceback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception.with_traceback(tb) –
+set self.__traceback__ to tb and return self.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="browsepy.exceptions.OutsideRemovableBase">
+<em class="property">exception </em><code class="descclassname">browsepy.exceptions.</code><code class="descname">OutsideRemovableBase</code><a class="reference internal" href="_modules/browsepy/exceptions.html#OutsideRemovableBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.exceptions.OutsideRemovableBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></a></p>
+<p>Exception raised when trying to access to a file outside path defined on
+<cite>directory_remove</cite> config property.</p>
+<dl class="method">
+<dt id="browsepy.exceptions.OutsideRemovableBase.with_traceback">
+<code class="descname">with_traceback</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.exceptions.OutsideRemovableBase.with_traceback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception.with_traceback(tb) –
+set self.__traceback__ to tb and return self.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="browsepy.exceptions.PathTooLongError">
+<em class="property">exception </em><code class="descclassname">browsepy.exceptions.</code><code class="descname">PathTooLongError</code><span class="sig-paren">(</span><em>message=None</em>, <em>path=None</em>, <em>limit=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/exceptions.html#PathTooLongError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.exceptions.PathTooLongError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#browsepy.exceptions.InvalidPathError" title="browsepy.exceptions.InvalidPathError"><code class="xref py py-class docutils literal"><span class="pre">browsepy.exceptions.InvalidPathError</span></code></a></p>
+<p>Exception raised when maximum filesystem path length is reached.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Property limit:</th><td class="field-body">value length limit</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="browsepy.exceptions.PathTooLongError.with_traceback">
+<code class="descname">with_traceback</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.exceptions.PathTooLongError.with_traceback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception.with_traceback(tb) –
+set self.__traceback__ to tb and return self.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="compat.html" title="previous chapter">Compat Module</a></li>
+      <li>Next: <a href="tests_utils.html" title="next chapter">Test Utility Module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/exceptions.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/exceptions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

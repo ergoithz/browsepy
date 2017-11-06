@@ -1,0 +1,152 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Bultin Plugins &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Plugin Development" href="plugins.html" />
+    <link rel="prev" title="Excluding paths" href="exclude.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="bultin-plugins">
+<span id="builtin-plugins"></span><h1>Bultin Plugins<a class="headerlink" href="#bultin-plugins" title="Permalink to this headline">¶</a></h1>
+<p>A player plugin is provided by default, and more are planned.</p>
+<p>Builtin-plugins serve as developers reference, while also being useful for
+unit-testing.</p>
+<div class="section" id="player">
+<span id="builtin-plugins-player"></span><h2>Player<a class="headerlink" href="#player" title="Permalink to this headline">¶</a></h2>
+<p>Player plugin provides their own endpoints, widgets and extends both
+<a class="reference internal" href="file.html#browsepy.file.File" title="browsepy.file.File"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.File</span></code></a> and <a class="reference internal" href="file.html#browsepy.file.Directory" title="browsepy.file.Directory"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.Directory</span></code></a> so playlists
+and directories could be handled.</p>
+<p>At the client-side, a slighty tweaked <a class="reference external" href="http://jplayer.org/">jPlayer</a>
+implementation is used.</p>
+<p>Sources are available at browsepy’s <a class="reference external" href="https://github.com/ergoithz/browsepy/tree/master/browsepy/plugin/player">plugin.player</a> submodule.</p>
+</div>
+<div class="section" id="contributing-builtin-plugins">
+<span id="builtin-plugins-contributing"></span><h2>Contributing Builtin Plugins<a class="headerlink" href="#contributing-builtin-plugins" title="Permalink to this headline">¶</a></h2>
+<p>Browsepy’s team is open to contributions of any kind, even about adding
+built-in plugins, as long as they comply with the following requirements:</p>
+<ul class="simple">
+<li>Plugins must be sufficiently covered by tests to avoid lowering browsepy’s
+overall test coverage.</li>
+<li>Plugins must not add external requirements to browsepy, optional
+requirements are allowed if plugin can work without them, even with
+limited functionality.</li>
+<li>Plugins should avoid adding specific logic on browsepy itself, but extending
+browsepy’s itself (specially via plugin interface) in a generic and useful
+way is definitely welcome.</li>
+</ul>
+<p>Said that, feel free to fork, code great stuff and fill pull requests at
+<a class="reference external" href="https://github.com/ergoithz/browsepy">GitHub</a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Bultin Plugins</a><ul>
+<li><a class="reference internal" href="#player">Player</a></li>
+<li><a class="reference internal" href="#contributing-builtin-plugins">Contributing Builtin Plugins</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="exclude.html" title="previous chapter">Excluding paths</a></li>
+      <li>Next: <a href="plugins.html" title="next chapter">Plugin Development</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/builtin_plugins.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/builtin_plugins.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

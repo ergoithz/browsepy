@@ -1,0 +1,344 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Plugin Development &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Integrations" href="integrations.html" />
+    <link rel="prev" title="Bultin Plugins" href="builtin_plugins.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="plugin-development">
+<span id="plugins"></span><h1>Plugin Development<a class="headerlink" href="#plugin-development" title="Permalink to this headline">¶</a></h1>
+<p>browsepy is extensible via a powerful plugin API. A plugin can register
+its own Flask blueprints, file browser widgets (filtering by file), mimetype
+detection functions and even its own command line arguments.</p>
+<p>A fully functional <code class="xref py py-mod docutils literal"><span class="pre">browsepy.plugin.player</span></code> plugin module is provided as
+example.</p>
+<div class="section" id="plugin-namespace">
+<span id="plugins-namespace"></span><h2>Plugin Namespace<a class="headerlink" href="#plugin-namespace" title="Permalink to this headline">¶</a></h2>
+<p>Plugins are regular python modules. They are loaded by <cite>–plugin</cite>
+<a class="reference internal" href="quickstart.html#quickstart-usage"><span class="std std-ref">console argument</span></a>.</p>
+<p>Aiming to make plugin names shorter, browsepy try to load plugins
+using namespaces
+and prefixes defined on configuration’s <code class="docutils literal"><span class="pre">plugin_namespaces</span></code> entry on
+<code class="xref py py-attr docutils literal"><span class="pre">browsepy.app.config</span></code>. Its default value is browsepy’s built-in module namespace
+<cite>browsepy.plugins</cite>, <cite>browsepy_</cite> prefix and an empty namespace (so any plugin could
+be used with its full module name).</p>
+<p>Summarizing, with default configuration:</p>
+<ul class="simple">
+<li>Any python module inside <cite>browsepy.plugin</cite> can be loaded as plugin by its
+relative module name, ie. <code class="docutils literal"><span class="pre">player</span></code> instead of <code class="docutils literal"><span class="pre">browsepy.plugin.player</span></code>.</li>
+<li>Any python module prefixed by <code class="docutils literal"><span class="pre">browsepy_</span></code> can be loaded as plugin by its
+unprefixed name, ie. <code class="docutils literal"><span class="pre">myplugin</span></code> instead of <code class="docutils literal"><span class="pre">browsepy_myplugin</span></code>.</li>
+<li>Any python module can be loaded as plugin by its full module name.</li>
+</ul>
+<p>Said that, you can name your own plugin so it could be loaded easily.</p>
+<div class="section" id="examples">
+<span id="plugins-namespace-examples"></span><h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>Your built-in plugin, placed under <cite>browsepy/plugins/</cite> in your own
+browsepy fork:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --plugin<span class="o">=</span>my_builtin_module
+</pre></div>
+</div>
+<p>Your prefixed plugin, a regular python module in python’s library path,
+named <cite>browsepy_prefixed_plugin</cite>:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --plugin<span class="o">=</span>prefixed_plugin
+</pre></div>
+</div>
+<p>Your plugin, a regular python module in python’s library path, named <cite>my_plugin</cite>.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --plugin<span class="o">=</span>my_plugin
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="protocol">
+<span id="plugins-protocol"></span><h2>Protocol<a class="headerlink" href="#protocol" title="Permalink to this headline">¶</a></h2>
+<p>The plugin manager subsystem expects a <cite>register_plugin</cite> callable at module
+level (in your <strong>__init__</strong> module globals) which will be called with the
+manager itself (type <a class="reference internal" href="manager.html#browsepy.manager.PluginManager" title="browsepy.manager.PluginManager"><code class="xref py py-class docutils literal"><span class="pre">PluginManager</span></code></a>) as first parameter.</p>
+<p>Plugin manager exposes several methods to register widgets and mimetype
+detection functions.</p>
+<p>A <a href="#id1"><span class="problematic" id="id2">*</span></a>sregister_plugin*s function looks like this (taken from player plugin):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">register_plugin</span><span class="p">(</span><span class="n">manager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Register blueprints and actions using given plugin manager.</span>
+
+<span class="sd">    :param manager: plugin manager</span>
+<span class="sd">    :type manager: browsepy.manager.PluginManager</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_blueprint</span><span class="p">(</span><span class="n">player</span><span class="p">)</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_mimetype_function</span><span class="p">(</span><span class="n">detect_playable_mimetype</span><span class="p">)</span>
+
+    <span class="c1"># add style tag</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span>
+        <span class="n">place</span><span class="o">=</span><span class="s1">&#39;styles&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;stylesheet&#39;</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;player.static&#39;</span><span class="p">,</span>
+        <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;css/browse.css&#39;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># register link actions</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span>
+        <span class="n">place</span><span class="o">=</span><span class="s1">&#39;entry-link&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;link&#39;</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;player.audio&#39;</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="o">=</span><span class="n">PlayableFile</span><span class="o">.</span><span class="n">detect</span>
+    <span class="p">)</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span>
+        <span class="n">place</span><span class="o">=</span><span class="s1">&#39;entry-link&#39;</span><span class="p">,</span>
+        <span class="n">icon</span><span class="o">=</span><span class="s1">&#39;playlist&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;link&#39;</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;player.playlist&#39;</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="o">=</span><span class="n">PlayListFile</span><span class="o">.</span><span class="n">detect</span>
+    <span class="p">)</span>
+
+    <span class="c1"># register action buttons</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span>
+        <span class="n">place</span><span class="o">=</span><span class="s1">&#39;entry-actions&#39;</span><span class="p">,</span>
+        <span class="n">css</span><span class="o">=</span><span class="s1">&#39;play&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;button&#39;</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;player.audio&#39;</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="o">=</span><span class="n">PlayableFile</span><span class="o">.</span><span class="n">detect</span>
+    <span class="p">)</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span>
+        <span class="n">place</span><span class="o">=</span><span class="s1">&#39;entry-actions&#39;</span><span class="p">,</span>
+        <span class="n">css</span><span class="o">=</span><span class="s1">&#39;play&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;button&#39;</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;player.playlist&#39;</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="o">=</span><span class="n">PlayListFile</span><span class="o">.</span><span class="n">detect</span>
+    <span class="p">)</span>
+
+    <span class="c1"># check argument (see `register_arguments`) before registering</span>
+    <span class="k">if</span> <span class="n">manager</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;player_directory_play&#39;</span><span class="p">):</span>
+        <span class="c1"># register header button</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">register_widget</span><span class="p">(</span>
+            <span class="n">place</span><span class="o">=</span><span class="s1">&#39;header&#39;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;button&#39;</span><span class="p">,</span>
+            <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;player.directory&#39;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s1">&#39;Play directory&#39;</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="n">PlayableDirectory</span><span class="o">.</span><span class="n">detect</span>
+            <span class="p">)</span>
+</pre></div>
+</div>
+<p>In case you need to add extra command-line-arguments to browsepy command,
+<code class="xref py py-func docutils literal"><span class="pre">register_arguments()</span></code> method can be also declared (like register_plugin,
+at your plugin’s module level). It will receive a
+<a class="reference internal" href="manager.html#browsepy.manager.ArgumentPluginManager" title="browsepy.manager.ArgumentPluginManager"><code class="xref py py-class docutils literal"><span class="pre">ArgumentPluginManager</span></code></a> instance, providing an argument-related subset of whole plugin manager’s functionality.</p>
+<p>A simple <cite>register_arguments</cite> example (from player plugin):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">register_arguments</span><span class="p">(</span><span class="n">manager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Register arguments using given plugin manager.</span>
+
+<span class="sd">    This method is called before `register_plugin`.</span>
+
+<span class="sd">    :param manager: plugin manager</span>
+<span class="sd">    :type manager: browsepy.manager.PluginManager</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># Arguments are forwarded to argparse:ArgumentParser.add_argument,</span>
+    <span class="c1"># https://docs.python.org/3.7/library/argparse.html#the-add-argument-method</span>
+    <span class="n">manager</span><span class="o">.</span><span class="n">register_argument</span><span class="p">(</span>
+        <span class="s1">&#39;--player-directory-play&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;enable directories as playlist&#39;</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="widgets">
+<span id="id3"></span><h2>Widgets<a class="headerlink" href="#widgets" title="Permalink to this headline">¶</a></h2>
+<p>Widget registration is provided by <a class="reference internal" href="manager.html#browsepy.manager.PluginManager.register_widget" title="browsepy.manager.PluginManager.register_widget"><code class="xref py py-meth docutils literal"><span class="pre">PluginManager.register_widget()</span></code></a>.</p>
+<p>You can alternatively pass a widget object, via <cite>widget</cite> keyword
+argument, or use a pure functional approach by passing <cite>place</cite>,
+<cite>type</cite> and the widget-specific properties as keyword arguments.</p>
+<p>In addition to that, you can also define in which cases widget will be shown passing
+a callable to <cite>filter</cite> argument keyword, which will receive a
+<a class="reference internal" href="file.html#browsepy.file.Node" title="browsepy.file.Node"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.Node</span></code></a> (commonly a <a class="reference internal" href="file.html#browsepy.file.File" title="browsepy.file.File"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.File</span></code></a> or a
+<a class="reference internal" href="file.html#browsepy.file.Directory" title="browsepy.file.Directory"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.Directory</span></code></a>) instance.</p>
+<p>For those wanting the object-oriented approach, and for reference for those
+wanting to know widget properties for using the functional way,
+<code class="xref py py-attr docutils literal"><span class="pre">WidgetPluginManager.widget_types</span></code> dictionary is
+available, containing widget namedtuples (see <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.namedtuple" title="(in Python v3.6)"><code class="xref py py-func docutils literal"><span class="pre">collections.namedtuple()</span></code></a>) definitions.</p>
+<p>Here is the “widget_types” for reference.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">WidgetPluginManager</span><span class="p">(</span><span class="n">RegistrablePluginManager</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; ... &#39;&#39;&#39;</span>
+    <span class="n">widget_types</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;base&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Widget&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">)),</span>
+        <span class="s1">&#39;link&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Link&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;css&#39;</span><span class="p">,</span> <span class="s1">&#39;icon&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;href&#39;</span><span class="p">),</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s1">&#39;icon&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">category</span>
+            <span class="p">}),</span>
+        <span class="s1">&#39;button&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Button&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;css&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;href&#39;</span><span class="p">)),</span>
+        <span class="s1">&#39;upload&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Upload&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;css&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;action&#39;</span><span class="p">)),</span>
+        <span class="s1">&#39;stylesheet&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Stylesheet&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="s1">&#39;href&#39;</span><span class="p">)),</span>
+        <span class="s1">&#39;script&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Script&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">)),</span>
+        <span class="s1">&#39;html&#39;</span><span class="p">:</span> <span class="n">defaultsnamedtuple</span><span class="p">(</span>
+            <span class="s1">&#39;Html&#39;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;html&#39;</span><span class="p">)),</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<p>Function <code class="xref py py-func docutils literal"><span class="pre">browsepy.file.defaultsnamedtuple()</span></code> is a
+<a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.namedtuple" title="(in Python v3.6)"><code class="xref py py-func docutils literal"><span class="pre">collections.namedtuple()</span></code></a> which uses a third argument dictionary
+as default attribute values. None is assumed as implicit default.</p>
+<p>All attribute values can be either <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></a> or a callable accepting
+a <a class="reference internal" href="file.html#browsepy.file.Node" title="browsepy.file.Node"><code class="xref py py-class docutils literal"><span class="pre">browsepy.file.Node</span></code></a> instance as argument and returning said <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></a>,
+allowing dynamic widget content and behavior.</p>
+<p>Please note place and type are always required (otherwise widget won’t be
+drawn), and this properties are mutually exclusive:</p>
+<ul class="simple">
+<li><strong>link</strong>: attribute href supersedes endpoint.</li>
+<li><strong>button</strong>: attribute href supersedes endpoint.</li>
+<li><strong>upload</strong>: attribute action supersedes endpoint.</li>
+<li><strong>stylesheet</strong>: attribute href supersedes endpoint and filename</li>
+<li><strong>script</strong>: attribute src supersedes endpoint and filename.</li>
+</ul>
+<p>Endpoints are Flask endpoint names, and endpoint handler functions must receive
+a “filename” parameter for stylesheet and script widgets (allowing it to point
+using with Flask’s statics view) and a “path” argument for other use-cases. In the
+former case it is recommended to use
+<a class="reference internal" href="file.html#browsepy.file.Node.from_urlpath" title="browsepy.file.Node.from_urlpath"><code class="xref py py-meth docutils literal"><span class="pre">browsepy.file.Node.from_urlpath()</span></code></a> static method to create the
+appropriate file/directory object (see <code class="xref py py-mod docutils literal"><span class="pre">browsepy.file</span></code>).</p>
+</div>
+<div class="section" id="considerations">
+<span id="plugins-considerations"></span><h2>Considerations<a class="headerlink" href="#considerations" title="Permalink to this headline">¶</a></h2>
+<p>Name your plugin wisely, look at <a class="reference external" href="https://pypi.python.org/">pypi</a> for
+conflicting module names.</p>
+<p>Always choose the less intrusive approach on plugin development, so new
+browsepy versions will not likely break it. That’s why stuff like
+<a class="reference internal" href="manager.html#browsepy.manager.PluginManager.register_blueprint" title="browsepy.manager.PluginManager.register_blueprint"><code class="xref py py-meth docutils literal"><span class="pre">PluginManager.register_blueprint()</span></code></a> is provided and its usage is
+preferred over directly registering blueprints via plugin manager’s app
+reference (or even module-level app reference).</p>
+<p>A good way to keep your plugin working on future browsepy releases is
+<a class="reference internal" href="builtin_plugins.html#builtin-plugins-contributing"><span class="std std-ref">upstreaming it</span></a> onto browsepy itself.</p>
+<p>Feel free to hack everything you want. Pull requests are definitely welcome.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugin Development</a><ul>
+<li><a class="reference internal" href="#plugin-namespace">Plugin Namespace</a><ul>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#protocol">Protocol</a></li>
+<li><a class="reference internal" href="#widgets">Widgets</a></li>
+<li><a class="reference internal" href="#considerations">Considerations</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="builtin_plugins.html" title="previous chapter">Bultin Plugins</a></li>
+      <li>Next: <a href="integrations.html" title="next chapter">Integrations</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/plugins.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/plugins.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

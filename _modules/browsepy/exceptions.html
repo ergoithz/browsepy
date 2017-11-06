@@ -1,0 +1,171 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>browsepy.exceptions &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for browsepy.exceptions</h1><div class="highlight"><pre>
+<span></span>
+<div class="viewcode-block" id="OutsideDirectoryBase"><a class="viewcode-back" href="../../exceptions.html#browsepy.exceptions.OutsideDirectoryBase">[docs]</a><span class="k">class</span> <span class="nc">OutsideDirectoryBase</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Exception raised when trying to access to a file outside path defined on</span>
+<span class="sd">    `directory_base` config property.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="OutsideRemovableBase"><a class="viewcode-back" href="../../exceptions.html#browsepy.exceptions.OutsideRemovableBase">[docs]</a><span class="k">class</span> <span class="nc">OutsideRemovableBase</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Exception raised when trying to access to a file outside path defined on</span>
+<span class="sd">    `directory_remove` config property.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="InvalidPathError"><a class="viewcode-back" href="../../exceptions.html#browsepy.exceptions.InvalidPathError">[docs]</a><span class="k">class</span> <span class="nc">InvalidPathError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Exception raised when a path is not valid.</span>
+
+<span class="sd">    :property path: value whose length raised this Exception</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="s1">&#39;invalid-path&#39;</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="s1">&#39;Path </span><span class="si">{0.path!r}</span><span class="s1"> is not valid.&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">if</span> <span class="n">message</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">message</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InvalidPathError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="InvalidFilenameError"><a class="viewcode-back" href="../../exceptions.html#browsepy.exceptions.InvalidFilenameError">[docs]</a><span class="k">class</span> <span class="nc">InvalidFilenameError</span><span class="p">(</span><span class="n">InvalidPathError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Exception raised when a filename is not valid.</span>
+
+<span class="sd">    :property filename: value whose length raised this Exception</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="s1">&#39;invalid-filename&#39;</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="s1">&#39;Filename </span><span class="si">{0.filename!r}</span><span class="s1"> is not valid.&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InvalidFilenameError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PathTooLongError"><a class="viewcode-back" href="../../exceptions.html#browsepy.exceptions.PathTooLongError">[docs]</a><span class="k">class</span> <span class="nc">PathTooLongError</span><span class="p">(</span><span class="n">InvalidPathError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Exception raised when maximum filesystem path length is reached.</span>
+
+<span class="sd">    :property limit: value length limit</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="s1">&#39;invalid-path-length&#39;</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="s1">&#39;Path </span><span class="si">{0.path!r}</span><span class="s1"> is too long, max length is </span><span class="si">{0.limit}</span><span class="s1">&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PathTooLongError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FilenameTooLongError"><a class="viewcode-back" href="../../exceptions.html#browsepy.exceptions.FilenameTooLongError">[docs]</a><span class="k">class</span> <span class="nc">FilenameTooLongError</span><span class="p">(</span><span class="n">InvalidFilenameError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Exception raised when maximum filesystem filename length is reached.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="s1">&#39;invalid-filename-length&#39;</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="s1">&#39;Filename </span><span class="si">{0.filename!r}</span><span class="s1"> is too long, max length is </span><span class="si">{0.limit}</span><span class="s1">&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FilenameTooLongError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="../../index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

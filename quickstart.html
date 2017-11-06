@@ -1,0 +1,212 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Quickstart &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Excluding paths" href="exclude.html" />
+    <link rel="prev" title="Welcome to browsepy’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="quickstart">
+<span id="id1"></span><h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<span id="quickstart-installation"></span><h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>browsepy is available at the <a class="reference external" href="https://pypi.python.org/">Python Package Index</a>
+so you can use pip to install. Please remember <a class="reference external" href="https://virtualenv.pypa.io/">virtualenv</a> or <a class="reference external" href="https://docs.python.org/3/library/venv.html#module-venv" title="(in Python v3.6)"><code class="xref py py-mod docutils literal"><span class="pre">venv</span></code></a>
+usage, for Python 2 and Python 3 respectively, is highly recommended when
+working with pip.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install browsepy
+</pre></div>
+</div>
+<p>Alternatively, you can get the development version from our
+<a class="reference external" href="https://github.com/ergoithz/browsepy">github repository</a> using <a class="reference external" href="https://git-scm.com/">git</a>. Brench <strong>master</strong> will be
+pointing to current release while new versions will reside on
+their own branches.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install git+https://github.com/ergoithz/browsepy.git
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<span id="quickstart-usage"></span><h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>These examples assume python’s <cite>bin</cite> directory is in <cite>PATH</cite>, if not,
+replace <cite>browsepy</cite> with <cite>python -m browsepy</cite>.</p>
+<p>Serving <code class="docutils literal"><span class="pre">$HOME/shared</span></code> to all addresses:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy <span class="m">0</span>.0.0.0 <span class="m">8080</span> --directory <span class="nv">$HOME</span>/shared
+</pre></div>
+</div>
+<p>Showing help:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --help
+</pre></div>
+</div>
+<p>And this is what is printed when you run <cite>browsepy –help</cite>, keep in
+mind that plugins (loaded with <cite>plugin</cite> argument) could add extra arguments to
+this list.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">browsepy</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">directory</span> <span class="n">PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">initial</span> <span class="n">PATH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">removable</span> <span class="n">PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">upload</span> <span class="n">PATH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">exclude</span> <span class="n">PATTERN</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">exclude</span><span class="o">-</span><span class="kn">from</span> <span class="nn">PATH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">plugin</span> <span class="n">MODULE</span><span class="p">]</span>
+                <span class="p">[</span><span class="n">host</span><span class="p">]</span> <span class="p">[</span><span class="n">port</span><span class="p">]</span>
+
+<span class="n">description</span><span class="p">:</span> <span class="n">starts</span> <span class="n">a</span> <span class="n">browsepy</span> <span class="n">web</span> <span class="n">file</span> <span class="n">browser</span>
+
+<span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="n">host</span>                 <span class="n">address</span> <span class="n">to</span> <span class="n">listen</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="p">)</span>
+  <span class="n">port</span>                 <span class="n">port</span> <span class="n">to</span> <span class="n">listen</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mi">8080</span><span class="p">)</span>
+
+<span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>           <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+  <span class="o">--</span><span class="n">directory</span> <span class="n">PATH</span>     <span class="n">serving</span> <span class="n">directory</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">current</span> <span class="n">path</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">initial</span> <span class="n">PATH</span>       <span class="n">default</span> <span class="n">directory</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">same</span> <span class="k">as</span> <span class="o">--</span><span class="n">directory</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">removable</span> <span class="n">PATH</span>     <span class="n">base</span> <span class="n">directory</span> <span class="n">allowing</span> <span class="n">remove</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">none</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">upload</span> <span class="n">PATH</span>        <span class="n">base</span> <span class="n">directory</span> <span class="n">allowing</span> <span class="n">upload</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">none</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">exclude</span> <span class="n">PATTERN</span>    <span class="n">exclude</span> <span class="n">paths</span> <span class="n">by</span> <span class="n">pattern</span> <span class="p">(</span><span class="n">multiple</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">exclude</span><span class="o">-</span><span class="kn">from</span> <span class="nn">PATH</span>  <span class="n">exclude</span> <span class="n">paths</span> <span class="n">by</span> <span class="n">pattern</span> <span class="n">file</span> <span class="p">(</span><span class="n">multiple</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">plugin</span> <span class="n">MODULE</span>      <span class="n">load</span> <span class="n">plugin</span> <span class="n">module</span> <span class="p">(</span><span class="n">multiple</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Showing help including player plugin arguments:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --plugin player --help
+</pre></div>
+</div>
+<p>And this is what is printed when you run <cite>browsepy –plugin player –help</cite>.
+Please note the extra parameters below <cite>player arguments</cite>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">browsepy</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">directory</span> <span class="n">PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">initial</span> <span class="n">PATH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">removable</span> <span class="n">PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">upload</span> <span class="n">PATH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">exclude</span> <span class="n">PATTERN</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">exclude</span><span class="o">-</span><span class="kn">from</span> <span class="nn">PATH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">plugin</span> <span class="n">MODULE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">player</span><span class="o">-</span><span class="n">directory</span><span class="o">-</span><span class="n">play</span><span class="p">]</span>
+                <span class="p">[</span><span class="n">host</span><span class="p">]</span> <span class="p">[</span><span class="n">port</span><span class="p">]</span>
+
+<span class="n">description</span><span class="p">:</span> <span class="n">starts</span> <span class="n">a</span> <span class="n">browsepy</span> <span class="n">web</span> <span class="n">file</span> <span class="n">browser</span>
+
+<span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="n">host</span>                  <span class="n">address</span> <span class="n">to</span> <span class="n">listen</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="p">)</span>
+  <span class="n">port</span>                  <span class="n">port</span> <span class="n">to</span> <span class="n">listen</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mi">8080</span><span class="p">)</span>
+
+<span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+  <span class="o">--</span><span class="n">directory</span> <span class="n">PATH</span>      <span class="n">serving</span> <span class="n">directory</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">current</span> <span class="n">path</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">initial</span> <span class="n">PATH</span>        <span class="n">default</span> <span class="n">directory</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">same</span> <span class="k">as</span> <span class="o">--</span><span class="n">directory</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">removable</span> <span class="n">PATH</span>      <span class="n">base</span> <span class="n">directory</span> <span class="n">allowing</span> <span class="n">remove</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">none</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">upload</span> <span class="n">PATH</span>         <span class="n">base</span> <span class="n">directory</span> <span class="n">allowing</span> <span class="n">upload</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">none</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">exclude</span> <span class="n">PATTERN</span>     <span class="n">exclude</span> <span class="n">paths</span> <span class="n">by</span> <span class="n">pattern</span> <span class="p">(</span><span class="n">multiple</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">exclude</span><span class="o">-</span><span class="kn">from</span> <span class="nn">PATH</span>   <span class="n">exclude</span> <span class="n">paths</span> <span class="n">by</span> <span class="n">pattern</span> <span class="n">file</span> <span class="p">(</span><span class="n">multiple</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">plugin</span> <span class="n">MODULE</span>       <span class="n">load</span> <span class="n">plugin</span> <span class="n">module</span> <span class="p">(</span><span class="n">multiple</span><span class="p">)</span>
+
+<span class="n">player</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">--</span><span class="n">player</span><span class="o">-</span><span class="n">directory</span><span class="o">-</span><span class="n">play</span>
+                        <span class="n">enable</span> <span class="n">directories</span> <span class="k">as</span> <span class="n">playlist</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quickstart</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to browsepy’s documentation!</a></li>
+      <li>Next: <a href="exclude.html" title="next chapter">Excluding paths</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/quickstart.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/quickstart.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

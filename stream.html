@@ -1,0 +1,242 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Stream Module &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Compat Module" href="compat.html" />
+    <link rel="prev" title="File Module" href="file.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="stream-module">
+<span id="file"></span><h1>Stream Module<a class="headerlink" href="#stream-module" title="Permalink to this headline">¶</a></h1>
+<p>This module provides a class for streaming directory tarballs. This is used
+by <a class="reference internal" href="file.html#browsepy.file.Directory.download" title="browsepy.file.Directory.download"><code class="xref py py-meth docutils literal"><span class="pre">browsepy.file.Directory.download()</span></code></a> method.</p>
+<div class="section" id="tarfilestream">
+<span id="tarfilestream-node"></span><h2>TarFileStream<a class="headerlink" href="#tarfilestream" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="browsepy.stream.TarFileStream">
+<em class="property">class </em><code class="descclassname">browsepy.stream.</code><code class="descname">TarFileStream</code><span class="sig-paren">(</span><em>path</em>, <em>buffsize=10240</em>, <em>exclude=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/stream.html#TarFileStream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.stream.TarFileStream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tarfile which compresses while reading for streaming.</p>
+<p>Buffsize can be provided, it must be 512 multiple (the tar block size) for
+compression.</p>
+<p>Note on corroutines: this class uses threading by default, but
+corroutine-based applications can change this behavior overriding the
+<a class="reference internal" href="#browsepy.stream.TarFileStream.event_class" title="browsepy.stream.TarFileStream.event_class"><code class="xref py py-attr docutils literal"><span class="pre">event_class</span></code></a> and <a class="reference internal" href="#browsepy.stream.TarFileStream.thread_class" title="browsepy.stream.TarFileStream.thread_class"><code class="xref py py-attr docutils literal"><span class="pre">thread_class</span></code></a> values.</p>
+<dl class="attribute">
+<dt id="browsepy.stream.TarFileStream.event_class">
+<code class="descname">event_class</code><a class="headerlink" href="#browsepy.stream.TarFileStream.event_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal"><span class="pre">Event</span></code></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.stream.TarFileStream.fill">
+<code class="descname">fill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/stream.html#TarFileStream.fill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.stream.TarFileStream.fill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes data on internal tarfile instance, which writes to current
+object, using <a class="reference internal" href="#browsepy.stream.TarFileStream.write" title="browsepy.stream.TarFileStream.write"><code class="xref py py-meth docutils literal"><span class="pre">write()</span></code></a>.</p>
+<p>As this method is blocking, it is used inside a thread.</p>
+<p>This method is called automatically, on a thread, on initialization,
+so there is little need to call it manually.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.stream.TarFileStream.read">
+<code class="descname">read</code><span class="sig-paren">(</span><em>want=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/stream.html#TarFileStream.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.stream.TarFileStream.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read method, gets data from internal buffer while releasing
+<a class="reference internal" href="#browsepy.stream.TarFileStream.write" title="browsepy.stream.TarFileStream.write"><code class="xref py py-meth docutils literal"><span class="pre">write()</span></code></a> locks when needed.</p>
+<p>The lock usage means it must ran on a different thread than
+<a class="reference internal" href="#browsepy.stream.TarFileStream.fill" title="browsepy.stream.TarFileStream.fill"><code class="xref py py-meth docutils literal"><span class="pre">fill()</span></code></a>, ie. the main thread, otherwise will deadlock.</p>
+<p>The combination of both write and this method running on different
+threads makes tarfile being streamed on-the-fly, with data chunks being
+processed and retrieved on demand.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>want</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – number bytes to read, defaults to 0 (all available)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">tarfile data as bytes</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.6)">bytes</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.stream.TarFileStream.tarfile_class">
+<code class="descname">tarfile_class</code><span class="sig-paren">(</span><em>name=None</em>, <em>mode='r'</em>, <em>fileobj=None</em>, <em>bufsize=10240</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#browsepy.stream.TarFileStream.tarfile_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open a tar archive for reading, writing or appending. Return
+an appropriate TarFile class.</p>
+<p>mode:
+‘r’ or ‘r:<a href="#id1"><span class="problematic" id="id2">*</span></a>’ open for reading with transparent compression
+‘r:’         open for reading exclusively uncompressed
+‘r:gz’       open for reading with gzip compression
+‘r:bz2’      open for reading with bzip2 compression
+‘r:xz’       open for reading with lzma compression
+‘a’ or ‘a:’  open for appending, creating the file if necessary
+‘w’ or ‘w:’  open for writing without compression
+‘w:gz’       open for writing with gzip compression
+‘w:bz2’      open for writing with bzip2 compression
+‘w:xz’       open for writing with lzma compression</p>
+<dl class="docutils">
+<dt>‘x’ or ‘x:’  create a tarfile exclusively without compression, raise</dt>
+<dd>an exception if the file is already created</dd>
+<dt>‘x:gz’       create a gzip compressed tarfile, raise an exception</dt>
+<dd>if the file is already created</dd>
+<dt>‘x:bz2’      create a bzip2 compressed tarfile, raise an exception</dt>
+<dd>if the file is already created</dd>
+<dt>‘x:xz’       create an lzma compressed tarfile, raise an exception</dt>
+<dd>if the file is already created</dd>
+</dl>
+<p>‘r|*’        open a stream of tar blocks with transparent compression
+‘r|’         open an uncompressed stream of tar blocks for reading
+‘r|gz’       open a gzip compressed stream of tar blocks
+‘r|bz2’      open a bzip2 compressed stream of tar blocks
+‘r|xz’       open an lzma compressed stream of tar blocks
+‘w|’         open an uncompressed stream for writing
+‘w|gz’       open a gzip compressed stream for writing
+‘w|bz2’      open a bzip2 compressed stream for writing
+‘w|xz’       open an lzma compressed stream for writing</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.stream.TarFileStream.thread_class">
+<code class="descname">thread_class</code><a class="headerlink" href="#browsepy.stream.TarFileStream.thread_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal"><span class="pre">Thread</span></code></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="browsepy.stream.TarFileStream.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/stream.html#TarFileStream.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.stream.TarFileStream.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write method used by internal tarfile instance to output data.
+This method blocks tarfile execution once internal buffer is full.</p>
+<p>As this method is blocking, it is used inside the same thread of
+<a class="reference internal" href="#browsepy.stream.TarFileStream.fill" title="browsepy.stream.TarFileStream.fill"><code class="xref py py-meth docutils literal"><span class="pre">fill()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.6)"><em>bytes</em></a>) – bytes to write to internal buffer</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">number of bytes written</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)">int</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Stream Module</a><ul>
+<li><a class="reference internal" href="#tarfilestream">TarFileStream</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="file.html" title="previous chapter">File Module</a></li>
+      <li>Next: <a href="compat.html" title="next chapter">Compat Module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/stream.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/stream.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

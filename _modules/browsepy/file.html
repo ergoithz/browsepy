@@ -1,0 +1,1082 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>browsepy.file &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for browsepy.file</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: UTF-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">codecs</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">current_app</span><span class="p">,</span> <span class="n">send_from_directory</span>
+<span class="kn">from</span> <span class="nn">werkzeug.utils</span> <span class="k">import</span> <span class="n">cached_property</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">compat</span>
+<span class="kn">from</span> <span class="nn">.compat</span> <span class="k">import</span> <span class="nb">range</span>
+<span class="kn">from</span> <span class="nn">.stream</span> <span class="k">import</span> <span class="n">TarFileStream</span>
+<span class="kn">from</span> <span class="nn">.exceptions</span> <span class="k">import</span> <span class="n">OutsideDirectoryBase</span><span class="p">,</span> <span class="n">OutsideRemovableBase</span><span class="p">,</span> \
+                        <span class="n">PathTooLongError</span><span class="p">,</span> <span class="n">FilenameTooLongError</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">unicode_underscore</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">compat</span><span class="o">.</span><span class="n">PY_LEGACY</span> <span class="k">else</span> <span class="s1">&#39;_&#39;</span>
+<span class="n">underscore_replace</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">:underscore&#39;</span> <span class="o">%</span> <span class="vm">__name__</span>
+<span class="n">codecs</span><span class="o">.</span><span class="n">register_error</span><span class="p">(</span><span class="n">underscore_replace</span><span class="p">,</span>
+                      <span class="k">lambda</span> <span class="n">error</span><span class="p">:</span> <span class="p">(</span><span class="n">unicode_underscore</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                      <span class="p">)</span>
+<span class="n">binary_units</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;KiB&quot;</span><span class="p">,</span> <span class="s2">&quot;MiB&quot;</span><span class="p">,</span> <span class="s2">&quot;GiB&quot;</span><span class="p">,</span> <span class="s2">&quot;TiB&quot;</span><span class="p">,</span> <span class="s2">&quot;PiB&quot;</span><span class="p">,</span> <span class="s2">&quot;EiB&quot;</span><span class="p">,</span> <span class="s2">&quot;ZiB&quot;</span><span class="p">,</span> <span class="s2">&quot;YiB&quot;</span><span class="p">)</span>
+<span class="n">standard_units</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">,</span> <span class="s2">&quot;MB&quot;</span><span class="p">,</span> <span class="s2">&quot;GB&quot;</span><span class="p">,</span> <span class="s2">&quot;TB&quot;</span><span class="p">,</span> <span class="s2">&quot;PB&quot;</span><span class="p">,</span> <span class="s2">&quot;EB&quot;</span><span class="p">,</span> <span class="s2">&quot;ZB&quot;</span><span class="p">,</span> <span class="s2">&quot;YB&quot;</span><span class="p">)</span>
+<span class="n">common_path_separators</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">/&#39;</span>
+<span class="n">restricted_chars</span> <span class="o">=</span> <span class="s1">&#39;/</span><span class="se">\0</span><span class="s1">&#39;</span>
+<span class="n">nt_restricted_chars</span> <span class="o">=</span> <span class="s1">&#39;/</span><span class="se">\0\\</span><span class="s1">&lt;&gt;:&quot;|?*&#39;</span> <span class="o">+</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">chr</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">32</span><span class="p">)))</span>
+<span class="n">restricted_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;::&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">nt_device_names</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="s1">&#39;CON&#39;</span><span class="p">,</span> <span class="s1">&#39;PRN&#39;</span><span class="p">,</span> <span class="s1">&#39;AUX&#39;</span><span class="p">,</span> <span class="s1">&#39;NUL&#39;</span><span class="p">)</span> <span class="o">+</span>
+    <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="s1">&#39;COM</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)))</span> <span class="o">+</span>
+    <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="s1">&#39;LPT</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)))</span>
+    <span class="p">)</span>
+<span class="n">fs_safe_characters</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_uppercase</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
+
+
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../file.html#browsepy.file.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Abstract filesystem node class.</span>
+
+<span class="sd">    This represents an unspecified entity with a filesystem&#39;s path suitable for</span>
+<span class="sd">    being inherited by plugins.</span>
+
+<span class="sd">    When inheriting, the following attributes should be overwritten in order</span>
+<span class="sd">    to specify :meth:`from_urlpath` classmethod behavior:</span>
+
+<span class="sd">    * :attr:`generic`, if true, an instance of directory_class or file_class</span>
+<span class="sd">      will be created instead of an instance of this class tself.</span>
+<span class="sd">    * :attr:`directory_class`, class will be used for directory nodes,</span>
+<span class="sd">    * :attr:`file_class`, class will be used for file nodes.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">generic</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">directory_class</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># set later at import time</span>
+    <span class="n">file_class</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># set later at import time</span>
+
+    <span class="n">re_charset</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;; charset=(?P&lt;charset&gt;[^;]+)&#39;</span><span class="p">)</span>
+    <span class="n">can_download</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">is_root</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="Node.is_excluded"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.is_excluded">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">is_excluded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if current node shouldn&#39;t be shown, using :attt:`app` config&#39;s</span>
+<span class="sd">        exclude_fnc.</span>
+
+<span class="sd">        :returns: True if excluded, False otherwise</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">exclude</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;exclude_fnc&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">exclude</span> <span class="ow">and</span> <span class="n">exclude</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Node.plugin_manager"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.plugin_manager">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">plugin_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get current app&#39;s plugin manager.</span>
+
+<span class="sd">        :returns: plugin manager instance</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">extensions</span><span class="p">[</span><span class="s1">&#39;plugin_manager&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Node.widgets"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.widgets">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">widgets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        List widgets with filter return True for this node (or without filter).</span>
+
+<span class="sd">        Remove button is prepended if :property:can_remove returns true.</span>
+
+<span class="sd">        :returns: list of widgets</span>
+<span class="sd">        :rtype: list of namedtuple instances</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">widgets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_remove</span><span class="p">:</span>
+            <span class="n">widgets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                    <span class="s1">&#39;entry-actions&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;button&#39;</span><span class="p">,</span>
+                    <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">css</span><span class="o">=</span><span class="s1">&#39;remove&#39;</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;remove&#39;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">widgets</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">get_widgets</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Node.link"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.link">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get last widget with place &quot;entry-link&quot;.</span>
+
+<span class="sd">        :returns: widget on entry-link (ideally a link one)</span>
+<span class="sd">        :rtype: namedtuple instance</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">link</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">widget</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">widgets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">widget</span><span class="o">.</span><span class="n">place</span> <span class="o">==</span> <span class="s1">&#39;entry-link&#39;</span><span class="p">:</span>
+                <span class="n">link</span> <span class="o">=</span> <span class="n">widget</span>
+        <span class="k">return</span> <span class="n">link</span></div>
+
+<div class="viewcode-block" id="Node.can_remove"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.can_remove">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">can_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if current node can be removed based on app config&#39;s</span>
+<span class="sd">        directory_remove.</span>
+
+<span class="sd">        :returns: True if current node can be removed, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dirbase</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;directory_remove&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">dirbase</span> <span class="ow">and</span> <span class="n">check_under_base</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">dirbase</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Node.stats"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.stats">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get current stats object as returned by os.stat function.</span>
+
+<span class="sd">        :returns: stats object</span>
+<span class="sd">        :rtype: posix.stat_result or nt.stat_result</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Node.pathconf"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.pathconf">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">pathconf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get filesystem config for current path.</span>
+<span class="sd">        See :func:`compat.pathconf`.</span>
+
+<span class="sd">        :returns: fs config</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">compat</span><span class="o">.</span><span class="n">pathconf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Node.parent"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.parent">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">parent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get parent node if available based on app config&#39;s directory_base.</span>
+
+<span class="sd">        :returns: parent object if available</span>
+<span class="sd">        :rtype: Node instance or None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">check_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;directory_base&#39;</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory_class</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">)</span> <span class="k">if</span> <span class="n">parent</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Node.ancestors"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.ancestors">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">ancestors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get list of ancestors until app config&#39;s directory_base is reached.</span>
+
+<span class="sd">        :returns: list of ancestors starting from nearest.</span>
+<span class="sd">        :rtype: list of Node objects</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">ancestors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">while</span> <span class="n">parent</span><span class="p">:</span>
+            <span class="n">ancestors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+            <span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">return</span> <span class="n">ancestors</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">modified</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get human-readable last modification date-time.</span>
+
+<span class="sd">        :returns: iso9008-like date-time string (without timezone)</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y.%m.</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">urlpath</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get the url substring corresponding to this node for those endpoints</span>
+<span class="sd">        accepting a &#39;path&#39; parameter, suitable for :meth:`from_urlpath`.</span>
+
+<span class="sd">        :returns: relative-url-like for node&#39;s path</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">abspath_to_urlpath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;directory_base&#39;</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get the basename portion of node&#39;s path.</span>
+
+<span class="sd">        :returns: filename</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get the mime portion of node&#39;s mimetype (without the encoding part).</span>
+
+<span class="sd">        :returns: mimetype</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mimetype</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">category</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get mimetype category (first portion of mimetype before the slash).</span>
+
+<span class="sd">        :returns: mimetype category</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        As of 2016-11-03&#39;s revision of RFC2046 it could be one of the</span>
+<span class="sd">        following:</span>
+<span class="sd">            * application</span>
+<span class="sd">            * audio</span>
+<span class="sd">            * example</span>
+<span class="sd">            * image</span>
+<span class="sd">            * message</span>
+<span class="sd">            * model</span>
+<span class="sd">            * multipart</span>
+<span class="sd">            * text</span>
+<span class="sd">            * video</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">defaults</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param path: local path</span>
+<span class="sd">        :type path: str</span>
+<span class="sd">        :param path: optional app instance</span>
+<span class="sd">        :type path: flask.app</span>
+<span class="sd">        :param **defaults: attributes will be set to object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">compat</span><span class="o">.</span><span class="n">fsdecode</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">current_app</span> <span class="k">if</span> <span class="n">app</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">app</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">defaults</span><span class="p">)</span>  <span class="c1"># only for attr and cached_property</span>
+
+<div class="viewcode-block" id="Node.remove"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Does nothing except raising if can_remove property returns False.</span>
+
+<span class="sd">        :raises: OutsideRemovableBase if :property:`can_remove` returns false</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_remove</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">OutsideRemovableBase</span><span class="p">(</span><span class="s2">&quot;File outside removable base&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Node.from_urlpath"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.from_urlpath">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_urlpath</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Alternative constructor which accepts a path as taken from URL and uses</span>
+<span class="sd">        the given app or the current app config to get the real path.</span>
+
+<span class="sd">        If class has attribute `generic` set to True, `directory_class` or</span>
+<span class="sd">        `file_class` will be used as type.</span>
+
+<span class="sd">        :param path: relative path as from URL</span>
+<span class="sd">        :param app: optional, flask application</span>
+<span class="sd">        :return: file object pointing to path</span>
+<span class="sd">        :rtype: File</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">app</span> <span class="o">=</span> <span class="n">app</span> <span class="ow">or</span> <span class="n">current_app</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;directory_base&#39;</span><span class="p">]</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">urlpath_to_abspath</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">generic</span><span class="p">:</span>
+            <span class="n">kls</span> <span class="o">=</span> <span class="bp">cls</span>
+        <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">kls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">directory_class</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">file_class</span>
+        <span class="k">return</span> <span class="n">kls</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Node.register_file_class"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.register_file_class">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">register_file_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kls</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Convenience method for setting current class file_class property.</span>
+
+<span class="sd">        :param kls: class to set</span>
+<span class="sd">        :type kls: type</span>
+<span class="sd">        :returns: given class (enabling using this as decorator)</span>
+<span class="sd">        :rtype: type</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">file_class</span> <span class="o">=</span> <span class="n">kls</span>
+        <span class="k">return</span> <span class="n">kls</span></div>
+
+<div class="viewcode-block" id="Node.register_directory_class"><a class="viewcode-back" href="../../file.html#browsepy.file.Node.register_directory_class">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">register_directory_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kls</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Convenience method for setting current class directory_class property.</span>
+
+<span class="sd">        :param kls: class to set</span>
+<span class="sd">        :type kls: type</span>
+<span class="sd">        :returns: given class (enabling using this as decorator)</span>
+<span class="sd">        :rtype: type</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">directory_class</span> <span class="o">=</span> <span class="n">kls</span>
+        <span class="k">return</span> <span class="n">kls</span></div></div>
+
+
+<div class="viewcode-block" id="File"><a class="viewcode-back" href="../../file.html#browsepy.file.File">[docs]</a><span class="nd">@Node</span><span class="o">.</span><span class="n">register_file_class</span>
+<span class="k">class</span> <span class="nc">File</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Filesystem file class.</span>
+
+<span class="sd">    Some notes:</span>
+
+<span class="sd">    * :attr:`can_download` is fixed to True, so Files can be downloaded</span>
+<span class="sd">      inconditionaly.</span>
+<span class="sd">    * :attr:`can_upload` is fixed to False, so nothing can be uploaded to</span>
+<span class="sd">      file path.</span>
+<span class="sd">    * :attr:`is_directory` is fixed to False, so no further checks are</span>
+<span class="sd">      performed.</span>
+<span class="sd">    * :attr:`generic` is set to False, so static method :meth:`from_urlpath`</span>
+<span class="sd">      will always return instances of this class.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">can_download</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">can_upload</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">is_directory</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">generic</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="File.widgets"><a class="viewcode-back" href="../../file.html#browsepy.file.File.widgets">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">widgets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        List widgets with filter return True for this file (or without filter).</span>
+
+<span class="sd">        Entry link is prepended.</span>
+<span class="sd">        Download button is prepended if :property:can_download returns true.</span>
+<span class="sd">        Remove button is prepended if :property:can_remove returns true.</span>
+
+<span class="sd">        :returns: list of widgets</span>
+<span class="sd">        :rtype: list of namedtuple instances</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">widgets</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                <span class="s1">&#39;entry-link&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;link&#39;</span><span class="p">,</span>
+                <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;open&#39;</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_download</span><span class="p">:</span>
+            <span class="n">widgets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                    <span class="s1">&#39;entry-actions&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;button&#39;</span><span class="p">,</span>
+                    <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">css</span><span class="o">=</span><span class="s1">&#39;download&#39;</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;download_file&#39;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">widgets</span> <span class="o">+</span> <span class="nb">super</span><span class="p">(</span><span class="n">File</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">widgets</span></div>
+
+<div class="viewcode-block" id="File.mimetype"><a class="viewcode-back" href="../../file.html#browsepy.file.File.mimetype">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">mimetype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get full mimetype, with encoding if available.</span>
+
+<span class="sd">        :returns: mimetype</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">get_mimetype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="File.is_file"><a class="viewcode-back" href="../../file.html#browsepy.file.File.is_file">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">is_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if node is file.</span>
+
+<span class="sd">        :returns: True if file, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get human-readable node size in bytes.</span>
+<span class="sd">        If directory, this will corresponds with own inode size.</span>
+
+<span class="sd">        :returns: fuzzy size with unit</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">size</span><span class="p">,</span> <span class="n">unit</span> <span class="o">=</span> <span class="n">fmt_size</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;use_binary_multiples&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="k">else</span> <span class="kc">False</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">binary_units</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%.2f</span><span class="s2"> </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">encoding</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get encoding part of mimetype, or &quot;default&quot; if not available.</span>
+
+<span class="sd">        :returns: file conding as returned by mimetype function or &quot;default&quot;</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s2">&quot;;&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mimetype</span><span class="p">:</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_charset</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mimetype</span><span class="p">)</span>
+            <span class="n">gdict</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">()</span> <span class="k">if</span> <span class="n">match</span> <span class="k">else</span> <span class="p">{}</span>
+            <span class="k">return</span> <span class="n">gdict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;default&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;default&quot;</span>
+
+<div class="viewcode-block" id="File.remove"><a class="viewcode-back" href="../../file.html#browsepy.file.File.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Remove file.</span>
+<span class="sd">        :raises OutsideRemovableBase: when not under removable base directory</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">File</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="File.download"><a class="viewcode-back" href="../../file.html#browsepy.file.File.download">[docs]</a>    <span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get a Flask&#39;s send_file Response object pointing to this file.</span>
+
+<span class="sd">        :returns: Response object as returned by flask&#39;s send_file</span>
+<span class="sd">        :rtype: flask.Response</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">directory</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">send_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">as_attachment</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Directory"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory">[docs]</a><span class="nd">@Node</span><span class="o">.</span><span class="n">register_directory_class</span>
+<span class="k">class</span> <span class="nc">Directory</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Filesystem directory class.</span>
+
+<span class="sd">    Some notes:</span>
+
+<span class="sd">    * :attr:`mimetype` is fixed to &#39;inode/directory&#39;, so mimetype detection</span>
+<span class="sd">      functions won&#39;t be called in this case.</span>
+<span class="sd">    * :attr:`is_file` is fixed to False, so no further checks are needed.</span>
+<span class="sd">    * :attr:`size` is fixed to 0 (zero), so stats are not required for this.</span>
+<span class="sd">    * :attr:`encoding` is fixed to &#39;default&#39;.</span>
+<span class="sd">    * :attr:`generic` is set to False, so static method :meth:`from_urlpath`</span>
+<span class="sd">      will always return instances of this class.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_listdir_cache</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mimetype</span> <span class="o">=</span> <span class="s1">&#39;inode/directory&#39;</span>
+    <span class="n">is_file</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;default&#39;</span>
+    <span class="n">generic</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get the basename portion of directory&#39;s path.</span>
+
+<span class="sd">        :returns: filename</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Directory</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
+
+<div class="viewcode-block" id="Directory.widgets"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.widgets">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">widgets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        List widgets with filter return True for this dir (or without filter).</span>
+
+<span class="sd">        Entry link is prepended.</span>
+<span class="sd">        Upload scripts and widget are added if :property:can_upload is true.</span>
+<span class="sd">        Download button is prepended if :property:can_download returns true.</span>
+<span class="sd">        Remove button is prepended if :property:can_remove returns true.</span>
+
+<span class="sd">        :returns: list of widgets</span>
+<span class="sd">        :rtype: list of namedtuple instances</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">widgets</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                <span class="s1">&#39;entry-link&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;link&#39;</span><span class="p">,</span>
+                <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;browse&#39;</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_upload</span><span class="p">:</span>
+            <span class="n">widgets</span><span class="o">.</span><span class="n">extend</span><span class="p">((</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                    <span class="s1">&#39;head&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;script&#39;</span><span class="p">,</span>
+                    <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;static&#39;</span><span class="p">,</span>
+                    <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;browse.directory.head.js&#39;</span>
+                <span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                    <span class="s1">&#39;scripts&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;script&#39;</span><span class="p">,</span>
+                    <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;static&#39;</span><span class="p">,</span>
+                    <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;browse.directory.body.js&#39;</span>
+                <span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                    <span class="s1">&#39;header&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;upload&#39;</span><span class="p">,</span>
+                    <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">text</span><span class="o">=</span><span class="s1">&#39;Upload&#39;</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;upload&#39;</span>
+                    <span class="p">)</span>
+                <span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_download</span><span class="p">:</span>
+            <span class="n">widgets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugin_manager</span><span class="o">.</span><span class="n">create_widget</span><span class="p">(</span>
+                    <span class="s1">&#39;entry-actions&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;button&#39;</span><span class="p">,</span>
+                    <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">css</span><span class="o">=</span><span class="s1">&#39;download&#39;</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="s1">&#39;download_directory&#39;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">widgets</span> <span class="o">+</span> <span class="nb">super</span><span class="p">(</span><span class="n">Directory</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">widgets</span></div>
+
+<div class="viewcode-block" id="Directory.is_directory"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.is_directory">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">is_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if path points to a real directory.</span>
+
+<span class="sd">        :returns: True if real directory, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Directory.is_root"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.is_root">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">is_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if directory is filesystem&#39;s root</span>
+
+<span class="sd">        :returns: True if FS root, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">check_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Directory.can_download"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.can_download">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">can_download</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if path is downloadable (if app&#39;s `directory_downloadable` config</span>
+<span class="sd">        property is True).</span>
+
+<span class="sd">        :returns: True if downloadable, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;directory_downloadable&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Directory.can_upload"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.can_upload">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">can_upload</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if a file can be uploaded to path (if directory path is under app&#39;s</span>
+<span class="sd">        `directory_upload` config property).</span>
+
+<span class="sd">        :returns: True if a file can be upload to directory, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dirbase</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;directory_upload&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dirbase</span> <span class="ow">and</span> <span class="n">check_base</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">dirbase</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Directory.can_remove"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.can_remove">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">can_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if current node can be removed based on app config&#39;s</span>
+<span class="sd">        directory_remove.</span>
+
+<span class="sd">        :returns: True if current node can be removed, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">and</span> <span class="nb">super</span><span class="p">(</span><span class="n">Directory</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">can_remove</span></div>
+
+<div class="viewcode-block" id="Directory.is_empty"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.is_empty">[docs]</a>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">is_empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get if directory is empty (based on :meth:`_listdir`).</span>
+
+<span class="sd">        :returns: True if this directory has no entries, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_listdir_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_listdir_cache</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_listdir</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Directory.remove"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Remove directory tree.</span>
+
+<span class="sd">        :raises OutsideRemovableBase: when not under removable base directory</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Directory</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Directory.download"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.download">[docs]</a>    <span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get a Flask Response object streaming a tarball of this directory.</span>
+
+<span class="sd">        :returns: Response object</span>
+<span class="sd">        :rtype: flask.Response</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">response_class</span><span class="p">(</span>
+            <span class="n">TarFileStream</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;directory_tar_buffsize&#39;</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;exclude_fnc&#39;</span><span class="p">],</span>
+                <span class="p">),</span>
+            <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/octet-stream&quot;</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Directory.contains"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.contains">[docs]</a>    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Check if directory contains an entry with given filename.</span>
+
+<span class="sd">        :param filename: filename will be check</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :returns: True if exists, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Directory.choose_filename"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.choose_filename">[docs]</a>    <span class="k">def</span> <span class="nf">choose_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">attempts</span><span class="o">=</span><span class="mi">999</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get a new filename which does not colide with any entry on directory,</span>
+<span class="sd">        based on given filename.</span>
+
+<span class="sd">        :param filename: base filename</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :param attempts: number of attempts, defaults to 999</span>
+<span class="sd">        :type attempts: int</span>
+<span class="sd">        :returns: filename</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        :raises FilenameTooLong: when filesystem filename size limit is reached</span>
+<span class="sd">        :raises PathTooLong: when OS or filesystem path size limit is reached</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">new_filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">attempts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">new_filename</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">new_filename</span> <span class="o">=</span> <span class="n">alternative_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">attempt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">new_filename</span><span class="p">):</span>
+                <span class="n">new_filename</span> <span class="o">=</span> <span class="n">alternative_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="n">limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pathconf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;PC_NAME_MAX&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">FilenameTooLongError</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+        <span class="n">abspath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pathconf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;PC_PATH_MAX&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">abspath</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">PathTooLongError</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">abspath</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_filename</span></div>
+
+    <span class="k">def</span> <span class="nf">_listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">precomputed_stats</span><span class="o">=</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span><span class="p">)):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Iter unsorted entries on this directory.</span>
+
+<span class="sd">        :yields: Directory or File instance for each entry in directory</span>
+<span class="sd">        :ytype: Node</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">scandir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">):</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                <span class="s1">&#39;app&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">,</span>
+                <span class="s1">&#39;parent&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="p">,</span>
+                <span class="s1">&#39;is_excluded&#39;</span><span class="p">:</span> <span class="kc">False</span>
+                <span class="p">}</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">precomputed_stats</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_symlink</span><span class="p">():</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;stats&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(</span><span class="n">follow_symlinks</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory_class</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_class</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Directory.listdir"><a class="viewcode-back" href="../../file.html#browsepy.file.Directory.listdir">[docs]</a>    <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sortkey</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get sorted list (by given sortkey and reverse params) of File objects.</span>
+
+<span class="sd">        :return: sorted list of File instances</span>
+<span class="sd">        :rtype: list of File instances</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_listdir_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_listdir_cache</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_listdir</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">sortkey</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_listdir_cache</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">sortkey</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">reverse</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_listdir_cache</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">data</span></div></div>
+
+
+<div class="viewcode-block" id="fmt_size"><a class="viewcode-back" href="../../file.html#browsepy.file.fmt_size">[docs]</a><span class="k">def</span> <span class="nf">fmt_size</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">binary</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Get size and unit.</span>
+
+<span class="sd">    :param size: size in bytes</span>
+<span class="sd">    :type size: int</span>
+<span class="sd">    :param binary: whether use binary or standard units, defaults to True</span>
+<span class="sd">    :type binary: bool</span>
+<span class="sd">    :return: size and unit</span>
+<span class="sd">    :rtype: tuple of int and unit as str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">binary</span><span class="p">:</span>
+        <span class="n">fmt_sizes</span> <span class="o">=</span> <span class="n">binary_units</span>
+        <span class="n">fmt_divider</span> <span class="o">=</span> <span class="mf">1024.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fmt_sizes</span> <span class="o">=</span> <span class="n">standard_units</span>
+        <span class="n">fmt_divider</span> <span class="o">=</span> <span class="mf">1000.</span>
+    <span class="k">for</span> <span class="n">fmt</span> <span class="ow">in</span> <span class="n">fmt_sizes</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mi">1000</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">/=</span> <span class="n">fmt_divider</span>
+    <span class="k">return</span> <span class="n">size</span><span class="p">,</span> <span class="n">fmt_sizes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+<span class="k">def</span> <span class="nf">relativize_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Make absolute path relative to an absolute base.</span>
+
+<span class="sd">    :param path: absolute path</span>
+<span class="sd">    :type path: str</span>
+<span class="sd">    :param base: absolute base path</span>
+<span class="sd">    :type base: str</span>
+<span class="sd">    :param os_sep: path component separator, defaults to current OS separator</span>
+<span class="sd">    :type os_sep: str</span>
+<span class="sd">    :return: relative path</span>
+<span class="sd">    :rtype: str or unicode</span>
+<span class="sd">    :raises OutsideDirectoryBase: if path is not below base</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">check_base</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">OutsideDirectoryBase</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> is not under </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">))</span>
+    <span class="n">prefix_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">base</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">os_sep</span><span class="p">):</span>
+        <span class="n">prefix_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">os_sep</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span><span class="p">[</span><span class="n">prefix_len</span><span class="p">:]</span>
+
+
+<div class="viewcode-block" id="abspath_to_urlpath"><a class="viewcode-back" href="../../file.html#browsepy.file.abspath_to_urlpath">[docs]</a><span class="k">def</span> <span class="nf">abspath_to_urlpath</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Make filesystem absolute path uri relative using given absolute base path.</span>
+
+<span class="sd">    :param path: absolute path</span>
+<span class="sd">    :param base: absolute base path</span>
+<span class="sd">    :param os_sep: path component separator, defaults to current OS separator</span>
+<span class="sd">    :return: relative uri</span>
+<span class="sd">    :rtype: str or unicode</span>
+<span class="sd">    :raises OutsideDirectoryBase: if resulting path is not below base</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">relativize_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os_sep</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="urlpath_to_abspath"><a class="viewcode-back" href="../../file.html#browsepy.file.urlpath_to_abspath">[docs]</a><span class="k">def</span> <span class="nf">urlpath_to_abspath</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Make uri relative path fs absolute using a given absolute base path.</span>
+
+<span class="sd">    :param path: relative path</span>
+<span class="sd">    :param base: absolute base path</span>
+<span class="sd">    :param os_sep: path component separator, defaults to current OS separator</span>
+<span class="sd">    :return: absolute path</span>
+<span class="sd">    :rtype: str or unicode</span>
+<span class="sd">    :raises OutsideDirectoryBase: if resulting path is not below base</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="n">base</span> <span class="k">if</span> <span class="n">base</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">os_sep</span><span class="p">)</span> <span class="k">else</span> <span class="n">base</span> <span class="o">+</span> <span class="n">os_sep</span>
+    <span class="n">realpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">os_sep</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">check_path</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">realpath</span><span class="p">)</span> <span class="ow">or</span> <span class="n">check_under_base</span><span class="p">(</span><span class="n">realpath</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">realpath</span>
+    <span class="k">raise</span> <span class="n">OutsideDirectoryBase</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> is not under </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">realpath</span><span class="p">,</span> <span class="n">base</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">generic_filename</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Extract filename of given path os-indepently, taking care of known path</span>
+<span class="sd">    separators.</span>
+
+<span class="sd">    :param path: path</span>
+<span class="sd">    :return: filename</span>
+<span class="sd">    :rtype: str or unicode (depending on given path)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">for</span> <span class="n">sep</span> <span class="ow">in</span> <span class="n">common_path_separators</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sep</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="n">sep</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span> <span class="nf">clean_restricted_chars</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">restricted_chars</span><span class="o">=</span><span class="n">restricted_chars</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Get path without restricted characters.</span>
+
+<span class="sd">    :param path: path</span>
+<span class="sd">    :return: path without restricted characters</span>
+<span class="sd">    :rtype: str or unicode (depending on given path)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">character</span> <span class="ow">in</span> <span class="n">restricted_chars</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">character</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span> <span class="nf">check_forbidden_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span>
+                             <span class="n">destiny_os</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                             <span class="n">restricted_names</span><span class="o">=</span><span class="n">restricted_names</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Get if given filename is forbidden for current OS or filesystem.</span>
+
+<span class="sd">    :param filename:</span>
+<span class="sd">    :param destiny_os: destination operative system</span>
+<span class="sd">    :param fs_encoding: destination filesystem filename encoding</span>
+<span class="sd">    :return: wether is forbidden on given OS (or filesystem) or not</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="n">filename</span> <span class="ow">in</span> <span class="n">restricted_names</span> <span class="ow">or</span>
+      <span class="n">destiny_os</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span> <span class="ow">and</span>
+      <span class="n">filename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="n">nt_device_names</span>
+      <span class="p">)</span>
+
+
+<div class="viewcode-block" id="check_path"><a class="viewcode-back" href="../../file.html#browsepy.file.check_path">[docs]</a><span class="k">def</span> <span class="nf">check_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Check if both given paths are equal.</span>
+
+<span class="sd">    :param path: absolute path</span>
+<span class="sd">    :type path: str</span>
+<span class="sd">    :param base: absolute base path</span>
+<span class="sd">    :type base: str</span>
+<span class="sd">    :param os_sep: path separator, defaults to os.sep</span>
+<span class="sd">    :type base: str</span>
+<span class="sd">    :return: wether two path are equal or not</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">base</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">os_sep</span><span class="p">)]</span> <span class="k">if</span> <span class="n">base</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">os_sep</span><span class="p">)</span> <span class="k">else</span> <span class="n">base</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normcase</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normcase</span><span class="p">(</span><span class="n">base</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_base"><a class="viewcode-back" href="../../file.html#browsepy.file.check_base">[docs]</a><span class="k">def</span> <span class="nf">check_base</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Check if given absolute path is under or given base.</span>
+
+<span class="sd">    :param path: absolute path</span>
+<span class="sd">    :type path: str</span>
+<span class="sd">    :param base: absolute base path</span>
+<span class="sd">    :type base: str</span>
+<span class="sd">    :param os_sep: path separator, defaults to os.sep</span>
+<span class="sd">    :return: wether path is under given base or not</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">check_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="p">)</span> <span class="ow">or</span>
+        <span class="n">check_under_base</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_under_base"><a class="viewcode-back" href="../../file.html#browsepy.file.check_under_base">[docs]</a><span class="k">def</span> <span class="nf">check_under_base</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">os_sep</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Check if given absolute path is under given base.</span>
+
+<span class="sd">    :param path: absolute path</span>
+<span class="sd">    :type path: str</span>
+<span class="sd">    :param base: absolute base path</span>
+<span class="sd">    :type base: str</span>
+<span class="sd">    :param os_sep: path separator, defaults to os.sep</span>
+<span class="sd">    :return: wether file is under given base or not</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="n">base</span> <span class="k">if</span> <span class="n">base</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">os_sep</span><span class="p">)</span> <span class="k">else</span> <span class="n">base</span> <span class="o">+</span> <span class="n">os_sep</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normcase</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normcase</span><span class="p">(</span><span class="n">prefix</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="secure_filename"><a class="viewcode-back" href="../../file.html#browsepy.file.secure_filename">[docs]</a><span class="k">def</span> <span class="nf">secure_filename</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">destiny_os</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">fs_encoding</span><span class="o">=</span><span class="n">compat</span><span class="o">.</span><span class="n">FS_ENCODING</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Get rid of parent path components and special filenames.</span>
+
+<span class="sd">    If path is invalid or protected, return empty string.</span>
+
+<span class="sd">    :param path: unsafe path, only basename will be used</span>
+<span class="sd">    :type: str</span>
+<span class="sd">    :param destiny_os: destination operative system (defaults to os.name)</span>
+<span class="sd">    :type destiny_os: str</span>
+<span class="sd">    :param fs_encoding: fs path encoding (defaults to detected)</span>
+<span class="sd">    :type fs_encoding: str</span>
+<span class="sd">    :return: filename or empty string</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">generic_filename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">clean_restricted_chars</span><span class="p">(</span>
+        <span class="n">path</span><span class="p">,</span>
+        <span class="n">restricted_chars</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">nt_restricted_chars</span>
+            <span class="k">if</span> <span class="n">destiny_os</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span> <span class="k">else</span>
+            <span class="n">restricted_chars</span>
+            <span class="p">))</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39; .&#39;</span><span class="p">)</span>  <span class="c1"># required by nt, recommended for others</span>
+
+    <span class="k">if</span> <span class="n">check_forbidden_filename</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">destiny_os</span><span class="o">=</span><span class="n">destiny_os</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;latin-1&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">underscore_replace</span><span class="p">)</span>
+
+    <span class="c1"># Decode and recover from filesystem encoding in order to strip unwanted</span>
+    <span class="c1"># characters out</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;os_name&#39;</span><span class="p">:</span> <span class="n">destiny_os</span><span class="p">,</span>
+        <span class="s1">&#39;fs_encoding&#39;</span><span class="p">:</span> <span class="n">fs_encoding</span><span class="p">,</span>
+        <span class="s1">&#39;errors&#39;</span><span class="p">:</span> <span class="n">underscore_replace</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="n">fs_encoded_path</span> <span class="o">=</span> <span class="n">compat</span><span class="o">.</span><span class="n">fsencode</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">fs_decoded_path</span> <span class="o">=</span> <span class="n">compat</span><span class="o">.</span><span class="n">fsdecode</span><span class="p">(</span><span class="n">fs_encoded_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fs_decoded_path</span></div>
+
+
+<div class="viewcode-block" id="alternative_filename"><a class="viewcode-back" href="../../file.html#browsepy.file.alternative_filename">[docs]</a><span class="k">def</span> <span class="nf">alternative_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">attempt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Generates an alternative version of given filename.</span>
+
+<span class="sd">    If an number attempt parameter is given, will be used on the alternative</span>
+<span class="sd">    name, a random value will be used otherwise.</span>
+
+<span class="sd">    :param filename: original filename</span>
+<span class="sd">    :param attempt: optional attempt number, defaults to null</span>
+<span class="sd">    :return: new filename</span>
+<span class="sd">    :rtype: str or unicode</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">filename_parts</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">filename_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ext</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;.</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ext</span> <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">filename_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="k">if</span> <span class="n">attempt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">choose</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span>
+        <span class="n">extra</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39; </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">choose</span><span class="p">(</span><span class="n">fs_safe_characters</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">extra</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39; (</span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">attempt</span>
+    <span class="k">return</span> <span class="sa">u</span><span class="s1">&#39;</span><span class="si">%s%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">extra</span><span class="p">,</span> <span class="n">ext</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="scandir"><a class="viewcode-back" href="../../file.html#browsepy.file.scandir">[docs]</a><span class="k">def</span> <span class="nf">scandir</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Config-aware scandir. Currently, only aware of ``exclude_fnc``.</span>
+
+<span class="sd">    :param path: absolute path</span>
+<span class="sd">    :type path: str</span>
+<span class="sd">    :param app: flask application</span>
+<span class="sd">    :type app: flask.Flask or None</span>
+<span class="sd">    :returns: filtered scandir entries</span>
+<span class="sd">    :rtype: iterator</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">exclude</span> <span class="o">=</span> <span class="n">app</span> <span class="ow">and</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exclude_fnc&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">exclude</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">item</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">compat</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">exclude</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">compat</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="../../index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

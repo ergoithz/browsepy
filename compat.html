@@ -1,0 +1,617 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Compat Module &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Exceptions Module" href="exceptions.html" />
+    <link rel="prev" title="Stream Module" href="stream.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-browsepy.compat">
+<span id="compat-module"></span><span id="compat"></span><h1>Compat Module<a class="headerlink" href="#module-browsepy.compat" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="browsepy.compat.isexec">
+<code class="descclassname">browsepy.compat.</code><code class="descname">isexec</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#isexec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.isexec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if given path points to an executable file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – file path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if executable, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.pathconf">
+<code class="descclassname">browsepy.compat.</code><code class="descname">pathconf</code><span class="sig-paren">(</span><em>path</em>, <em>os_name='posix'</em>, <em>isdir_fnc=&lt;function isdir&gt;</em>, <em>pathconf_fnc=&lt;built-in function pathconf&gt;</em>, <em>pathconf_names={'PC_ALLOC_SIZE_MIN': 18</em>, <em>'PC_ASYNC_IO': 10</em>, <em>'PC_CHOWN_RESTRICTED': 6</em>, <em>'PC_FILESIZEBITS': 13</em>, <em>'PC_LINK_MAX': 0</em>, <em>'PC_MAX_CANON': 1</em>, <em>'PC_MAX_INPUT': 2</em>, <em>'PC_NAME_MAX': 3</em>, <em>'PC_NO_TRUNC': 7</em>, <em>'PC_PATH_MAX': 4</em>, <em>'PC_PIPE_BUF': 5</em>, <em>'PC_PRIO_IO': 11</em>, <em>'PC_REC_INCR_XFER_SIZE': 14</em>, <em>'PC_REC_MAX_XFER_SIZE': 15</em>, <em>'PC_REC_MIN_XFER_SIZE': 16</em>, <em>'PC_REC_XFER_ALIGN': 17</em>, <em>'PC_SOCK_MAXBUF': 12</em>, <em>'PC_SYMLINK_MAX': 19</em>, <em>'PC_SYNC_IO': 9</em>, <em>'PC_VDISABLE': 8}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#pathconf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.pathconf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all pathconf variables for given path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute fs path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dictionary containing pathconf keys and their values (both str)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.pathparse">
+<code class="descclassname">browsepy.compat.</code><code class="descname">pathparse</code><span class="sig-paren">(</span><em>value</em>, <em>sep=':'</em>, <em>os_sep='/'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#pathparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.pathparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get enviroment PATH directories as list.</p>
+<p>This function cares about spliting, escapes and normalization of paths
+across OSes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – path string, as given by os.environ[‘PATH’]</li>
+<li><strong>sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – PATH separator, defaults to os.pathsep</li>
+<li><strong>os_sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – OS filesystem path separator, defaults to os.sep</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Yields:</th><td class="field-body"><p class="first">every path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Ytype:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.pathsplit">
+<code class="descclassname">browsepy.compat.</code><code class="descname">pathsplit</code><span class="sig-paren">(</span><em>value</em>, <em>sep=':'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#pathsplit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.pathsplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get enviroment PATH elements as list.</p>
+<p>This function only cares about spliting across OSes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – path string, as given by os.environ[‘PATH’]</li>
+<li><strong>sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – PATH separator, defaults to os.pathsep</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Yields:</th><td class="field-body"><p class="first">every path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Ytype:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.re_escape">
+<code class="descclassname">browsepy.compat.</code><code class="descname">re_escape</code><span class="sig-paren">(</span><em>pattern</em>, <em>chars=frozenset({'|'</em>, <em>')'</em>, <em>'#'</em>, <em>'\\'</em>, <em>'.'</em>, <em>'('</em>, <em>'-'</em>, <em>'{'</em>, <em>'}'</em>, <em>'+'</em>, <em>'^'</em>, <em>'?'</em>, <em>'*'</em>, <em>'['</em>, <em>'$'</em>, <em>']'})</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#re_escape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.re_escape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Escape all special regex characters in pattern.
+Logic taken from regex module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pattern</strong> – regex pattern to escape</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">escaped pattern</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.usedoc">
+<code class="descclassname">browsepy.compat.</code><code class="descname">usedoc</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#usedoc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.usedoc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator which copies __doc__ of given object into decorated one.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">fnc1</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="sd">&quot;&quot;&quot;docstring&quot;&quot;&quot;</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nd">@usedoc</span><span class="p">(</span><span class="n">fnc1</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">fnc2</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fnc2</span><span class="o">.</span><span class="vm">__doc__</span>
+<span class="go">&#39;docstring&#39;collections.abc.D</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#any" title="(in Python v3.6)"><em>any</em></a>) – anything with a __doc__ attribute</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">decorator function</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#callable" title="(in Python v3.6)">callable</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.FS_ENCODING">
+<code class="descclassname">browsepy.compat.</code><code class="descname">FS_ENCODING</code><em class="property"> = sys.getfilesystemencoding()</em><a class="headerlink" href="#browsepy.compat.FS_ENCODING" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detected filesystem encoding: ie. <cite>utf-8</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.PY_LEGACY">
+<code class="descclassname">browsepy.compat.</code><code class="descname">PY_LEGACY</code><em class="property"> = sys.version_info &lt; (3, )</em><a class="headerlink" href="#browsepy.compat.PY_LEGACY" title="Permalink to this definition">¶</a></dt>
+<dd><p>True on Python 2, False on newer.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.ENV_PATH">
+<code class="descclassname">browsepy.compat.</code><code class="descname">ENV_PATH</code><em class="property"> = ('/usr/local/bin', '/usr/bin', ... )</em><a class="headerlink" href="#browsepy.compat.ENV_PATH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.ENV_PATHEXT">
+<code class="descclassname">browsepy.compat.</code><code class="descname">ENV_PATHEXT</code><em class="property"> = ('.exe', '.bat', ... ) if os.name == 'nt' else ('',)</em><a class="headerlink" href="#browsepy.compat.ENV_PATHEXT" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of paths where commands are located, taken and processed from
+<span class="target" id="index-0"></span><code class="xref std std-envvar docutils literal"><span class="pre">PATH</span></code> environment variable. Used by <a class="reference internal" href="#browsepy.compat.which" title="browsepy.compat.which"><code class="xref py py-func docutils literal"><span class="pre">which()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.TRUE_VALUES">
+<code class="descclassname">browsepy.compat.</code><code class="descname">TRUE_VALUES</code><em class="property"> = frozenset({'true', 'yes', '1', 'enable', 'enabled', True, 1})</em><a class="headerlink" href="#browsepy.compat.TRUE_VALUES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Values which should be equivalent to True, used by <a class="reference internal" href="#browsepy.compat.getdebug" title="browsepy.compat.getdebug"><code class="xref py py-func docutils literal"><span class="pre">getdebug()</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.FileNotFoundError">
+<code class="descclassname">browsepy.compat.</code><code class="descname">FileNotFoundError</code><em class="property"> = OSError if PY_LEGACY else FileNotFoundError</em><a class="headerlink" href="#browsepy.compat.FileNotFoundError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience python exception type reference.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.range">
+<code class="descclassname">browsepy.compat.</code><code class="descname">range</code><em class="property"> = xrange if PY_LEGACY else range</em><a class="headerlink" href="#browsepy.compat.range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience python builtin function reference.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.filter">
+<code class="descclassname">browsepy.compat.</code><code class="descname">filter</code><em class="property"> = itertools.ifilter if PY_LEGACY else filter</em><a class="headerlink" href="#browsepy.compat.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience python builtin function reference.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.basestring">
+<code class="descclassname">browsepy.compat.</code><code class="descname">basestring</code><em class="property"> = basestring if PY_LEGACY else str</em><a class="headerlink" href="#browsepy.compat.basestring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience python type reference.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.unicode">
+<code class="descclassname">browsepy.compat.</code><code class="descname">unicode</code><em class="property"> = unicode if PY_LEGACY else str</em><a class="headerlink" href="#browsepy.compat.unicode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience python type reference.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.scandir">
+<code class="descclassname">browsepy.compat.</code><code class="descname">scandir</code><em class="property"> = scandir.scandir or os.walk</em><a class="headerlink" href="#browsepy.compat.scandir" title="Permalink to this definition">¶</a></dt>
+<dd><p>New scandir, either from scandir module or Python3.6+ os module.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="browsepy.compat.walk">
+<code class="descclassname">browsepy.compat.</code><code class="descname">walk</code><em class="property"> = scandir.walk or os.walk</em><a class="reference internal" href="_modules/os.html#walk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.walk" title="Permalink to this definition">¶</a></dt>
+<dd><p>New walk, either from scandir module or Python3.6+ os module.</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">browsepy.compat.</code><code class="descname">pathconf</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#pathconf"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Get all pathconf variables for given path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – absolute fs path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dictionary containing pathconf keys and their values (both str)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">browsepy.compat.</code><code class="descname">isexec</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#isexec"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Check if given path points to an executable file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – file path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if executable, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.which">
+<code class="descclassname">browsepy.compat.</code><code class="descname">which</code><span class="sig-paren">(</span><em>name</em>, <em>env_path=ENV_PATH</em>, <em>is_executable_fnc=isexec</em>, <em>path_join_fnc=os.path.join</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#which"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.which" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get command absolute path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – name of executable command</li>
+<li><strong>env_path</strong> (<em>list of str</em>) – OS environment executable paths, defaults to autodetected</li>
+<li><strong>is_executable_fnc</strong> (<em>Callable</em>) – callable will be used to detect if path is
+executable, defaults to <cite>isexec</cite></li>
+<li><strong>path_join_fnc</strong> (<em>Callable</em>) – callable will be used to join path components</li>
+<li><strong>os_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – os name, defaults to os.name</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">absolute path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a> or <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.6)">None</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.getdebug">
+<code class="descclassname">browsepy.compat.</code><code class="descname">getdebug</code><span class="sig-paren">(</span><em>environ=os.environ</em>, <em>true_values=TRUE_VALUES</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#getdebug"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.getdebug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get if app is expected to be ran in debug mode looking at environment
+variables.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>environ</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping" title="(in Python v3.6)"><em>collections.abc.Mapping</em></a>) – environment dict-like object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if debug contains a true-like string, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.deprecated">
+<code class="descclassname">browsepy.compat.</code><code class="descname">deprecated</code><span class="sig-paren">(</span><em>func_or_text</em>, <em>environ=os.environ</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator used to mark functions as deprecated. It will result in a
+warning being emmitted hen the function is called.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@deprecated</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">fnc</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Usage (custom message):</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@deprecated</span><span class="p">(</span><span class="s1">&#39;This is deprecated&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">fnc</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>func_or_text</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#callable" title="(in Python v3.6)"><em>callable</em></a>) – message or callable to decorate</li>
+<li><strong>environ</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping" title="(in Python v3.6)"><em>collections.abc.Mapping</em></a>) – optional environment mapping</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">nested decorator or new decorated function (depending on params)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#callable" title="(in Python v3.6)">callable</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">browsepy.compat.</code><code class="descname">usedoc</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#usedoc"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Decorator which copies __doc__ of given object into decorated one.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">fnc1</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="sd">&quot;&quot;&quot;docstring&quot;&quot;&quot;</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nd">@usedoc</span><span class="p">(</span><span class="n">fnc1</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">fnc2</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fnc2</span><span class="o">.</span><span class="vm">__doc__</span>
+<span class="go">&#39;docstring&#39;collections.abc.D</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#any" title="(in Python v3.6)"><em>any</em></a>) – anything with a __doc__ attribute</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">decorator function</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#callable" title="(in Python v3.6)">callable</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.fsdecode">
+<code class="descclassname">browsepy.compat.</code><code class="descname">fsdecode</code><span class="sig-paren">(</span><em>path</em>, <em>os_name=os.name</em>, <em>fs_encoding=FS_ENCODING</em>, <em>errors=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#fsdecode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.fsdecode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decode given path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.6)"><em>bytes</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – path will be decoded if using bytes</li>
+<li><strong>os_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – operative system name, defaults to os.name</li>
+<li><strong>fs_encoding</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – current filesystem encoding, defaults to autodetected</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">decoded path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.fsencode">
+<code class="descclassname">browsepy.compat.</code><code class="descname">fsencode</code><span class="sig-paren">(</span><em>path</em>, <em>os_name=os.name</em>, <em>fs_encoding=FS_ENCODING</em>, <em>errors=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#fsencode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.fsencode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encode given path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.6)"><em>bytes</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – path will be encoded if not using bytes</li>
+<li><strong>os_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – operative system name, defaults to os.name</li>
+<li><strong>fs_encoding</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – current filesystem encoding, defaults to autodetected</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">encoded path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.6)">bytes</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="browsepy.compat.getcwd">
+<code class="descclassname">browsepy.compat.</code><code class="descname">getcwd</code><span class="sig-paren">(</span><em>fs_encoding=FS_ENCODING</em>, <em>cwd_fnc=os.getcwd</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#getcwd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#browsepy.compat.getcwd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current work directory’s absolute path.
+Like os.getcwd but garanteed to return an unicode-str object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fs_encoding</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – filesystem encoding, defaults to autodetected</li>
+<li><strong>cwd_fnc</strong> (<em>Callable</em>) – callable used to get the path, defaults to os.getcwd</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">browsepy.compat.</code><code class="descname">re_escape</code><span class="sig-paren">(</span><em>pattern</em>, <em>chars=&quot;()[]{}?*+|^$\.-#&quot;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#re_escape"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Escape all special regex characters in pattern.
+Logic taken from regex module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pattern</strong> – regex pattern to escape</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">escaped pattern</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">browsepy.compat.</code><code class="descname">pathsplit</code><span class="sig-paren">(</span><em>value</em>, <em>sep=os.pathsep</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#pathsplit"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Get enviroment PATH elements as list.</p>
+<p>This function only cares about spliting across OSes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – path string, as given by os.environ[‘PATH’]</li>
+<li><strong>sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – PATH separator, defaults to os.pathsep</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Yields:</th><td class="field-body"><p class="first">every path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Ytype:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">browsepy.compat.</code><code class="descname">pathparse</code><span class="sig-paren">(</span><em>value</em>, <em>sep=os.pathsep</em>, <em>os_sep=os.sep</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/browsepy/compat.html#pathparse"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Get enviroment PATH directories as list.</p>
+<p>This function cares about spliting, escapes and normalization of paths
+across OSes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – path string, as given by os.environ[‘PATH’]</li>
+<li><strong>sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – PATH separator, defaults to os.pathsep</li>
+<li><strong>os_sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – OS filesystem path separator, defaults to os.sep</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Yields:</th><td class="field-body"><p class="first">every path</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Ytype:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="stream.html" title="previous chapter">Stream Module</a></li>
+      <li>Next: <a href="exceptions.html" title="next chapter">Exceptions Module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/compat.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/compat.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,224 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Integrations &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Manager Module" href="manager.html" />
+    <link rel="prev" title="Plugin Development" href="plugins.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="integrations">
+<span id="id1"></span><h1>Integrations<a class="headerlink" href="#integrations" title="Permalink to this headline">¶</a></h1>
+<p>Browsepy is a Flask application and python module, so it could be integrated
+anywhere python’s <a class="reference external" href="https://www.python.org/dev/peps/pep-0333/">WSGI</a> protocol
+is supported. Also, browsepy’s public API could be easily reused.</p>
+<p>Browsepy app config (available at <code class="xref py py-attr docutils literal"><span class="pre">browsepy.app.config</span></code>) exposes the
+following configuration options.</p>
+<ul class="simple">
+<li><strong>directory_base</strong>: anything under this directory will be served,
+defaults to current path.</li>
+<li><strong>directory_start</strong>: directory will be served when accessing root URL</li>
+<li><strong>directory_remove</strong>: file removing will be available under this path,
+defaults to <strong>None</strong>.</li>
+<li><strong>directory_upload</strong>: file upload will be available under this path,
+defaults to <strong>None</strong>.</li>
+<li><strong>directory_tar_buffsize</strong>, directory tar streaming buffer size,
+defaults to <strong>262144</strong> and must be multiple of 512.</li>
+<li><strong>directory_downloadable</strong> whether enable directory download or not,
+defaults to <strong>True</strong>.</li>
+<li><strong>use_binary_multiples</strong> whether use binary units (bi-bytes, like KiB)
+instead of common ones (bytes, like KB), defaults to <strong>True</strong>.</li>
+<li><strong>plugin_modules</strong> list of module names (absolute or relative to
+plugin_namespaces) will be loaded.</li>
+<li><strong>plugin_namespaces</strong> prefixes for module names listed at plugin_modules
+where relative plugin_modules are searched.</li>
+</ul>
+<p>Please note: After editing <cite>plugin_modules</cite> value, plugin manager (available
+at module <code class="xref py py-data docutils literal"><span class="pre">browsepy.plugin_manager</span></code> and
+<code class="xref py py-data docutils literal"><span class="pre">browsepy.app.extensions['plugin_manager']</span></code>) should be reloaded using
+the <code class="xref py py-meth docutils literal"><span class="pre">browsepy.plugin_manager.reload()</span></code> instance method of <a class="reference internal" href="manager.html#browsepy.manager.PluginManager.reload" title="browsepy.manager.PluginManager.reload"><code class="xref py py-meth docutils literal"><span class="pre">browsepy.manager.PluginManager.reload()</span></code></a> for browsepy’s plugin
+manager.</p>
+<p>The other way of loading a plugin programmatically is calling
+<code class="xref py py-meth docutils literal"><span class="pre">browsepy.plugin_manager.load_plugin()</span></code> instance method of
+<a class="reference internal" href="manager.html#browsepy.manager.PluginManager.load_plugin" title="browsepy.manager.PluginManager.load_plugin"><code class="xref py py-meth docutils literal"><span class="pre">browsepy.manager.PluginManager.load_plugin()</span></code></a> for browsepy’s plugin
+manager.</p>
+<div class="section" id="cherrypy-and-cherrymusic">
+<span id="integrations-cherrymusic"></span><h2>Cherrypy and Cherrymusic<a class="headerlink" href="#cherrypy-and-cherrymusic" title="Permalink to this headline">¶</a></h2>
+<p>Startup script running browsepy inside the <a class="reference external" href="http://cherrypy.org/">cherrypy</a>
+server provided by <a class="reference external" href="http://www.fomori.org/cherrymusic/">cherrymusic</a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="ch">#!/env/bin/python</span>
+<span class="c1"># -*- coding: UTF-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">cherrymusicserver</span>
+<span class="kn">import</span> <span class="nn">cherrypy</span>
+
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">expandvars</span><span class="p">,</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">abspath</span><span class="p">,</span> <span class="n">join</span> <span class="k">as</span> <span class="n">joinpath</span>
+<span class="kn">from</span> <span class="nn">browsepy</span> <span class="kn">import</span> <span class="n">app</span> <span class="k">as</span> <span class="n">browsepy</span><span class="p">,</span> <span class="n">plugin_manager</span>
+
+
+<span class="k">class</span> <span class="nc">HTTPHandler</span><span class="p">(</span><span class="n">cherrymusicserver</span><span class="o">.</span><span class="n">httphandler</span><span class="o">.</span><span class="n">HTTPHandler</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">autoLoginActive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+<span class="k">class</span> <span class="nc">Root</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">cherrymusicserver</span><span class="o">.</span><span class="n">httphandler</span><span class="o">.</span><span class="n">HTTPHandler</span> <span class="o">=</span> <span class="n">HTTPHandler</span>
+
+<span class="n">base_path</span> <span class="o">=</span> <span class="n">abspath</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="n">static_path</span> <span class="o">=</span> <span class="n">joinpath</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="s1">&#39;static&#39;</span><span class="p">)</span>
+<span class="n">media_path</span> <span class="o">=</span> <span class="n">expandvars</span><span class="p">(</span><span class="s1">&#39;$HOME/media&#39;</span><span class="p">)</span>
+<span class="n">download_path</span> <span class="o">=</span> <span class="n">joinpath</span><span class="p">(</span><span class="n">media_path</span><span class="p">,</span> <span class="s1">&#39;downloads&#39;</span><span class="p">)</span>
+<span class="n">root_config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;/&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;tools.staticdir.on&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="s1">&#39;tools.staticdir.dir&#39;</span><span class="p">:</span> <span class="n">static_path</span><span class="p">,</span>
+        <span class="s1">&#39;tools.staticdir.index&#39;</span><span class="p">:</span> <span class="s1">&#39;index.html&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">cherrymusic_config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;server.rootpath&#39;</span><span class="p">:</span> <span class="s1">&#39;/player&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">browsepy</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+    <span class="n">APPLICATION_ROOT</span> <span class="o">=</span> <span class="s1">&#39;/browse&#39;</span><span class="p">,</span>
+    <span class="n">directory_base</span> <span class="o">=</span> <span class="n">media_path</span><span class="p">,</span>
+    <span class="n">directory_start</span> <span class="o">=</span> <span class="n">media_path</span><span class="p">,</span>
+    <span class="n">directory_remove</span> <span class="o">=</span> <span class="n">media_path</span><span class="p">,</span>
+    <span class="n">directory_upload</span> <span class="o">=</span> <span class="n">media_path</span><span class="p">,</span>
+    <span class="n">plugin_modules</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;player&#39;</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">plugin_manager</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">joinpath</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="s1">&#39;stderr.log&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">joinpath</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="s1">&#39;stdout.log&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">joinpath</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="s1">&#39;pidfile.pid&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
+
+    <span class="n">cherrymusicserver</span><span class="o">.</span><span class="n">setup_config</span><span class="p">(</span><span class="n">cherrymusic_config</span><span class="p">)</span>
+    <span class="n">cherrymusicserver</span><span class="o">.</span><span class="n">setup_services</span><span class="p">()</span>
+    <span class="n">cherrymusicserver</span><span class="o">.</span><span class="n">migrate_databases</span><span class="p">()</span>
+    <span class="n">cherrypy</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">graft</span><span class="p">(</span><span class="n">browsepy</span><span class="p">,</span> <span class="s1">&#39;/browse&#39;</span><span class="p">)</span>
+    <span class="n">cherrypy</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="n">Root</span><span class="p">(),</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">root_config</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cherrymusicserver</span><span class="o">.</span><span class="n">start_server</span><span class="p">(</span><span class="n">cherrymusic_config</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Exiting...&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Integrations</a><ul>
+<li><a class="reference internal" href="#cherrypy-and-cherrymusic">Cherrypy and Cherrymusic</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="plugins.html" title="previous chapter">Plugin Development</a></li>
+      <li>Next: <a href="manager.html" title="next chapter">Manager Module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/integrations.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/integrations.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,331 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Excluding paths &#8212; browsepy 0.5.6 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/logo.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Bultin Plugins" href="builtin_plugins.html" />
+    <link rel="prev" title="Quickstart" href="quickstart.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="excluding-paths">
+<span id="id1"></span><h1>Excluding paths<a class="headerlink" href="#excluding-paths" title="Permalink to this headline">¶</a></h1>
+<p>Starting from version <strong>0.5.3</strong>, browsepy accepts <strong>–exclude</strong> command line
+arguments expecting linux filename expansion strings, also known as globs.</p>
+<p><strong>Note (windows):</strong> on nt platforms, the accepted glob syntax will be the same
+(<code class="docutils literal"><span class="pre">/</span></code> for filepath separator and <code class="docutils literal"><span class="pre">\</span></code> used for character escapes),
+browsepy will transform them appropriately.</p>
+<p>They allow matching filemames using wildcards, being the most common <cite>*</cite>
+(matching any string, even empty) and <cite>?</cite> (matching a single character). See
+<a class="reference internal" href="#glob-manpage"><span class="std std-ref">Glob manpage</span></a> for further info.</p>
+<p>Please note that both collating symbols (like <code class="docutils literal"><span class="pre">[.a-acute.]</span></code>) and
+equivalence class expressions (like <code class="docutils literal"><span class="pre">[=a=]</span></code>) are currently unsupported.</p>
+<p>Excluded paths will be omitted from both directory listing and directory
+tarball downloads.</p>
+<p>As seen at <a class="reference internal" href="quickstart.html#quickstart-usage"><span class="std std-ref">Usage</span></a>, the exclude parameter can be provided
+as follows:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --exclude<span class="o">=</span>.*
+</pre></div>
+</div>
+<p>The above example will exclude all files prefixed with <code class="docutils literal"><span class="pre">.</span></code>, which are
+considered hidden on POSIX systems. In other words, it will match <code class="docutils literal"><span class="pre">.myfile</span></code>
+and not <code class="docutils literal"><span class="pre">my.file</span></code>.</p>
+<p>You can, alternatively, restrict the above exclusion to only top-level filenames:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --exclude<span class="o">=</span>/.*
+</pre></div>
+</div>
+<p>The following example will hide all files ending with <code class="docutils literal"><span class="pre">.ini</span></code>, but only on the
+base directory.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --exclude<span class="o">=</span>/*.ini
+</pre></div>
+</div>
+<p>You will find this syntax very similar to definitions found in <strong>.gitignore</strong>,
+<strong>.dockerignore</strong> and others ignore definition files. As browsepy uses
+same format, you can pass them to browsepy using <strong>–exclude-from</strong>
+options.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>browsepy --exclude-from<span class="o">=</span>.gitignore
+</pre></div>
+</div>
+<div class="section" id="glob-manpage">
+<span id="id2"></span><h2>Glob manpage<a class="headerlink" href="#glob-manpage" title="Permalink to this headline">¶</a></h2>
+<p>As glob reference, this is returned by <code class="docutils literal"><span class="pre">man</span> <span class="pre">glob.7</span></code>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>GLOB(7)              Linux Programmer&#39;s Manual             GLOB(7)
+
+NAME
+       glob - globbing pathnames
+
+DESCRIPTION
+       Long  ago,  in  UNIX V6, there was a program /etc/glob that
+       would expand wildcard patterns.  Soon afterward this became
+       a shell built-in.
+
+       These  days  there  is  also a library routine glob(3) that
+       will perform this function for a user program.
+
+       The rules are as follows (POSIX.2, 3.13).
+
+   Wildcard matching
+       A string is a wildcard pattern if it contains  one  of  the
+       characters &#39;?&#39;, &#39;*&#39; or &#39;[&#39;.  Globbing is the operation that
+       expands a wildcard  pattern  into  the  list  of  pathnames
+       matching the pattern.  Matching is defined by:
+
+       A &#39;?&#39; (not between brackets) matches any single character.
+
+       A  &#39;*&#39; (not between brackets) matches any string, including
+       the empty string.
+
+       Character classes
+
+       An expression &quot;[...]&quot; where the first character  after  the
+       leading  &#39;[&#39;  is  not  an  &#39;!&#39;  matches a single character,
+       namely any of the characters enclosed by the brackets.  The
+       string  enclosed by the brackets cannot be empty; therefore
+       &#39;]&#39; can be allowed between the brackets, provided  that  it
+       is  the  first character.  (Thus, &quot;[][!]&quot; matches the three
+       characters &#39;[&#39;, &#39;]&#39; and &#39;!&#39;.)
+
+       Ranges
+
+       There is one special convention: two  characters  separated
+       by  &#39;-&#39; denote a range.  (Thus, &quot;[A-Fa-f0-9]&quot; is equivalent
+       to &quot;[ABCDEFabcdef0123456789]&quot;.)  One may include &#39;-&#39; in its
+       literal  meaning  by  making it the first or last character
+       between the brackets.  (Thus, &quot;[]-]&quot; matches just  the  two
+       characters &#39;]&#39; and &#39;-&#39;, and &quot;[--0]&quot; matches the three char‐
+       acters &#39;-&#39;, &#39;.&#39;, &#39;0&#39;, since &#39;/&#39; cannot be matched.)
+
+       Complementation
+
+       An expression &quot;[!...]&quot; matches a single  character,  namely
+       any  character  that  is  not  matched  by  the  expression
+       obtained  by  removing  the  first  &#39;!&#39;  from  it.   (Thus,
+       &quot;[!]a-]&quot;  matches  any single character except &#39;]&#39;, &#39;a&#39; and
+       &#39;-&#39;.)
+
+       One can remove the special meaning of &#39;?&#39;, &#39;*&#39; and  &#39;[&#39;  by
+       preceding  them by a backslash, or, in case this is part of
+       a shell command line, enclosing them  in  quotes.   Between
+       brackets  these  characters  stand  for  themselves.  Thus,
+       &quot;[[?*\]&quot; matches the four characters &#39;[&#39;, &#39;?&#39;, &#39;*&#39; and &#39;\&#39;.
+
+   Pathnames
+       Globbing is applied on each of the components of a pathname
+       separately.  A &#39;/&#39; in a pathname cannot be matched by a &#39;?&#39;
+       or &#39;*&#39; wildcard, or by a range like &quot;[.-0]&quot;.  A range  con‐
+       taining  an  explicit &#39;/&#39; character is syntactically incor‐
+       rect.  (POSIX requires that  syntactically  incorrect  pat‐
+       terns are left unchanged.)
+
+       If  a  filename  starts  with a &#39;.&#39;, this character must be
+       matched explicitly.  (Thus, rm * will not remove  .profile,
+       and  tar c *  will  not  archive all your files; tar c . is
+       better.)
+
+   Empty lists
+       The nice and simple rule given above:  &quot;expand  a  wildcard
+       pattern into the list of matching pathnames&quot; was the origi‐
+       nal UNIX definition.  It allowed one to have patterns  that
+       expand into an empty list, as in
+
+           xv -wait 0 *.gif *.jpg
+
+       where  perhaps  no *.gif files are present (and this is not
+       an error).  However, POSIX requires that a wildcard pattern
+       is  left  unchanged  when it is syntactically incorrect, or
+       the list of matching pathnames is empty.  With bash one can
+       force the classical behavior using this command:
+
+           shopt -s nullglob
+
+       (Similar  problems occur elsewhere.  For example, where old
+       scripts have
+
+           rm `find . -name &quot;*~&quot;`
+
+       new scripts require
+
+           rm -f nosuchfile `find . -name &quot;*~&quot;`
+
+       to avoid error messages from rm called with an empty  argu‐
+       ment list.)
+
+NOTES
+   Regular expressions
+       Note  that  wildcard  patterns are not regular expressions,
+       although they are a bit similar.  First of all, they  match
+       filenames,  rather than text, and secondly, the conventions
+       are not the same: for example, in a regular expression  &#39;*&#39;
+       means zero or more copies of the preceding thing.
+
+       Now that regular expressions have bracket expressions where
+       the negation is indicated by a &#39;^&#39;, POSIX has declared  the
+       effect of a wildcard pattern &quot;[^...]&quot; to be undefined.
+
+   Character classes and internationalization
+       Of  course ranges were originally meant to be ASCII ranges,
+       so that &quot;[ -%]&quot; stands for &quot;[ !&quot;#$%]&quot;  and  &quot;[a-z]&quot;  stands
+       for &quot;any lowercase letter&quot;.  Some UNIX implementations gen‐
+       eralized this so that a range X-Y stands  for  the  set  of
+       characters  with  code  between  the codes for X and for Y.
+       However, this requires the user to know the character  cod‐
+       ing in use on the local system, and moreover, is not conve‐
+       nient if the collating sequence for the local alphabet dif‐
+       fers  from the ordering of the character codes.  Therefore,
+       POSIX extended the bracket notation greatly, both for wild‐
+       card patterns and for regular expressions.  In the above we
+       saw three types of  items  that  can  occur  in  a  bracket
+       expression:  namely  (i) the negation, (ii) explicit single
+       characters, and (iii) ranges.  POSIX specifies ranges in an
+       internationally more useful way and adds three more types:
+
+       (iii)  Ranges X-Y comprise all characters that fall between
+       X and Y (inclusive) in the current  collating  sequence  as
+       defined by the LC_COLLATE category in the current locale.
+
+       (iv) Named character classes, like
+
+       [:alnum:]  [:alpha:]  [:blank:]  [:cntrl:]
+       [:digit:]  [:graph:]  [:lower:]  [:print:]
+       [:punct:]  [:space:]  [:upper:]  [:xdigit:]
+
+       so  that  one can say &quot;[[:lower:]]&quot; instead of &quot;[a-z]&quot;, and
+       have things work in Denmark, too,  where  there  are  three
+       letters  past &#39;z&#39; in the alphabet.  These character classes
+       are defined by the LC_CTYPE category in the current locale.
+
+       (v) Collating  symbols,  like  &quot;[.ch.]&quot;  or  &quot;[.a-acute.]&quot;,
+       where  the string between &quot;[.&quot; and &quot;.]&quot; is a collating ele‐
+       ment defined for the current locale.  Note that this may be
+       a multicharacter element.
+
+       (vi) Equivalence class expressions, like &quot;[=a=]&quot;, where the
+       string between &quot;[=&quot; and &quot;=]&quot; is any collating element  from
+       its  equivalence  class, as defined for the current locale.
+       For example, &quot;[[=a=]]&quot; might be  equivalent  to  &quot;[aáàäâ]&quot;,
+       that  is,  to &quot;[a[.a-acute.][.a-grave.][.a-umlaut.][.a-cir‐
+       cumflex.]]&quot;.
+
+SEE ALSO
+       sh(1), fnmatch(3), glob(3), locale(7), regex(7)
+
+COLOPHON
+       This page is part of release 4.10 of  the  Linux  man-pages
+       project.   A  description of the project, information about
+       reporting bugs, and the latest version of this page, can be
+       found at https://www.kernel.org/doc/man-pages/.
+
+Linux                       2016-10-08                     GLOB(7)
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><h3 class="logo"><a href="index.html">browsepy</a></h3>
+<p>The simple web file browser.</p>
+<h3>Useful Links</h3>
+<ul>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy">Browsepy at GitHub</a>
+  </li>
+  <li>
+    <a href="http://pypi.python.org/pypi/browsepy">Browsepy at PyPI</a>
+  </li>
+  <li>
+    <a href="http://github.com/ergoithz/browsepy/issues">Issue Tracker</a>
+  </li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Excluding paths</a><ul>
+<li><a class="reference internal" href="#glob-manpage">Glob manpage</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="quickstart.html" title="previous chapter">Quickstart</a></li>
+      <li>Next: <a href="builtin_plugins.html" title="next chapter">Bultin Plugins</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/exclude.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Felipe A. Hernandez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/exclude.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
