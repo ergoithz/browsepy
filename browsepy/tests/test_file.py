@@ -121,15 +121,15 @@ class TestFile(unittest.TestCase):
             f.write(b',\n' * 512)
         f = self.module.File(test_file, app=self.app)
 
-        default = self.app.config['use_binary_multiples']
+        default = self.app.config['USE_BINARY_MULIPLES']
 
-        self.app.config['use_binary_multiples'] = True
+        self.app.config['USE_BINARY_MULIPLES'] = True
         self.assertEqual(f.size, '1.00 KiB')
 
-        self.app.config['use_binary_multiples'] = False
+        self.app.config['USE_BINARY_MULIPLES'] = False
         self.assertEqual(f.size, '1.02 KB')
 
-        self.app.config['use_binary_multiples'] = default
+        self.app.config['USE_BINARY_MULIPLES'] = default
 
     def test_stats(self):
         virtual_file = os.path.join(self.workbench, 'file.txt')

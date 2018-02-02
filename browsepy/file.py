@@ -125,12 +125,12 @@ class Node(object):
     def can_remove(self):
         '''
         Get if current node can be removed based on app config's
-        directory_remove.
+        DIRECTORY_REMOVE.
 
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
         '''
-        dirbase = self.app.config["directory_remove"]
+        dirbase = self.app.config["DIRECTORY_REMOVE"]
         return bool(dirbase and check_under_base(self.path, dirbase))
 
     @cached_property
@@ -157,12 +157,12 @@ class Node(object):
     @cached_property
     def parent(self):
         '''
-        Get parent node if available based on app config's directory_base.
+        Get parent node if available based on app config's DIRECTORY_BASE.
 
         :returns: parent object if available
         :rtype: Node instance or None
         '''
-        if check_path(self.path, self.app.config['directory_base']):
+        if check_path(self.path, self.app.config['DIRECTORY_BASE']):
             return None
         parent = os.path.dirname(self.path) if self.path else None
         return self.directory_class(parent, self.app) if parent else None
@@ -170,7 +170,7 @@ class Node(object):
     @cached_property
     def ancestors(self):
         '''
-        Get list of ancestors until app config's directory_base is reached.
+        Get list of ancestors until app config's DIRECTORY_BASE is reached.
 
         :returns: list of ancestors starting from nearest.
         :rtype: list of Node objects
@@ -205,7 +205,7 @@ class Node(object):
         :returns: relative-url-like for node's path
         :rtype: str
         '''
-        return abspath_to_urlpath(self.path, self.app.config['directory_base'])
+        return abspath_to_urlpath(self.path, self.app.config['DIRECTORY_BASE'])
 
     @property
     def name(self):
@@ -285,7 +285,7 @@ class Node(object):
         :rtype: File
         '''
         app = app or current_app
-        base = app.config['directory_base']
+        base = app.config['DIRECTORY_BASE']
         path = urlpath_to_abspath(path, base)
         if not cls.generic:
             kls = cls
@@ -407,7 +407,7 @@ class File(Node):
         try:
             size, unit = fmt_size(
                 self.stats.st_size,
-                self.app.config['use_binary_multiples'] if self.app else False
+                self.app.config['USE_BINARY_MULIPLES'] if self.app else False
                 )
         except OSError:
             return None
@@ -560,31 +560,31 @@ class Directory(Node):
     @cached_property
     def can_download(self):
         '''
-        Get if path is downloadable (if app's `directory_downloadable` config
+        Get if path is downloadable (if app's `DIRECTORY_DOWNLOADABLE` config
         property is True).
 
         :returns: True if downloadable, False otherwise
         :rtype: bool
         '''
-        return self.app.config['directory_downloadable']
+        return self.app.config['DIRECTORY_DOWNLOADABLE']
 
     @cached_property
     def can_upload(self):
         '''
         Get if a file can be uploaded to path (if directory path is under app's
-        `directory_upload` config property).
+        `DIRECTORY_UPLOAD` config property).
 
         :returns: True if a file can be upload to directory, False otherwise
         :rtype: bool
         '''
-        dirbase = self.app.config["directory_upload"]
+        dirbase = self.app.config["DIRECTORY_UPLOAD"]
         return dirbase and check_base(self.path, dirbase)
 
     @cached_property
     def can_remove(self):
         '''
         Get if current node can be removed based on app config's
-        directory_remove.
+        DIRECTORY_REMOVE.
 
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
@@ -624,7 +624,7 @@ class Directory(Node):
         return self.app.response_class(
             TarFileStream(
                 self.path,
-                self.app.config['directory_tar_buffsize'],
+                self.app.config['DIRECTORY_TAR_BUFFSIZE'],
                 self.app.config['exclude_fnc'],
                 ),
             mimetype="application/octet-stream"

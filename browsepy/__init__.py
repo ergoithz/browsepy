@@ -35,15 +35,15 @@ app = Flask(
     template_folder=os.path.join(__basedir__, "templates")
     )
 app.config.update(
-    directory_base=compat.getcwd(),
-    directory_start=None,
-    directory_remove=None,
-    directory_upload=None,
-    directory_tar_buffsize=262144,
-    directory_downloadable=True,
-    use_binary_multiples=True,
-    plugin_modules=[],
-    plugin_namespaces=(
+    DIRECTORY_BASE=compat.getcwd(),
+    DIRECTORY_START=None,
+    DIRECTORY_REMOVE=None,
+    DIRECTORY_UPLOAD=None,
+    DIRECTORY_TAR_BUFFSIZE=262144,
+    DIRECTORY_DOWNLOADABLE=True,
+    USE_BINARY_MULIPLES=True,
+    PLUGIN_MODULES=[],
+    PLUGIN_NAMESPACES=(
         'browsepy.plugin',
         'browsepy_',
         '',
@@ -54,6 +54,8 @@ app.jinja_env.add_extension('browsepy.transform.htmlcompress.HTMLCompress')
 
 if 'BROWSEPY_SETTINGS' in os.environ:
     app.config.from_envvar('BROWSEPY_SETTINGS')
+
+print(app.config["DIRECTORY_BASE"])
 
 plugin_manager = PluginManager(app)
 
@@ -285,7 +287,7 @@ def upload(path):
 
 @app.route("/")
 def index():
-    path = app.config["directory_start"] or app.config["directory_base"]
+    path = app.config["DIRECTORY_START"] or app.config["DIRECTORY_BASE"]
     try:
         urlpath = Node(path).urlpath
     except OutsideDirectoryBase:

@@ -170,26 +170,26 @@ url, and mounting **browsepy.app** on the appropriate parent
 Browsepy app config (available at :attr:`browsepy.app.config`) uses the
 following configuration options.
 
-* **directory_base**: anything under this directory will be served,
+* **DIRECTORY_BASE**: anything under this directory will be served,
   defaults to current path.
-* **directory_start**: directory will be served when accessing root URL
-* **directory_remove**: file removing will be available under this path,
+* **DIRECTORY_START**: directory will be served when accessing root URL
+* **DIRECTORY_REMOVE**: file removing will be available under this path,
   defaults to **None**.
-* **directory_upload**: file upload will be available under this path,
+* **DIRECTORY_UPLOAD**: file upload will be available under this path,
   defaults to **None**.
-* **directory_tar_buffsize**, directory tar streaming buffer size,
+* **DIRECTORY_TAR_BUFFSIZE**, directory tar streaming buffer size,
   defaults to **262144** and must be multiple of 512.
-* **directory_downloadable** whether enable directory download or not,
+* **DIRECTORY_DOWNLOADABLE** whether enable directory download or not,
   defaults to **True**.
-* **use_binary_multiples** whether use binary units (bi-bytes, like KiB)
+* **USE_BINARY_MULIPLES** whether use binary units (bi-bytes, like KiB)
   instead of common ones (bytes, like KB), defaults to **True**.
-* **plugin_modules** list of module names (absolute or relative to
-  plugin_namespaces) will be loaded.
-* **plugin_namespaces** prefixes for module names listed at plugin_modules
-  where relative plugin_modules are searched.
+* **PLUGIN_MODULES** list of module names (absolute or relative to
+  PLUGIN_NAMESPACES) will be loaded.
+* **PLUGIN_NAMESPACES** prefixes for module names listed at PLUGIN_MODULES
+  where relative PLUGIN_MODULES are searched.
 * **exclude_fnc** function will be used to exclude files from listing and directory tarballs. Can be either None or function receiving an absolute path and returning a boolean.
 
-After editing `plugin_modules` value, plugin manager (available at module
+After editing `PLUGIN_MODULES` value, plugin manager (available at module
 plugin_manager and app.extensions['plugin_manager']) should be reloaded using
 the `reload` method.
 

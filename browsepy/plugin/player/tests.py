@@ -60,7 +60,7 @@ class TestPlayerBase(unittest.TestCase):
     def setUp(self):
         self.base = 'c:\\base' if os.name == 'nt' else '/base'
         self.app = flask.Flask(self.__class__.__name__)
-        self.app.config['directory_base'] = self.base
+        self.app.config['DIRECTORY_BASE'] = self.base
         self.manager = ManagerMock()
 
 
@@ -115,14 +115,14 @@ class TestIntegration(TestIntegrationBase):
 
     def test_register_plugin(self):
         self.app.config.update(self.browsepy_module.app.config)
-        self.app.config['plugin_namespaces'] = ('browsepy.plugin',)
+        self.app.config['PLUGIN_NAMESPACES'] = ('browsepy.plugin',)
         manager = self.manager_module.PluginManager(self.app)
         manager.load_plugin('player')
         self.assertIn(self.player_module.player, self.app.blueprints.values())
 
     def test_register_arguments(self):
         self.app.config.update(self.browsepy_module.app.config)
-        self.app.config['plugin_namespaces'] = ('browsepy.plugin',)
+        self.app.config['PLUGIN_NAMESPACES'] = ('browsepy.plugin',)
 
         manager = self.manager_module.ArgumentPluginManager(self.app)
         manager.load_arguments(self.non_directory_args)
@@ -132,8 +132,8 @@ class TestIntegration(TestIntegrationBase):
 
     def test_reload(self):
         self.app.config.update(
-            plugin_modules=['player'],
-            plugin_namespaces=['browsepy.plugin']
+            PLUGIN_MODULES=['player'],
+            PLUGIN_NAMESPACES=['browsepy.plugin']
         )
         manager = self.manager_module.PluginManager(self.app)
         manager.load_arguments(self.non_directory_args)
@@ -289,13 +289,13 @@ class TestBlueprint(TestPlayerBase):
         super(TestBlueprint, self).setUp()
         self.app = browsepy.app  # required for our url_for calls
         self.app.config.update(
-            directory_base=tempfile.mkdtemp(),
+            DIRECTORY_BASE=tempfile.mkdtemp(),
             SERVER_NAME='test'
         )
         self.app.register_blueprint(self.module.player)
 
     def tearDown(self):
-        shutil.rmtree(self.app.config['directory_base'])
+        shutil.rmtree(self.app.config['DIRECTORY_BASE'])
         test_utils.clear_flask_context()
 
     def url_for(self, endpoint, **kwargs):
@@ -309,13 +309,13 @@ class TestBlueprint(TestPlayerBase):
         return response
 
     def file(self, path, data=''):
-        apath = p(self.app.config['directory_base'], path)
+        apath = p(self.app.config['DIRECTORY_BASE'], path)
         with open(apath, 'w') as f:
             f.write(data)
         return apath
 
     def directory(self, path):
-        apath = p(self.app.config['directory_base'], path)
+        apath = p(self.app.config['DIRECTORY_BASE'], path)
         os.mkdir(apath)
         return apath
 
