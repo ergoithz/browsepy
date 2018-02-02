@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Mkdir</h1>
+  <p>Plese enter dir name</p>
+  <form method="post" class="mkdir">
+    <input type="text" name="dirname"/>
+    <input type="submit" value="Yes" />
+  </form>
+  <form method="get" class="mkdir" action="{{ url_for('browse', path=directory.urlpath) }}">
+    <input type="submit" class="cancel" alt="Go back" value="Cancel" />
+  </form>
+{% endblock %}

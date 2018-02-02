@@ -523,6 +523,13 @@ class Directory(Node):
                     file=self,
                     text='Upload',
                     endpoint='upload'
+                    ),
+                self.plugin_manager.create_widget(
+                    'header',
+                    'button',
+                    file=self,
+                    text='Mkdir',
+                    endpoint='mkdir'
                     )
                 ))
         if self.can_download:
@@ -613,6 +620,17 @@ class Directory(Node):
         '''
         super(Directory, self).remove()
         shutil.rmtree(self.path)
+
+    def mkdir(self, dirname):
+        '''
+        Remove directory tree.
+
+        :raises OutsideRemovableBase: when not under removable base directory
+        '''
+        os.mkdir(os.path.join(self.path, dirname))
+        # os.unlink(self.path)
+        # super(Directory, self).remove()
+        # shutil.rmtree(self.path)
 
     def download(self):
         '''
