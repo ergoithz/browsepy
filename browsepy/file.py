@@ -623,14 +623,13 @@ class Directory(Node):
 
     def mkdir(self, dirname):
         '''
-        Remove directory tree.
+        Make new directory.
 
-        :raises OutsideRemovableBase: when not under removable base directory
+        :param dirname: new directory name
+        :type directory: str
         '''
         os.mkdir(os.path.join(self.path, dirname))
-        # os.unlink(self.path)
-        # super(Directory, self).remove()
-        # shutil.rmtree(self.path)
+
 
     def download(self):
         '''
