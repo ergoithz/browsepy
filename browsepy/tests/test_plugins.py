@@ -46,13 +46,13 @@ class TestPlugins(unittest.TestCase):
 
     def setUp(self):
         self.app = self.app_module.app
-        self.original_namespaces = self.app.config['plugin_namespaces']
+        self.original_namespaces = self.app.config['PLUGIN_NAMESPACES']
         self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
-        self.app.config['plugin_namespaces'] = (self.plugin_namespace,)
+        self.app.config['PLUGIN_NAMESPACES'] = (self.plugin_namespace,)
         self.manager = self.manager_module.PluginManager(self.app)
 
     def tearDown(self):
-        self.app.config['plugin_namespaces'] = self.original_namespaces
+        self.app.config['PLUGIN_NAMESPACES'] = self.original_namespaces
         self.manager.clear()
         test_utils.clear_flask_context()
 
@@ -88,7 +88,7 @@ class TestPlugins(unittest.TestCase):
 
     def test_namespace_prefix(self):
         self.assertTrue(self.manager.import_plugin(self.plugin_name))
-        self.app.config['plugin_namespaces'] = (
+        self.app.config['PLUGIN_NAMESPACES'] = (
             self.plugin_namespace + '.test_',
             )
         self.assertTrue(self.manager.import_plugin('module'))

@@ -22,7 +22,7 @@ Plugins are regular python modules. They are loaded by `--plugin`
 
 Aiming to make plugin names shorter, browsepy try to load plugins
 using namespaces
-and prefixes defined on configuration's ``plugin_namespaces`` entry on
+and prefixes defined on configuration's ``PLUGIN_NAMESPACES`` entry on
 :attr:`browsepy.app.config`. Its default value is browsepy's built-in module namespace
 `browsepy.plugins`, `browsepy_` prefix and an empty namespace (so any plugin could
 be used with its full module name).

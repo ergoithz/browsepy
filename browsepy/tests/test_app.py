@@ -17,9 +17,9 @@ class TestApp(unittest.TestCase):
                 f.write(b'DIRECTORY_DOWNLOADABLE = False\n')
                 name = f.name
             os.environ['BROWSEPY_TEST_SETTINGS'] = name
-            self.app.config['directory_downloadable'] = True
+            self.app.config['DIRECTORY_DOWNLOADABLE'] = True
             self.app.config.from_envvar('BROWSEPY_TEST_SETTINGS')
-            self.assertFalse(self.app.config['directory_downloadable'])
+            self.assertFalse(self.app.config['DIRECTORY_DOWNLOADABLE'])
         finally:
             os.remove(name)
 

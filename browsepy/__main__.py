@@ -45,14 +45,14 @@ class PluginAction(argparse.Action):
 
 
 class ArgParse(argparse.ArgumentParser):
-    default_directory = app.config['directory_base']
+    default_directory = app.config['DIRECTORY_BASE']
     default_initial = (
         None
-        if app.config['directory_start'] == app.config['directory_base'] else
-        app.config['directory_start']
+        if app.config['DIRECTORY_START'] == app.config['DIRECTORY_BASE'] else
+        app.config['DIRECTORY_START']
         )
-    default_removable = app.config['directory_remove']
-    default_upload = app.config['directory_upload']
+    default_removable = app.config['DIRECTORY_REMOVE']
+    default_upload = app.config['DIRECTORY_UPLOAD']
 
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
@@ -168,12 +168,12 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     if args.debug:
         os.environ['DEBUG'] = 'true'
     app.config.update(
-        directory_base=args.directory,
-        directory_start=args.initial or args.directory,
-        directory_remove=args.removable,
-        directory_upload=args.upload,
-        plugin_modules=list_union(
-            app.config['plugin_modules'],
+        DIRECTORY_BASE=args.directory,
+        DIRECTORY_START=args.initial or args.directory,
+        DIRECTORY_REMOVE=args.removable,
+        DIRECTORY_UPLOAD=args.upload,
+        PLUGIN_MODULES=list_union(
+            app.config['PLUGIN_MODULES'],
             args.plugin,
             ),
         exclude_fnc=filter_union(

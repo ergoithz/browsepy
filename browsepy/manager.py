@@ -60,7 +60,7 @@ class PluginManagerBase(object):
         '''
         List of plugin namespaces taken from app config.
         '''
-        return self.app.config['plugin_namespaces'] if self.app else []
+        return self.app.config['PLUGIN_NAMESPACES'] if self.app else []
 
     def __init__(self, app=None):
         if app is None:
@@ -84,10 +84,10 @@ class PluginManagerBase(object):
 
         This method will make use of :meth:`clear` and :meth:`load_plugin`,
         so all internal state will be cleared, and all plugins defined in
-        :data:`self.app.config['plugin_modules']` will be loaded.
+        :data:`self.app.config['PLUGIN_MODULES']` will be loaded.
         '''
         self.clear()
-        for plugin in self.app.config.get('plugin_modules', ()):
+        for plugin in self.app.config.get('PLUGIN_MODULES', ()):
             self.load_plugin(plugin)
 
     def clear(self):
