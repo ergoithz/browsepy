@@ -630,7 +630,6 @@ class Directory(Node):
         '''
         os.mkdir(os.path.join(self.path, dirname))
 
-
     def download(self):
         '''
         Get a Flask Response object streaming a tarball of this directory.
