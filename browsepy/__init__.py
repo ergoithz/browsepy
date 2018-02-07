@@ -294,8 +294,8 @@ def mkdir(path):
         return render_template('mkdir.html', directory=directory)
     dirname = request.form["dirname"]
     directory.mkdir(dirname)
-
-    return redirect(url_for(".browse", path=Node(os.path.join(directory.path, dirname)).urlpath))
+    new_directory = Node(os.path.join(directory.path, dirname))
+    return redirect(url_for(".browse", path=new_directory.urlpath))
 
 
 @app.route("/")
