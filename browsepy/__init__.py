@@ -282,6 +282,7 @@ def upload(path):
                     )
     return redirect(url_for(".browse", path=directory.urlpath))
 
+
 @app.route("/mkdir/", defaults={'path': ''}, methods=("GET", "POST"))
 @app.route("/mkdir/<path:path>", methods=("GET", "POST"))
 def mkdir(path):
