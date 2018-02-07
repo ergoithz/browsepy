@@ -283,6 +283,22 @@ def upload(path):
     return redirect(url_for(".browse", path=directory.urlpath))
 
 
+@app.route("/mkdir/", defaults={'path': ''}, methods=("GET", "POST"))
+@app.route("/mkdir/<path:path>", methods=("GET", "POST"))
+def mkdir(path):
+    try:
+        directory = Node.from_urlpath(path)
+    except OutsideDirectoryBase:
+        return NotFound()
+
+    if request.method == 'GET':
+        return render_template('mkdir.html', directory=directory)
+    dirname = request.form["dirname"]
+    directory.mkdir(dirname)
+    new_directory = Node(os.path.join(directory.path, dirname))
+    return redirect(url_for(".browse", path=new_directory.urlpath))
+
+
 @app.route("/")
 def index():
     path = app.config["directory_start"] or app.config["directory_base"]

@@ -523,6 +523,13 @@ class Directory(Node):
                     file=self,
                     text='Upload',
                     endpoint='upload'
+                    ),
+                self.plugin_manager.create_widget(
+                    'header',
+                    'button',
+                    file=self,
+                    text='Mkdir',
+                    endpoint='mkdir'
                     )
                 ))
         if self.can_download:
@@ -613,6 +620,15 @@ class Directory(Node):
         '''
         super(Directory, self).remove()
         shutil.rmtree(self.path)
+
+    def mkdir(self, dirname):
+        '''
+        Make new directory.
+
+        :param dirname: new directory name
+        :type directory: str
+        '''
+        os.mkdir(os.path.join(self.path, dirname))
 
     def download(self):
         '''
