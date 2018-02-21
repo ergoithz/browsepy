@@ -15,7 +15,7 @@ class FileActionsException(Exception):
 
 class InvalidDirnameError(FileActionsException):
     '''
-    Exception raised when a clipboard item is not valid.
+    Exception raised when a new directory name is invalid.
 
     :property name: name which raised this Exception
     '''
@@ -30,36 +30,53 @@ class InvalidDirnameError(FileActionsException):
 class ClipboardException(FileActionsException):
     '''
     Base class for clipboard exceptions.
+
+    :property path: item path which raised this Exception
+    :property clipboard: :class Clipboard: instance
     '''
-    pass
+    code = 'invalid-clipboard'
+    template = 'Clipboard is invalid.'
+
+    def __init__(self, message=None, path=None, clipboard=None):
+        self.clipboard = clipboard
+        super(ClipboardException, self).__init__(message, path)
 
 
-class InvalidClipboardItemError(ClipboardException):
+class ItemIssue(tuple):
+    '''
+    Item/error issue
+    '''
+    @property
+    def item(self):
+        return self[0]
+
+    @property
+    def error(self):
+        return self[1]
+
+    @property
+    def code(self):
+        if isinstance(self.error, OSError):
+            return 'oserror-%d' % self.error.errno
+
+
+class InvalidClipboardItemsError(ClipboardException):
     '''
     Exception raised when a clipboard item is not valid.
 
     :property path: item path which raised this Exception
     '''
-    code = 'invalid-clipboard-item'
-    template = 'Clipboard item {0.item!r} is not valid.'
+    pair_class = ItemIssue
+    code = 'invalid-clipboard-items'
+    template = 'Clipboard has invalid items.'
 
-    def __init__(self, message=None, path=None, item=None):
-        self.item = item
-        super(InvalidClipboardItemError, self).__init__(message, path)
+    def __init__(self, message=None, path=None, clipboard=None, issues=()):
+        self.issues = list(map(self.pair_class, issues))
+        supa = super(InvalidClipboardItemsError, self)
+        supa.__init__(message, path, clipboard)
 
-
-class MissingClipboardItemError(InvalidClipboardItemError):
-    '''
-    Exception raised when a clipboard item is not valid.
-
-    :property path: item path which raised this Exception
-    '''
-    code = 'missing-clipboard-item'
-    template = 'Clipboard item {0.item!r} not found.'
-
-    def __init__(self, message=None, path=None, item=None):
-        self.item = item
-        super(InvalidClipboardItemError, self).__init__(message, path)
+    def append(self, item, error):
+        self.issues.append(self.pair_class(item, error))
 
 
 class InvalidClipboardModeError(ClipboardException):
@@ -71,9 +88,10 @@ class InvalidClipboardModeError(ClipboardException):
     code = 'invalid-clipboard-mode'
     template = 'Clipboard mode {0.path!r} is not valid.'
 
-    def __init__(self, message=None, path=None, mode=None):
+    def __init__(self, message=None, path=None, clipboard=None, mode=None):
         self.mode = mode
-        super(InvalidClipboardModeError, self).__init__(message, path)
+        supa = super(InvalidClipboardModeError, self)
+        supa.__init__(message, path, clipboard)
 
 
 class InvalidClipboardSizeError(ClipboardException):
@@ -85,6 +103,7 @@ class InvalidClipboardSizeError(ClipboardException):
     code = 'invalid-clipboard-size'
     template = 'Clipboard has too many items.'
 
-    def __init__(self, message=None, path=None, max_cookies=0):
+    def __init__(self, message=None, path=None, clipboard=None, max_cookies=0):
         self.max_cookies = max_cookies
-        super(InvalidClipboardSizeError, self).__init__(message, path)
+        supa = super(InvalidClipboardSizeError, self)
+        supa.__init__(message, path, clipboard)

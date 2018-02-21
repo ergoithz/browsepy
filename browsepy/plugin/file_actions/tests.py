@@ -31,6 +31,10 @@ class CookieProxy(object):
             }
 
     def set_cookie(self, name, value, **kwargs):
+        for cookie in self._client.cookie_jar:
+            if cookie.name == name:
+                self._client.cookie_jar.clear(
+                    cookie.domain, cookie.path, cookie.name)
         return self._client.set_cookie(
             self._client.environ_base['REMOTE_ADDR'], name, value, **kwargs)
 

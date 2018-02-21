@@ -13,43 +13,49 @@
   {% endif %}
 {% endset %}
 
-{% if error and error.code %}
-  {% if error.code.startswith('invalid-clipboard-') %}
-    {% set workaround %}
-      {% if item %}<p>Clipboard item: <span class="path">{{ item.urlpath }}</span></p>{% endif %}
-      <p>Please try again, if this problem persists contact server administrator.</p>
-    {% endset %}
-    {% if error.code == 'invalid-clipboard-item' %}
-      {% set description -%}
-        <h2>A clipboard item is not valid.</h2>
-        <p>File or directory is no longer available for given action.</p>
-        {{ workaround }}
-      {%- endset %}
-    {% elif error.code == 'invalid-clipboard-size' %}
-      {% set description -%}
-        <h2>Clipboard is too big.</h2>
-        <p>Clipboard became too big to be effectively stored in your browser cookies.</p>
-        <p>Please try again with fewer items.</p>
-      {%- endset %}
-    {% elif error.code == 'missing-clipboard-item' %}
-      {% set description -%}
-        <h2>A clipboard item is not found</h2>
-        <p>File or directory has been deleted, renamed or moved other to location.</p>
-        {{ workaround }}
-      {%- endset %}
+{% set messages %}
+  {% for issue in issues %}
+    {% if issue.error.code == 'oserror-2' %}
+      <p>{{ issue.item.name }} is no longer on source directory.</p>
     {% else %}
-      {% set description %}
-        <h2>Clipboard state is corrupted.</h2>
-        <p>Saved clipboard state is no longer valid.</p>
-        {{ workaround }}
-      {% endset %}
+      <p>{{ issue.item.name }} {{ issue.error }}</p>
     {% endif %}
+  {% endfor %}
+{% endset %}
+
+{% if error and error.code %}
+  {% set workaround %}
+    {% if item %}<p>Clipboard item: <span class="path">{{ item.urlpath }}</span></p>{% endif %}
+    <p>Please try again, if this problem persists contact server administrator.</p>
+  {% endset %}
+  {% if error.code == 'invalid-clipboard-items' %}
+    {% set description -%}
+      {% if issues.length == 1 -%}
+        <h2>A clipboard item is not valid.</h2>
+      {%- else -%}
+        <h2>Some clipboard items are invalid.</h2>
+      {%- endif %}
+      {{ messages }}
+      {{ workaround }}
+    {%- endset %}
+  {% elif error.code == 'invalid-clipboard-size' %}
+    {% set description -%}
+      <h2>Clipboard is too big.</h2>
+      <p>Clipboard became too big to be effectively stored in your browser cookies.</p>
+      <p>Please try again with fewer items.</p>
+    {%- endset %}
   {% elif error.code == 'invalid-dirname' %}
     {% set description %}
       <h2>Directory name is not valid.</h2>
       <p>Given directory name is not valid: incompatible name encoding or reserved name on filesystem.</p>
       <p>Please try again with other directory name or contact server administrator.</p>
     {%- endset %}
+  {% else %}
+    {% set description %}
+      <h2>Clipboard state is corrupted.</h2>
+      <p>Saved clipboard state is no longer valid.</p>
+      {{ workaround }}
+    {% endset %}
   {% endif %}
 {% endif %}
 

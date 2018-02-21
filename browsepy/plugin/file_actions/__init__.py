@@ -4,6 +4,7 @@
 import os
 import os.path
 import shutil
+import logging
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
                   make_response
@@ -16,12 +17,15 @@ from browsepy.compat import map, re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase
 
 from .clipboard import Clipboard
-from .exceptions import FileActionsException, ClipboardException, \
-                        InvalidClipboardModeError, InvalidClipboardItemError, \
-                        MissingClipboardItemError, InvalidDirnameError
+from .exceptions import FileActionsException, \
+                        InvalidClipboardModeError, \
+                        InvalidClipboardItemsError, \
+                        InvalidDirnameError
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
+
+logger = logging.getLogger(__name__)
 
 actions = Blueprint(
     'file_actions',
@@ -30,6 +34,7 @@ actions = Blueprint(
     template_folder=os.path.join(__basedir__, 'templates'),
     static_folder=os.path.join(__basedir__, 'static'),
     )
+
 re_basename = '^[^ {0}]([^{0}]*[^ {0}])?$'.format(
     re_escape(current_restricted_chars + common_path_separators)
     )
@@ -114,6 +119,8 @@ def selection(path):
 def clipboard_paste(path):
 
     def copy(target, node, join_fnc=os.path.join):
+        if node.is_excluded:
+            raise Exception()
         dest = join_fnc(
             target.path,
             target.choose_filename(node.name)
@@ -124,6 +131,8 @@ def clipboard_paste(path):
             shutil.copy2(node.path, dest)
 
     def cut(target, node, join_fnc=os.path.join):
+        if node.is_excluded or not node.can_remove:
+            raise Exception()
         if node.parent.path != target.path:
             dest = join_fnc(
                 target.path,
@@ -143,42 +152,37 @@ def clipboard_paste(path):
       ):
         return NotFound()
 
-    response = redirect(url_for('browse', path=directory.urlpath))
     clipboard = Clipboard.from_request()
     mode = clipboard.mode
-    clipboard.mode = 'paste'  # disables exclusion
-
-    nodes = [node for node in map(Node.from_urlpath, clipboard)]
 
     if mode == 'cut':
         paste_fnc = cut
-        for node in nodes:
-            if node.is_excluded or not node.can_remove:
-                raise InvalidClipboardItemError(
-                    path=directory.path,
-                    item=node.urlpath
-                    )
     elif mode == 'copy':
         paste_fnc = copy
-        for node in nodes:
-            if node.is_excluded:
-                raise InvalidClipboardItemError(
-                    path=directory.path,
-                    item=node.urlpath
-                    )
     else:
-        raise InvalidClipboardModeError(path=directory.path, mode=mode)
+        raise InvalidClipboardModeError(
+            path=directory.path,
+            clipboard=clipboard,
+            mode=mode
+            )
 
-    for node in nodes:
+    issues = []
+    clipboard.mode = 'paste'  # disables exclusion
+    for node in map(Node.from_urlpath, clipboard):
         try:
             paste_fnc(directory, node)
-        except FileNotFoundError:
-            raise MissingClipboardItemError(
-                path=directory.path,
-                item=node.urlpath
-                )
+        except BaseException as e:
+            issues.append((node, e))
 
-    clipboard.clear()
+    clipboard.mode = mode
+    if issues:
+        raise InvalidClipboardItemsError(
+            path=directory.path,
+            clipboard=clipboard,
+            issues=issues
+            )
+    else:
+        response = redirect(url_for('browse', path=directory.urlpath))
     clipboard.to_response(response)
     return response
 
@@ -196,17 +200,20 @@ def clipboard_clear(path):
 @actions.errorhandler(FileActionsException)
 def clipboard_error(e):
     file = Node(e.path) if hasattr(e, 'path') else None
-    item = Node.from_urlpath(e.item) if hasattr(e, 'item') else None
+    clipboard = getattr(e, 'clipboard', None)
+    issues = getattr(e, 'issues', ())
+
     response = make_response((
         render_template(
             '400.file_actions.html',
-            error=e, file=file, item=item
+            error=e, file=file, clipboard=clipboard, issues=issues,
             ),
         400
         ))
-    if isinstance(e, ClipboardException):
-        clipboard = Clipboard.from_request()
-        clipboard.clear()
+    if clipboard:
+        for issue in issues:
+            if isinstance(issue.error, FileNotFoundError):
+                clipboard.remove(issue.item.urlpath)
         clipboard.to_response(response)
     return response
 

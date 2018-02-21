@@ -156,3 +156,12 @@ class Clipboard(set):
             data = self.__getstate__()
             start = self._write_paginated_cookie(data, response) + 1
         self._delete_paginated_cookie(response, start, request)
+
+    def copy(self):
+        '''
+        Create another instance of this class with same items and mode.
+
+        :returns: clipboard instance
+        :rtype: Clipboard
+        '''
+        return self.___class__(self, mode=self.mode)
