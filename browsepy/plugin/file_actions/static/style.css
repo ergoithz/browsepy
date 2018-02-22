@@ -55,3 +55,7 @@ tr.clickable:hover {
 tr.clickable:hover > td{
   background-color: #ddd;
 }
+.issue-name {
+  font-weight: bold;
+  font-family: monospace;
+}

@@ -1,3 +1,5 @@
+import os
+import errno
 
 
 class FileActionsException(Exception):
@@ -55,9 +57,18 @@ class ItemIssue(tuple):
         return self[1]
 
     @property
-    def code(self):
-        if isinstance(self.error, OSError):
-            return 'oserror-%d' % self.error.errno
+    def message(self):
+        if isinstance(self.error, OSError) and \
+          self.error.errno in errno.errorcode:
+            return '%s (%s)' % (
+                os.strerror(self.error.errno),
+                errno.errorcode[self.error.errno]
+                )
+
+        # ensure full path is never returned
+        text = str(self.error)
+        text = text.replace(self.item.path, self.item.name)
+        return text
 
 
 class InvalidClipboardItemsError(ClipboardException):
@@ -76,7 +87,7 @@ class InvalidClipboardItemsError(ClipboardException):
         supa.__init__(message, path, clipboard)
 
     def append(self, item, error):
-        self.issues.append(self.pair_class(item, error))
+        self.issues.append(self.pair_class((item, error)))
 
 
 class InvalidClipboardModeError(ClipboardException):

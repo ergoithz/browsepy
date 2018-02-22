@@ -14,6 +14,7 @@ from werkzeug.utils import cached_property
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.clipboard as file_actions_clipboard
 import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
+import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.exceptions as browsepy_exceptions
 import browsepy.compat as compat
@@ -321,6 +322,13 @@ class TestAction(unittest.TestCase):
             self.assertExist('asdf')
 
             response = client.post(
+                '/file-actions/create/directory',
+                data={
+                    'name': 'asdf'
+                    })
+            self.assertEqual(response.status_code, 400)  # already exists
+
+            response = client.post(
                 '/file-actions/create/directory/..',
                 data={
                     'name': 'asdf',
@@ -520,3 +528,29 @@ class TestClipboard(unittest.TestCase):
         clipboard = self.module.Clipboard()
         clipboard.to_response(request, request)
         self.assertNotIn(name, request.cookies)
+
+
+class TestException(unittest.TestCase):
+    module = file_actions_exceptions
+    clipboard_class = file_actions_clipboard.Clipboard
+    node_class = browsepy_file.Node
+
+    def test_invalid_clipboard_items_error(self):
+        clipboard = self.clipboard_class((
+            'asdf',
+            ))
+        pair = (
+            self.node_class('/base/asdf'),
+            Exception('Uncaught exception /base/asdf'),
+            )
+        e = self.module.InvalidClipboardItemsError(
+            path='/',
+            clipboard=clipboard,
+            issues=[pair]
+            )
+        e.append(
+            self.node_class('/base/other'),
+            OSError(2, 'Not found with random message'),
+            )
+        self.assertIn('Uncaught exception asdf', e.issues[0].message)
+        self.assertIn('No such file or directory', e.issues[1].message)

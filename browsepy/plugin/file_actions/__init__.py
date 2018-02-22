@@ -66,7 +66,10 @@ def create_directory(path):
             name=basename,
             )
 
-    os.mkdir(os.path.join(directory.path, basename))
+    try:
+        os.mkdir(os.path.join(directory.path, basename))
+    except OSError:
+        raise FileActionsException(path=directory.path)
 
     return redirect(url_for('browse', path=directory.urlpath))
 

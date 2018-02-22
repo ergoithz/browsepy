@@ -15,11 +15,7 @@
 
 {% set messages %}
   {% for issue in issues %}
-    {% if issue.error.code == 'oserror-2' %}
-      <p>{{ issue.item.name }} is no longer on source directory.</p>
-    {% else %}
-      <p>{{ issue.item.name }} {{ issue.error }}</p>
-    {% endif %}
+     <p><span class="issue-name">{{ issue.item.name }}</span>: {{ issue.message }}</p>
   {% endfor %}
 {% endset %}
 
