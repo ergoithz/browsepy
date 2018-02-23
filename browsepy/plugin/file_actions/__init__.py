@@ -128,7 +128,7 @@ def clipboard_paste(path):
 
     def copy(target, node, join_fnc=os.path.join):
         if node.is_excluded:
-            raise Exception()
+            raise OSError(2, os.strerror(2))
         dest = join_fnc(
             target.path,
             target.choose_filename(node.name)
@@ -140,7 +140,8 @@ def clipboard_paste(path):
 
     def cut(target, node, join_fnc=os.path.join):
         if node.is_excluded or not node.can_remove:
-            raise Exception()
+            code = 2 if node.is_excluded else 1
+            raise OSError(code, os.strerror(code))
         if node.parent.path != target.path:
             dest = join_fnc(
                 target.path,
