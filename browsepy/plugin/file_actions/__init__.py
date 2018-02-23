@@ -20,7 +20,8 @@ from .clipboard import Clipboard
 from .exceptions import FileActionsException, \
                         InvalidClipboardModeError, \
                         InvalidClipboardItemsError, \
-                        InvalidDirnameError
+                        InvalidDirnameError, \
+                        DirectoryCreationError
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
@@ -68,8 +69,12 @@ def create_directory(path):
 
     try:
         os.mkdir(os.path.join(directory.path, basename))
-    except OSError:
-        raise FileActionsException(path=directory.path)
+    except OSError as e:
+        raise DirectoryCreationError.from_exception(
+            e,
+            path=directory.path,
+            name=basename
+            )
 
     return redirect(url_for('browse', path=directory.urlpath))
 
@@ -184,8 +189,11 @@ def clipboard_paste(path):
             clipboard=clipboard,
             issues=issues
             )
-    else:
-        response = redirect(url_for('browse', path=directory.urlpath))
+
+    if mode == 'cut':
+        clipboard.clear()
+
+    response = redirect(url_for('browse', path=directory.urlpath))
     clipboard.to_response(response)
     return response
 

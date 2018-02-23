@@ -21,12 +21,40 @@ class InvalidDirnameError(FileActionsException):
 
     :property name: name which raised this Exception
     '''
-    code = 'invalid-dirname'
+    code = 'directory-invalid-name'
     template = 'Clipboard item {0.name!r} is not valid.'
 
     def __init__(self, message=None, path=None, name=None):
         self.name = name
         super(InvalidDirnameError, self).__init__(message, path)
+
+
+class DirectoryCreationError(FileActionsException):
+    '''
+    Exception raised when a new directory creation fails.
+
+    :property name: name which raised this Exception
+    '''
+    code = 'directory-mkdir-error'
+    template = 'Clipboard item {0.name!r} is not valid.'
+
+    def __init__(self, message=None, path=None, name=None):
+        self.name = name
+        super(DirectoryCreationError, self).__init__(message, path)
+
+    @property
+    def message(self):
+        return self.args[0]
+
+    @classmethod
+    def from_exception(cls, exception, *args, **kwargs):
+        message = None
+        if isinstance(exception, OSError):
+            message = '%s (%s)' % (
+                os.strerror(exception.errno),
+                errno.errorcode[exception.errno]
+                )
+        return cls(message, *args, **kwargs)
 
 
 class ClipboardException(FileActionsException):
@@ -36,7 +64,7 @@ class ClipboardException(FileActionsException):
     :property path: item path which raised this Exception
     :property clipboard: :class Clipboard: instance
     '''
-    code = 'invalid-clipboard'
+    code = 'clipboard-invalid'
     template = 'Clipboard is invalid.'
 
     def __init__(self, message=None, path=None, clipboard=None):
@@ -58,8 +86,7 @@ class ItemIssue(tuple):
 
     @property
     def message(self):
-        if isinstance(self.error, OSError) and \
-          self.error.errno in errno.errorcode:
+        if isinstance(self.error, OSError):
             return '%s (%s)' % (
                 os.strerror(self.error.errno),
                 errno.errorcode[self.error.errno]
@@ -78,7 +105,7 @@ class InvalidClipboardItemsError(ClipboardException):
     :property path: item path which raised this Exception
     '''
     pair_class = ItemIssue
-    code = 'invalid-clipboard-items'
+    code = 'clipboard-invalid-items'
     template = 'Clipboard has invalid items.'
 
     def __init__(self, message=None, path=None, clipboard=None, issues=()):
@@ -96,7 +123,7 @@ class InvalidClipboardModeError(ClipboardException):
 
     :property mode: mode which raised this Exception
     '''
-    code = 'invalid-clipboard-mode'
+    code = 'clipboard-invalid-mode'
     template = 'Clipboard mode {0.path!r} is not valid.'
 
     def __init__(self, message=None, path=None, clipboard=None, mode=None):
@@ -111,7 +138,7 @@ class InvalidClipboardSizeError(ClipboardException):
 
     :property max_cookies: maximum allowed size
     '''
-    code = 'invalid-clipboard-size'
+    code = 'clipboard-invalid-size'
     template = 'Clipboard has too many items.'
 
     def __init__(self, message=None, path=None, clipboard=None, max_cookies=0):

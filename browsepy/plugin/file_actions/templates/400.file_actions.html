@@ -1,10 +1,5 @@
 {% extends "base.html" %}
 
-{% set description %}
-  <p>The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).</p>
-  <p>Please try other parameters or contact server administrator.</p>
-{% endset %}
-
 {% set buttons %}
   {% if file %}
     <a class="long button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Accept</a>
@@ -20,39 +15,57 @@
 {% endset %}
 
 {% if error and error.code %}
-  {% set workaround %}
-    {% if item %}<p>Clipboard item: <span class="path">{{ item.urlpath }}</span></p>{% endif %}
-    <p>Please try again, if this problem persists contact server administrator.</p>
-  {% endset %}
-  {% if error.code == 'invalid-clipboard-items' %}
-    {% set description -%}
-      {% if issues.length == 1 -%}
-        <h2>A clipboard item is not valid.</h2>
-      {%- else -%}
-        <h2>Some clipboard items are invalid.</h2>
-      {%- endif %}
-      {{ messages }}
-      {{ workaround }}
-    {%- endset %}
-  {% elif error.code == 'invalid-clipboard-size' %}
-    {% set description -%}
-      <h2>Clipboard is too big.</h2>
-      <p>Clipboard became too big to be effectively stored in your browser cookies.</p>
-      <p>Please try again with fewer items.</p>
-    {%- endset %}
-  {% elif error.code == 'invalid-dirname' %}
-    {% set description %}
-      <h2>Directory name is not valid.</h2>
-      <p>Given directory name is not valid: incompatible name encoding or reserved name on filesystem.</p>
+  {% if error.code.startswith('directory-') %}
+    {% set workaround %}
       <p>Please try again with other directory name or contact server administrator.</p>
-    {%- endset %}
-  {% else %}
-    {% set description %}
-      <h2>Clipboard state is corrupted.</h2>
-      <p>Saved clipboard state is no longer valid.</p>
-      {{ workaround }}
     {% endset %}
+    {% if error.code == 'directory-invalid-name' %}
+      {% set description %}
+        <h2>Directory name is not valid</h2>
+        <p>Given directory name is not valid: incompatible name encoding or reserved name on filesystem.</p>
+        {{ workaround }}
+      {%- endset %}
+    {% elif error.code == 'directory-mkdir-error' %}
+      {% set description %}
+        <h2>Directory creation failed</h2>
+        <p>{{ error.message }}.</p>
+        {{ workaround }}
+      {%- endset %}
+    {% endif %}
+  {% elif error.code.startswith('clipboard-') %}
+    {% set workaround %}
+      <p>Please try again, if this problem persists contact server administrator.</p>
+    {% endset %}
+    {% if error.code == 'clipboard-invalid-items' %}
+      {% set description -%}
+        {% if issues.length == 1 -%}
+          <h2>A clipboard item is not valid</h2>
+        {%- else -%}
+          <h2>Some clipboard items are not valid</h2>
+        {%- endif %}
+        {{ messages }}
+        {{ workaround }}
+      {%- endset %}
+    {% elif error.code == 'clipboard-invalid-size' %}
+      {% set description -%}
+        <h2>Clipboard size limit exceeded</h2>
+        <p>Clipboard became too big to be effectively stored in your browser cookies.</p>
+        <p>Please try again with fewer items.</p>
+      {%- endset %}
+    {% else %}
+      {% set description %}
+        <h2>Clipboard state is corrupted</h2>
+        <p>Saved clipboard state is no longer valid.</p>
+        {{ workaround }}
+      {% endset %}
+    {% endif %}
   {% endif %}
+{% else %}
+  {% set description %}
+    <h2>Unexpected error</h2>
+    <p>Operation failed due an unexpected error.</p>
+    <p>Please contact server administrator.</p>
+  {% endset %}
 {% endif %}
 
 {% block title %}400 Bad Request{% endblock %}
