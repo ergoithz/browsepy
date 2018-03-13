@@ -1,0 +1,5 @@
+# for python < 3.6
+scandir
+
+# for python < 3.3
+backports.shutil_get_terminal_size

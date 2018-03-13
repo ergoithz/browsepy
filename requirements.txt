@@ -1,19 +1,2 @@
-flask
-unicategories
-
-# for python < 3.6
-scandir
-
-# for python < 3.3
-backports.shutil_get_terminal_size
-
-# for building
-setuptools
-wheel
-
-# for Makefile tasks (testing, coverage, docs)
-pep8
-flake8
-coverage
-pyaml
-sphinx
+-r requirements/compat.txt
+-r requirements/development.txt

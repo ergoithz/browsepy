@@ -1,0 +1,12 @@
+-r base.txt
+
+# for building
+setuptools
+wheel
+
+# for Makefile tasks (testing, coverage, docs)
+pep8
+flake8
+coverage
+pyaml
+sphinx

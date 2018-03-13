@@ -1,7 +1,7 @@
 .PHONY: doc clean pep8 coverage travis
 
 test: pep8 flake8 eslint
-	python -c 'import yaml;yaml.load(open(".travis.yml").read())'
+	python -c 'import yaml, glob;[yaml.load(open(p)) for p in glob.glob(".*.yml")]'
 ifdef debug
 	python setup.py test --debug=$(debug)
 else
@@ -55,14 +55,3 @@ showcoverage: coverage
 	coverage html
 	xdg-open file://${CURDIR}/htmlcov/index.html >> /dev/null
 
-travis-script: pep8 flake8 coverage
-
-travis-script-sphinx:
-	travis-sphinx --nowarn --source=doc build
-
-travis-success:
-	codecov
-	coveralls
-
-travis-success-sphinx:
-	travis-sphinx deploy
