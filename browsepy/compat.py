@@ -27,6 +27,61 @@ try:
 except ImportError:
     from backports.shutil_get_terminal_size import get_terminal_size  # noqa
 
+try:
+    from queue import Queue, Empty, Full
+except ImportError:
+    from Queue import Queue, Empty, Full  # noqa
+
+try:
+    from threading import Barrier, BrokenBarrierError
+except ImportError:
+    from threading import Lock  # noqa
+
+    class BrokenBarrierError(RuntimeError):
+        pass
+
+    class Barrier(object):
+        def __init__(self, parties, action=None, timeout=0):
+            self.parties = parties
+            self.n_waiting = 0
+            self.broken = False
+            self._queue = Queue(maxsize=1)
+            self._lock = Lock()
+
+        def _uncork(self, broken=False):
+            # allow every exit
+            while self.n_waiting > 1:
+                self._queue.put(broken)
+                self.n_waiting -= 1
+            self.n_waiting = 0
+
+        def reset(self):
+            with self._lock:
+                self._uncork(True)
+
+        def abort(self):
+            with self._lock:
+                self.broken = True
+                self._uncork(True)
+
+        def wait(self):
+            with self._lock:
+                if self.broken:
+                    raise BrokenBarrierError()
+
+                self.n_waiting += 1
+
+                if self.n_waiting == self.parties:
+                    self._uncork()
+
+                    if self.action:
+                        self.action()
+
+                    return
+
+            if self._queue.get():
+                raise BrokenBarrierError()
+
 
 def isexec(path):
     '''
