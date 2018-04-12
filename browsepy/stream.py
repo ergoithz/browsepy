@@ -3,31 +3,41 @@ import os
 import os.path
 import tarfile
 import threading
+import functools
 
 import browsepy.compat as compat
 
 
-class WriteAbort(RuntimeError):
-    def __init__(self):
-        print('abort')
-        super(WriteAbort, self).__init__()
-
-
-class WritableQueue(object):
+class BlockingPipeAbort(RuntimeError):
     '''
-    Minimal threading blocking pipe threading with only `write`, `get` and
-    `close` methods.
+    Exception used internally be default's :class:`BlockingPipe`
+    implementation.
+    '''
+    pass
 
-    This class includes :class:`queue.Queue` specific logic, which itself
-    depends on :module:`threading` so any alternate
+class BlockingPipe(object):
+    '''
+    Minimal pipe class with `write`, `retrieve` and `close` blocking methods.
 
-    Method `write` is exposed instead of `put` for :class:`tarfile.TarFile`
+    This class implementation assumes that :attr:`pipe_class` (set as
+    class:`queue.Queue` in current implementation) instances has both `put`
+    and `get blocking methods.
+
+    Due its blocking implementation, this class is only compatible with
+    python's threading module, any other approach (like coroutines) will
+    require to adapt this class (via inheritance or implementation).
+
+    This class exposes :method:`write` for :class:`tarfile.TarFile`
     `fileobj` compatibility.
-    '''
-    abort_exception = WriteAbort
+    '''''
+    lock_class = threading.Lock
+    pipe_class = functools.partial(compat.Queue, maxsize=1)
+    abort_exception = BlockingPipeAbort
 
     def __init__(self):
-        self._queue = compat.Queue(maxsize=1)
+        self._pipe = self.pipe_class()
+        self._wlock = self.lock_class()
+        self._rlock = self.lock_class()
         self.closed = False
 
     def write(self, data):
@@ -41,15 +51,12 @@ class WritableQueue(object):
         :rtype: int
         :raises WriteAbort: if already closed or closed while blocking
         '''
-        if self.closed:
-            raise self.abort_exception()
 
-        self._queue.put(data)
-
-        if self.closed:
-            raise self.abort_exception()
-
-        return len(data)
+        with self._wlock:
+            if self.closed:
+                raise self.abort_exception()
+            self._pipe.put(data)
+            return len(data)
 
     def retrieve(self):
         '''
@@ -60,15 +67,14 @@ class WritableQueue(object):
         :rtype: bytes
         :raises WriteAbort: if already closed or closed while blocking
         '''
-        if self.closed:
-            raise self.abort_exception()
 
-        data = self._queue.get()
-
-        if self.closed and data is None:
-            raise self.abort_exception()
-
-        return data
+        with self._rlock:
+            if self.closed:
+                raise self.abort_exception()
+            data = self._pipe.get()
+            if data is None:
+                raise self.abort_exception()
+            return data
 
     def close(self):
         '''
@@ -76,6 +82,20 @@ class WritableQueue(object):
         :attr:`abort_exception` instances.
         '''
         self.closed = True
+
+        # release locks
+        reading = not self._rlock.acquire(blocking=False)
+        writing = not self._wlock.acquire(blocking=False)
+
+        if not reading:
+            if writing:
+                self._pipe.get()
+            self._rlock.release()
+
+        if not writing:
+            if reading:
+                self._pipe.put(None)
+            self._wlock.release()
 
 
 class TarFileStream(object):
@@ -90,7 +110,8 @@ class TarFileStream(object):
     :attr:`event_class` and :attr:`thread_class` values.
     '''
 
-    writable_class = WritableQueue
+    pipe_class = BlockingPipe
+    abort_exception = BlockingPipe.abort_exception
     thread_class = threading.Thread
     tarfile_class = tarfile.open
 
@@ -128,7 +149,7 @@ class TarFileStream(object):
         self._started = False
         self._buffsize = buffsize
         self._compress = compress if compress and buffsize > 15 else ''
-        self._writable = self.writable_class()
+        self._writable = self.pipe_class()
         self._th = self.thread_class(target=self._fill)
 
     def _fill(self):
@@ -148,7 +169,7 @@ class TarFileStream(object):
         def infofilter(info):
             return None if exclude(path_join(path, info.name)) else info
 
-        tarfile = self.tarfile_class(  # stream write
+        tarfile = self.tarfile_class(
             fileobj=self._writable,
             mode='w|{}'.format(self._compress),
             bufsize=self._buffsize
@@ -157,10 +178,11 @@ class TarFileStream(object):
         try:
             tarfile.add(self.path, "", filter=infofilter if exclude else None)
             tarfile.close()  # force stream flush
-        except self._writable.abort_exception:
-            pass
+        except self.abort_exception:
+            # expected exception when pipe is closed prematurely
+            tarfile.close()  # free fd
         else:
-            self._writable.close()
+            self.close()
 
     def __next__(self):
         '''
@@ -177,7 +199,7 @@ class TarFileStream(object):
 
         try:
             return self._writable.retrieve()
-        except self._writable.abort_exception:
+        except self.abort_exception:
             raise StopIteration()
 
     def __iter__(self):
