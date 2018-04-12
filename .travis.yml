@@ -8,8 +8,7 @@ matrix:
   include:
   - python: "2.7"
   - python: "pypy"
-  # pypy3 disabled until fixed
-  #- python: "pypy3"
+  - python: "pypy3"
   - python: "3.3"
   - python: "3.4"
   - python: "3.5"
@@ -20,7 +19,8 @@ matrix:
 
 install:
   - pip install --upgrade pip
-  - pip install travis-sphinx flake8 pycodestyle codecov coveralls .
+  - pip install -r requirements/ci.txt
+  - pip install .
   - |
     if [ "$eslint" = "yes" ]; then
       nvm install stable
@@ -28,23 +28,36 @@ install:
       npm install eslint
       export PATH="$PWD/node_modules/.bin:$PATH"
     fi
+  - |
+    if [ "$sphinx" = "yes" ]; then
+      pip install -r requirements/doc.txt
+    fi
 
 script:
-  - make travis-script
+  - make flake8 coverage
   - |
     if [ "$eslint" = "yes" ]; then
       make eslint
     fi
   - |
     if [ "$sphinx" = "yes" ]; then
-      make travis-script-sphinx
+      make doc
     fi
 
 after_success:
-  - make travis-success
+  - codecov
+  - coveralls
   - |
-    if [ "$sphinx" = "yes" ]; then
-      make travis-success-sphinx
+    if [ "$sphinx" = "yes" ] && \
+       [ "$TRAVIS_BRANCH" = "master" ] && \
+       [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+      ghp-import \
+        --push \
+        --force \
+        --no-jekyll \
+        --branch=gh-pages \
+        --remote="https://${GH_TOKEN}@github.com${TRAVIS_REPO_SLUG}.git" \
+        doc/.build/html
     fi
 
 notifications:

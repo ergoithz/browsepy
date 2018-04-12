@@ -1,0 +1,27 @@
+#
+# Continuous-integration requirements file
+# ========================================
+#
+# This module includes all requirements for continuous-integration tasks
+# (see .travis.yml).
+#
+# Requirement file inheritance tree
+# ---------------------------------
+#
+# - requirements/ci.txt
+#   - requirements/development.txt
+#     - requirements/base.txt
+#
+# See also
+# --------
+#
+# - requirements.txt
+# - requirements/compat.txt
+# - requirements/development.txt
+#
+
+-r development.txt
+
+ghp-import
+codecov
+coveralls

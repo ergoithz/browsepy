@@ -1,19 +1,29 @@
-flask
-unicategories
+#
+# Default requirements file
+# =========================
+#
+# This file includes all development dependencies, including compatibility
+# modules.
+#
+# If you do not want compatibility dependencies, install
+# `requirements/development.txt` instead.
+#
+# Requirement file inheritance tree
+# ---------------------------------
+#
+# - requirements.txt
+#   - requirements/compat.txt
+#   - requirements/development.txt
+#     - requirements/base.txt
+#
+# See also
+# --------
+#
+# - requirements/ci.txt
+# - requirements/compat.txt
+# - requirements/development.txt
+#
 
-# for python < 3.6
-scandir
+-r requirements/compat.txt
+-r requirements/development.txt
 
-# for python < 3.3
-backports.shutil_get_terminal_size
-
-# for building
-setuptools
-wheel
-
-# for Makefile tasks (testing, coverage, docs)
-pycodestyle<2.4.0
-flake8
-coverage
-pyaml
-sphinx
