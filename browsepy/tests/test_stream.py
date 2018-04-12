@@ -19,7 +19,7 @@ class StreamTest(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def randfile(self, size=1024):
-        name = codecs.encode(os.urandom(5), 'hex').decode()
+        name = codecs.encode(os.urandom(5), 'hex_codec').decode()
         with open(os.path.join(self.base, name), 'wb') as f:
             f.write(os.urandom(size))
 
