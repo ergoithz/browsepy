@@ -5,6 +5,8 @@
 # This module includes only development dependencies for Makefile tasks such as
 # code analysis and building (see Makefile).
 #
+# Documentation requirements are on its own file `requirements/doc.txt`.
+#
 # Requirement file inheritance tree
 # ---------------------------------
 #
@@ -27,4 +29,3 @@ pycodestyle<2.4.0
 flake8
 coverage
 pyaml
-sphinx

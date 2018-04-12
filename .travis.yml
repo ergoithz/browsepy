@@ -28,6 +28,10 @@ install:
       npm install eslint
       export PATH="$PWD/node_modules/.bin:$PATH"
     fi
+  - |
+    if [ "$sphinx" = "yes" ]; then
+      pip install -r requirements/doc.txt
+    fi
 
 script:
   - make flake8 coverage

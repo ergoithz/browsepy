@@ -1,0 +1,26 @@
+#
+# Documentation requirements file
+# ===============================
+#
+# This module includes only dependencies required to build the documentation.
+#
+# These requirements are kept separated from both development and integration
+# requirement files as they tend to be picky about python versions.
+#
+# Requirement file inheritance tree
+# ---------------------------------
+#
+# - requirements/doc.txt
+#   - requirements/base.txt
+#
+# See also
+# --------
+#
+# - requirements.txt
+# - requirements/ci.txt
+# - requirements/compat.txt
+#
+
+-r base.txt
+
+sphinx
