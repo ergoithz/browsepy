@@ -6,10 +6,8 @@ import os.path
 import sys
 import abc
 import itertools
-
-import warnings
 import functools
-
+import warnings
 import posixpath
 import ntpath
 
@@ -33,9 +31,9 @@ except ImportError:
     from Queue import Queue, Empty, Full  # noqa
 
 try:
-    from collections.abc import Generator  # python 3.3+
+    from collections.abc import Iterator as BaseIterator  # python 3.3+
 except ImportError:
-    from backports_abc import Generator  # noqa
+    from collections import Iterator as BaseIterator
 
 
 def isexec(path):
@@ -328,6 +326,14 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
 
 
 if PY_LEGACY:
+    class Iterator(BaseIterator):
+        def next(self):
+            '''
+            Call :method:`__next__` for compatibility.
+
+            :returns: see :method:`__next__`
+            '''
+            return self.__next__()
 
     class FileNotFoundError(BaseException):
         __metaclass__ = abc.ABCMeta
@@ -343,6 +349,7 @@ if PY_LEGACY:
     chr = unichr  # noqa
     bytes = str  # noqa
 else:
+    Iterator = BaseIterator
     FileNotFoundError = FileNotFoundError
     range = range
     filter = filter

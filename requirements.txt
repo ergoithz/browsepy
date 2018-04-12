@@ -6,7 +6,6 @@ scandir
 
 # for python < 3.3
 backports.shutil_get_terminal_size
-backports_abc
 
 # for building
 setuptools

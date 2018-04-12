@@ -35,11 +35,6 @@ try:
 except ImportError:
     from distutils.core import setup
 
-try:
-    import collections.abc as collections_abc
-except ImportError:
-    collections_abc = None
-
 sys.path[:], sys_path = [os.path.abspath('browsepy')], sys.path[:]
 import __meta__ as meta  # noqa
 sys.path[:] = sys_path
@@ -55,9 +50,6 @@ if bdist or not hasattr(os, 'scandir'):  # python 3.5+
 
 if bdist or not hasattr(shutil, 'get_terminal_size'):  # python 3.3+
     extra_requires.append('backports.shutil_get_terminal_size')
-
-if bdist or not hasattr(collections_abc, 'Generator'):  # python 3.3+
-    extra_requires.append('backports_abc')
 
 for debugger in ('ipdb', 'pudb', 'pdb'):
     opt = '--debug=%s' % debugger

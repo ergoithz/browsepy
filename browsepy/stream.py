@@ -90,8 +90,8 @@ class BlockingPipe(object):
             self.closed = True
 
             # release locks
-            reading = not self._rlock.acquire(blocking=False)
-            writing = not self._wlock.acquire(blocking=False)
+            reading = not self._rlock.acquire(False)
+            writing = not self._wlock.acquire(False)
 
             if not reading:
                 if writing:
@@ -104,13 +104,12 @@ class BlockingPipe(object):
                 self._wlock.release()
 
 
-class TarFileStream(compat.Generator):
+class TarFileStream(compat.Iterator):
     '''
-    Iterable/generator class which yields tarfile chunks for streaming.
+    Iterator class which yields tarfile chunks for streaming.
 
-    This class implements :class:`collections.abc.Generator` interface
-    (`PEP 325 <https://www.python.org/dev/peps/pep-0342/>`_),
-    so it can be appropriately handled by wsgi servers
+    This class implements :class:`collections.abc.Iterator` interface
+    with :method:`close`, so it can be appropriately handled by wsgi servers
     (`PEP 333<https://www.python.org/dev/peps/pep-0333>`_).
 
     Buffsize can be provided, it should be 512 multiple (the tar block size)
@@ -192,7 +191,7 @@ class TarFileStream(compat.Generator):
         else:
             self.close()
 
-    def send(self, value):
+    def __next__(self):
         '''
         Pulls chunk from tarfile (which is processed on its own thread).
 
@@ -210,25 +209,14 @@ class TarFileStream(compat.Generator):
         except self.abort_exception:
             raise StopIteration()
 
-    def throw(self, typ, val=None, tb=None):
+    def close(self):
         '''
-        Raise an exception in the coroutine.
-        Return next yielded value or raise StopIteration.
+        Closes tarfile pipe and stops further processing.
         '''
-        try:
-            if val is None:
-                if tb is None:
-                    raise typ
-                val = typ()
-            if tb is not None:
-                val = val.with_traceback(tb)
-            raise val
-        except GeneratorExit:
-            self._pipe.close()
-            raise
+        self._pipe.close()
 
     def __del__(self):
         '''
-        Call :method:`TarFileStream.close`,
+        Call :method:`TarFileStream.close`.
         '''
         self.close()
