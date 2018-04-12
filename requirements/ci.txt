@@ -1,0 +1,6 @@
+-r development.txt
+
+# for continuous integration tasks
+ghp-import
+codecov
+coveralls

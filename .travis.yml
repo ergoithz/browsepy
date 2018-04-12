@@ -19,7 +19,8 @@ matrix:
 
 install:
   - pip install --upgrade pip
-  - pip install ghp-import sphinx flake8 pep8 codecov coveralls .
+  - pip install -r requirements/ci.txt
+  - pip install .
   - |
     if [ "$eslint" = "yes" ]; then
       nvm install stable
@@ -43,9 +44,16 @@ after_success:
   - codecov
   - coveralls
   - |
-    if [ "$sphinx" = "yes" ] && [ "$TRAVIS_BRANCH" = "master" ] && 
-[ "$TRAVIS_PULL_REQUEST" = "false" ]; then
-      ghp-import --push --force --no-jekyll --branch=gh-pages --remote="https://${GH_TOKEN}@github.com${TRAVIS_REPO_SLUG}.git doc/.build/html"
+    if [ "$sphinx" = "yes" ] && \
+       [ "$TRAVIS_BRANCH" = "master" ] && \
+       [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+      ghp-import \
+        --push \
+        --force \
+        --no-jekyll \
+        --branch=gh-pages \
+        --remote="https://${GH_TOKEN}@github.com${TRAVIS_REPO_SLUG}.git" \
+        doc/.build/html
     fi
 
 notifications:
