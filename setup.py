@@ -35,10 +35,13 @@ try:
 except ImportError:
     from distutils.core import setup
 
-sys_path = sys.path[:]
-sys.path[:] = (os.path.abspath('browsepy'),)
-__import__('__meta__')
-meta = sys.modules['__meta__']
+try:
+    import collections.abc as collections_abc
+except ImportError:
+    collections_abc = None
+
+sys.path[:], sys_path = [os.path.abspath('browsepy')], sys.path[:]
+import __meta__ as meta  # noqa
 sys.path[:] = sys_path
 
 with open('README.rst') as f:
@@ -46,11 +49,15 @@ with open('README.rst') as f:
 
 extra_requires = []
 bdist = 'bdist' in sys.argv or any(a.startswith('bdist_') for a in sys.argv)
-if bdist or not hasattr(os, 'scandir'):
+
+if bdist or not hasattr(os, 'scandir'):  # python 3.5+
     extra_requires.append('scandir')
 
-if bdist or not hasattr(shutil, 'get_terminal_size'):
+if bdist or not hasattr(shutil, 'get_terminal_size'):  # python 3.3+
     extra_requires.append('backports.shutil_get_terminal_size')
+
+if bdist or not hasattr(collections_abc, 'Generator'):  # python 3.3+
+    extra_requires.append('backports_abc')
 
 for debugger in ('ipdb', 'pudb', 'pdb'):
     opt = '--debug=%s' % debugger

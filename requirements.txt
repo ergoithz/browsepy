@@ -6,13 +6,14 @@ scandir
 
 # for python < 3.3
 backports.shutil_get_terminal_size
+backports_abc
 
 # for building
 setuptools
 wheel
 
 # for Makefile tasks (testing, coverage, docs)
-pycodestyle
+pycodestyle<2.4.0
 flake8
 coverage
 pyaml

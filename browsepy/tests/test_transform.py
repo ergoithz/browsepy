@@ -100,7 +100,7 @@ class TestGlob(unittest.TestCase):
         translations = [
             ('[[.a-acute.]]a', '/.a(/|$)'),
             ('/[[=a=]]a', '^/.a(/|$)'),
-            ('/[[=a=]\d]a', '^/.a(/|$)'),
+            ('/[[=a=]\\d]a', '^/.a(/|$)'),
             ('[[:non-existent-class:]]a', '/.a(/|$)'),
             ]
         for source, result in translations:

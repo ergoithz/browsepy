@@ -10,10 +10,11 @@ import browsepy.compat as compat
 
 class BlockingPipeAbort(RuntimeError):
     '''
-    Exception used internally be default's :class:`BlockingPipe`
+    Exception used internally by :class:`BlockingPipe`'s default
     implementation.
     '''
     pass
+
 
 class BlockingPipe(object):
     '''
@@ -23,9 +24,7 @@ class BlockingPipe(object):
     class:`queue.Queue` in current implementation) instances has both `put`
     and `get blocking methods.
 
-    Due its blocking implementation, this class is only compatible with
-    python's threading module, any other approach (like coroutines) will
-    require to adapt this class (via inheritance or implementation).
+    Due its blocking implementation, this class uses :module:`threading`.
 
     This class exposes :method:`write` for :class:`tarfile.TarFile`
     `fileobj` compatibility.
@@ -76,38 +75,48 @@ class BlockingPipe(object):
                 raise self.abort_exception()
             return data
 
+    def __del__(self):
+        '''
+        Call :method:`BlockingPipe.close`.
+        '''
+        self.close()
+
     def close(self):
         '''
         Closes, so any blocked and future writes or retrieves will raise
         :attr:`abort_exception` instances.
         '''
-        self.closed = True
+        if not self.closed:
+            self.closed = True
 
-        # release locks
-        reading = not self._rlock.acquire(blocking=False)
-        writing = not self._wlock.acquire(blocking=False)
+            # release locks
+            reading = not self._rlock.acquire(blocking=False)
+            writing = not self._wlock.acquire(blocking=False)
 
-        if not reading:
-            if writing:
-                self._pipe.get()
-            self._rlock.release()
+            if not reading:
+                if writing:
+                    self._pipe.get()
+                self._rlock.release()
 
-        if not writing:
-            if reading:
-                self._pipe.put(None)
-            self._wlock.release()
+            if not writing:
+                if reading:
+                    self._pipe.put(None)
+                self._wlock.release()
 
 
-class TarFileStream(object):
+class TarFileStream(compat.Generator):
     '''
-    Tarfile which compresses while reading for streaming.
+    Iterable/generator class which yields tarfile chunks for streaming.
+
+    This class implements :class:`collections.abc.Generator` interface
+    (`PEP 325 <https://www.python.org/dev/peps/pep-0342/>`_),
+    so it can be appropriately handled by wsgi servers
+    (`PEP 333<https://www.python.org/dev/peps/pep-0333>`_).
 
     Buffsize can be provided, it should be 512 multiple (the tar block size)
     for and will be used as tarfile block size.
 
-    Note on corroutines: this class uses threading by default, but
-    corroutine-based applications can change this behavior overriding the
-    :attr:`event_class` and :attr:`thread_class` values.
+    This class uses :module:`threading` for offloading.
     '''
 
     pipe_class = BlockingPipe
@@ -130,8 +139,7 @@ class TarFileStream(object):
 
     def __init__(self, path, buffsize=10240, exclude=None, compress='gz'):
         '''
-        Compression will start a thread, and will be pausing until consumed.
-
+        Initialize thread and class (thread is not started until interated.)
         Note that compress parameter will be ignored if buffsize is below 16.
 
         :param path: local path of directory whose content will be compressed.
@@ -149,7 +157,7 @@ class TarFileStream(object):
         self._started = False
         self._buffsize = buffsize
         self._compress = compress if compress and buffsize > 15 else ''
-        self._writable = self.pipe_class()
+        self._pipe = self.pipe_class()
         self._th = self.thread_class(target=self._fill)
 
     def _fill(self):
@@ -170,7 +178,7 @@ class TarFileStream(object):
             return None if exclude(path_join(path, info.name)) else info
 
         tarfile = self.tarfile_class(
-            fileobj=self._writable,
+            fileobj=self._pipe,
             mode='w|{}'.format(self._compress),
             bufsize=self._buffsize
             )
@@ -184,7 +192,7 @@ class TarFileStream(object):
         else:
             self.close()
 
-    def __next__(self):
+    def send(self, value):
         '''
         Pulls chunk from tarfile (which is processed on its own thread).
 
@@ -198,22 +206,29 @@ class TarFileStream(object):
             self._th.start()
 
         try:
-            return self._writable.retrieve()
+            return self._pipe.retrieve()
         except self.abort_exception:
             raise StopIteration()
 
-    def __iter__(self):
+    def throw(self, typ, val=None, tb=None):
         '''
-        This class itself implements iterable protocol, so iter() returns
-        this instance itself.
+        Raise an exception in the coroutine.
+        Return next yielded value or raise StopIteration.
+        '''
+        try:
+            if val is None:
+                if tb is None:
+                    raise typ
+                val = typ()
+            if tb is not None:
+                val = val.with_traceback(tb)
+            raise val
+        except GeneratorExit:
+            self._pipe.close()
+            raise
 
-        :returns: instance itself
-        :rtype: TarFileStream
+    def __del__(self):
         '''
-        return self
-
-    def close(self):
+        Call :method:`TarFileStream.close`,
         '''
-        Finish processing aborting any pending write.
-        '''
-        self._writable.close()
+        self.close()

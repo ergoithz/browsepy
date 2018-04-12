@@ -5,7 +5,6 @@ import codecs
 import unittest
 import tempfile
 import shutil
-import threading
 
 import browsepy.stream
 

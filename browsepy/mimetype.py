@@ -8,7 +8,7 @@ import mimetypes
 from .compat import FileNotFoundError, which  # noqa
 
 generic_mimetypes = frozenset(('application/octet-stream', None))
-re_mime_validate = re.compile('\w+/\w+(; \w+=[^;]+)*')
+re_mime_validate = re.compile(r'\w+/\w+(; \w+=[^;]+)*')
 
 
 def by_python(path):
