@@ -1,10 +1,28 @@
+#
+# Development requirements file
+# =============================
+#
+# This module includes only development dependencies for Makefile tasks such as
+# code analysis and building (see Makefile).
+#
+# Requirement file inheritance tree
+# ---------------------------------
+#
+# - requirements/development.txt
+#   - requirements/base.txt
+#
+# See also
+# --------
+#
+# - requirements.txt
+# - requirements/ci.txt
+# - requirements/compat.txt
+#
+
 -r base.txt
 
-# for building
 setuptools
 wheel
-
-# for Makefile tasks (testing, coverage, docs)
 pycodestyle<2.4.0
 flake8
 coverage

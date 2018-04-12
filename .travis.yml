@@ -30,7 +30,7 @@ install:
     fi
 
 script:
-  - make pep8 flake8 coverage
+  - make flake8 coverage
   - |
     if [ "$eslint" = "yes" ]; then
       make eslint

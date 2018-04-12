@@ -1,2 +1,28 @@
+#
+# Default requirements file
+# =========================
+#
+# This file includes all development dependencies, including compatibility
+# modules.
+#
+# If you do not want compatibility dependencies, install
+# `requirements/development.txt` instead.
+#
+# Requirement file inheritance tree
+# ---------------------------------
+#
+# - requirements.txt
+#   - requirements/compat.txt
+#   - requirements/development.txt
+#     - requirements/base.txt
+#
+# See also
+# --------
+#
+# - requirements/ci.txt
+# - requirements/compat.txt
+# - requirements/development.txt
+#
+
 -r requirements/compat.txt
 -r requirements/development.txt
