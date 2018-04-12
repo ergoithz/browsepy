@@ -3,7 +3,6 @@
 
 import os
 import os.path
-import shutil
 import logging
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
@@ -13,15 +12,15 @@ from werkzeug.exceptions import NotFound
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
                           current_restricted_chars, common_path_separators
-from browsepy.compat import map, re_escape, FileNotFoundError
+from browsepy.compat import re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase
 
 from .clipboard import Clipboard
 from .exceptions import FileActionsException, \
-                        InvalidClipboardModeError, \
                         InvalidClipboardItemsError, \
                         InvalidDirnameError, \
                         DirectoryCreationError
+from .paste import paste_clipboard
 
 
 __basedir__ = os.path.dirname(os.path.abspath(__file__))
@@ -125,30 +124,6 @@ def selection(path):
 @actions.route('/clipboard/paste', defaults={'path': ''})
 @actions.route('/clipboard/paste/<path:path>')
 def clipboard_paste(path):
-
-    def copy(target, node, join_fnc=os.path.join):
-        if node.is_excluded:
-            raise OSError(2, os.strerror(2))
-        dest = join_fnc(
-            target.path,
-            target.choose_filename(node.name)
-            )
-        if node.is_directory:
-            shutil.copytree(node.path, dest)
-        else:
-            shutil.copy2(node.path, dest)
-
-    def cut(target, node, join_fnc=os.path.join):
-        if node.is_excluded or not node.can_remove:
-            code = 2 if node.is_excluded else 1
-            raise OSError(code, os.strerror(code))
-        if node.parent.path != target.path:
-            dest = join_fnc(
-                target.path,
-                target.choose_filename(node.name)
-                )
-            shutil.move(node.path, dest)
-
     try:
         directory = Node.from_urlpath(path)
     except OutsideDirectoryBase:
@@ -162,28 +137,7 @@ def clipboard_paste(path):
         return NotFound()
 
     clipboard = Clipboard.from_request()
-    mode = clipboard.mode
-
-    if mode == 'cut':
-        paste_fnc = cut
-    elif mode == 'copy':
-        paste_fnc = copy
-    else:
-        raise InvalidClipboardModeError(
-            path=directory.path,
-            clipboard=clipboard,
-            mode=mode
-            )
-
-    issues = []
-    clipboard.mode = 'paste'  # disables exclusion
-    for node in map(Node.from_urlpath, clipboard):
-        try:
-            paste_fnc(directory, node)
-        except BaseException as e:
-            issues.append((node, e))
-
-    clipboard.mode = mode
+    success, issues = paste_clipboard(directory, clipboard)
     if issues:
         raise InvalidClipboardItemsError(
             path=directory.path,
@@ -191,7 +145,7 @@ def clipboard_paste(path):
             issues=issues
             )
 
-    if mode == 'cut':
+    if clipboard.mode == 'cut':
         clipboard.clear()
 
     response = redirect(url_for('browse', path=directory.urlpath))
