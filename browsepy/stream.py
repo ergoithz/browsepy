@@ -5,7 +5,7 @@ import tarfile
 import threading
 import functools
 
-import browsepy.compat as compat
+from . import compat
 
 
 class BlockingPipeAbort(RuntimeError):
@@ -123,20 +123,29 @@ class TarFileStream(compat.Iterator):
     thread_class = threading.Thread
     tarfile_class = tarfile.open
 
-    extensions = {
-        'gz': 'tgz',
-        'bz2': 'tar.bz2',
-        'xz': 'tar.xz',
+    mimetype = 'application/x-tar'
+    compresion_modes = {
+        None: ('', 'tar'),
+        'gzip': ('gz', 'tgz'),
+        'bzip2': ('bz2', 'tar.bz2'),
+        'xz': ('xz', 'tar.xz'),
         }
 
     @property
     def name(self):
-        return '%s.%s' % (
-            os.path.basename(self.path),
-            self.extensions.get(self._compress, 'tar')
-            )
+        '''
+        Filename generated from given path and compression method.
+        '''
+        return '%s.%s' % (os.path.basename(self.path), self._extension)
 
-    def __init__(self, path, buffsize=10240, exclude=None, compress='gz'):
+    @property
+    def encoding(self):
+        '''
+        Mimetype parameters (such as encoding).
+        '''
+        return self._compress
+
+    def __init__(self, path, buffsize=10240, exclude=None, compress='gzip'):
         '''
         Initialize thread and class (thread is not started until interated.)
         Note that compress parameter will be ignored if buffsize is below 16.
@@ -155,7 +164,10 @@ class TarFileStream(compat.Iterator):
 
         self._started = False
         self._buffsize = buffsize
-        self._compress = compress if compress and buffsize > 15 else ''
+
+        self._compress = compress if compress and buffsize > 15 else None
+        self._mode, self._extension = self.compresion_modes[self._compress]
+
         self._pipe = self.pipe_class()
         self._th = self.thread_class(target=self._fill)
 
@@ -178,7 +190,7 @@ class TarFileStream(compat.Iterator):
 
         tarfile = self.tarfile_class(
             fileobj=self._pipe,
-            mode='w|{}'.format(self._compress),
+            mode='w|{}'.format(self._mode),
             bufsize=self._buffsize
             )
 

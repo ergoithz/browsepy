@@ -17,6 +17,7 @@ from werkzeug.utils import cached_property
 from . import compat
 from . import manager
 from .compat import range
+from .http import Headers
 from .stream import TarFileStream
 from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
                         PathTooLongError, FilenameTooLongError
@@ -636,14 +637,20 @@ class Directory(Node):
         :returns: Response object
         :rtype: flask.Response
         '''
-
+        stream = TarFileStream(
+            self.path,
+            self.app.config['directory_tar_buffsize'],
+            self.plugin_manager.check_excluded,
+            )
         return self.app.response_class(
-            TarFileStream(
-                self.path,
-                self.app.config['directory_tar_buffsize'],
-                self.plugin_manager.check_excluded,
-                ),
-            mimetype="application/octet-stream"
+            stream,
+            direct_passthrough=True,
+            headers=Headers(
+                content_type=stream.mimetype,
+                content_type_options={'encoding': stream.encoding},
+                content_disposition='attachment',
+                content_disposition_options={'filename': stream.name},
+                )
             )
 
     def contains(self, filename):

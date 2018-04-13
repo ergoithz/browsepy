@@ -55,7 +55,7 @@ class LinkWidget(WidgetBase):
                 self.icon if self.icon is not None else
                 'dir-icon' if file.is_directory else
                 'file-icon',
-            )
+                )
         return self
 
 
