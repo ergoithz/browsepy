@@ -45,9 +45,10 @@ class Page(object):
 class DirectoryDownload(Page):
     file_class = collections.namedtuple('File', ('name', 'size'))
 
-    def __init__(self, filename, content_type, files, response=None):
+    def __init__(self, filename, content_type, encoding, files, response=None):
         self.filename = filename
         self.content_type = content_type
+        self.encoding = encoding
         self.files = files
         self.response = response
 
@@ -63,13 +64,17 @@ class DirectoryDownload(Page):
         files.sort()
         filename = None
         content_type = None
+        encoding = None
         if response:
-            content_type = response.content_type
+            content_type, options = parse_options_header(response.content_type)
+            if 'encoding' in options:
+                encoding = options['encoding']
+
             disposition = response.headers.get('Content-Disposition')
             mode, options = parse_options_header(disposition)
             if mode == 'attachment' and 'filename' in options:
                 filename = options['filename']
-        return cls(filename, content_type, files, response)
+        return cls(filename, content_type, encoding, files, response)
 
 
 class ListPage(Page):
@@ -435,6 +440,7 @@ class TestApp(unittest.TestCase):
         response = self.get('download_directory', path='start')
         self.assertEqual(response.filename, 'start.tgz')
         self.assertEqual(response.content_type, 'application/x-tar')
+        self.assertEqual(response.encoding, 'gzip')
         self.assertEqual(
             [f.name for f in response.files],
             ['testfile.%s' % x for x in ('bin', 'exc', 'txt')]
@@ -445,6 +451,7 @@ class TestApp(unittest.TestCase):
         response = self.get('download_directory', path='start')
         self.assertEqual(response.filename, 'start.tgz')
         self.assertEqual(response.content_type, 'application/x-tar')
+        self.assertEqual(response.encoding, 'gzip')
         self.assertEqual(
             [f.name for f in response.files],
             ['testfile.%s' % x for x in ('bin', 'txt')]

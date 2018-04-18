@@ -42,7 +42,7 @@ class Headers(BaseHeaders):
         :param **kwargs: headers as keyword arguments
         '''
         items = [
-            self.genpair(key, '%s_%s' % (key, options_suffix), kwargs)
+            self.genpair(key, '%s%s' % (key, options_suffix), kwargs)
             for key in kwargs
             if not key.endswith(options_suffix)
             ]
