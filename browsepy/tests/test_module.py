@@ -9,11 +9,13 @@ import tempfile
 import tarfile
 import io
 import mimetypes
+import collections
 
 import flask
 import bs4
 
 from werkzeug.exceptions import NotFound
+from werkzeug.http import parse_options_header
 
 import browsepy
 import browsepy.file
@@ -38,6 +40,36 @@ class Page(object):
     @classmethod
     def from_source(cls, source, response=None):
         return cls(source, response)
+
+
+class DirectoryDownload(Page):
+    file_class = collections.namedtuple('File', ('name', 'size'))
+
+    def __init__(self, filename, content_type, files, response=None):
+        self.filename = filename
+        self.content_type = content_type
+        self.files = files
+        self.response = response
+
+    @classmethod
+    def from_source(cls, source, response=None):
+        iodata = io.BytesIO(source)
+        with tarfile.open('p.tgz', mode="r:gz", fileobj=iodata) as tgz:
+            files = [
+                cls.file_class(member.name, member.size)
+                for member in tgz.getmembers()
+                if member.name
+                ]
+        files.sort()
+        filename = None
+        content_type = None
+        if response:
+            content_type = response.content_type
+            disposition = response.headers.get('Content-Disposition')
+            mode, options = parse_options_header(disposition)
+            if mode == 'attachment' and 'filename' in options:
+                filename = options['filename']
+        return cls(filename, content_type, files, response)
 
 
 class ListPage(Page):
@@ -128,6 +160,7 @@ class TestApp(unittest.TestCase):
     generic_page_class = Page
     list_page_class = ListPage
     confirm_page_class = ConfirmPage
+    directory_download_class = DirectoryDownload
     page_exceptions = {
         404: Page404Exception,
         400: Page400Exception,
@@ -198,6 +231,8 @@ class TestApp(unittest.TestCase):
             page_class = self.confirm_page_class
         elif endpoint == 'sort' and follow_redirects:
             page_class = self.list_page_class
+        elif endpoint == 'download_directory':
+            page_class = self.directory_download_class
         else:
             page_class = self.generic_page_class
         with kwargs.pop('client', None) or self.app.test_client() as client:
@@ -391,33 +426,27 @@ class TestApp(unittest.TestCase):
         bindata = bytes(range(256))
         exclude = self.app.config['exclude_fnc']
 
-        def tarball_files(path):
-            page = self.get('download_directory', path=path)
-            iodata = io.BytesIO(page.data)
-            with tarfile.open('p.tgz', mode="r:gz", fileobj=iodata) as tgz:
-                tgz_files = [
-                    member.name
-                    for member in tgz.getmembers()
-                    if member.name
-                    ]
-            tgz_files.sort()
-            return tgz_files
-
         for path in (binfile, excfile):
             with open(path, 'wb') as f:
                 f.write(bindata)
 
         self.app.config['exclude_fnc'] = None
 
+        response = self.get('download_directory', path='start')
+        self.assertEqual(response.filename, 'start.tgz')
+        self.assertEqual(response.content_type, 'application/x-tar')
         self.assertEqual(
-            tarball_files('start'),
+            [f.name for f in response.files],
             ['testfile.%s' % x for x in ('bin', 'exc', 'txt')]
             )
 
         self.app.config['exclude_fnc'] = lambda p: p.endswith('.exc')
 
+        response = self.get('download_directory', path='start')
+        self.assertEqual(response.filename, 'start.tgz')
+        self.assertEqual(response.content_type, 'application/x-tar')
         self.assertEqual(
-            tarball_files('start'),
+            [f.name for f in response.files],
             ['testfile.%s' % x for x in ('bin', 'txt')]
             )
 

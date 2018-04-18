@@ -304,7 +304,7 @@ class TestFileFunctions(unittest.TestCase):
         self.assertRaises(
             browsepy.OutsideDirectoryBase,
             self.module.relativize_path, '/other', '/parent', '/'
-        )
+            )
 
     def test_under_base(self):
         self.assertTrue(
