@@ -8,7 +8,7 @@ from werkzeug.datastructures import Headers as BaseHeaders
 class Headers(BaseHeaders):
     '''
     A wrapper around :class:`werkzeug.datastructures.Headers`, allowing
-    to specify headers with options.
+    to specify headers with options on initialization.
     '''
     snake_replace = staticmethod(re.compile(r'(^|-)[a-z]').sub)
 
@@ -28,11 +28,19 @@ class Headers(BaseHeaders):
         :rtype: tuple of str
         '''
         return (
-            cls.snake_replace(lambda x: x[0].upper(), key.replace('_', '-')),
+            cls.snake_replace(
+                lambda x: x.group(0).upper(),
+                key.replace('_', '-')
+                ),
             dump_options_header(values[key], values.get(optkey, {})),
             )
 
     def __init__(self, options_suffix='_options', **kwargs):
+        '''
+        :param options_suffix: suffix for header options (default: '_options')
+        :type options_suffix: str
+        :param **kwargs: headers as keyword arguments
+        '''
         items = [
             self.genpair(key, '%s_%s' % (key, options_suffix), kwargs)
             for key in kwargs
