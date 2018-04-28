@@ -646,10 +646,14 @@ class Directory(Node):
             stream,
             direct_passthrough=True,
             headers=Headers(
-                content_type=stream.mimetype,
-                content_type_options={'encoding': stream.encoding},
-                content_disposition='attachment',
-                content_disposition_options={'filename': stream.name},
+                content_type=(
+                    stream.mimetype,
+                    {'encoding': stream.encoding} if stream.encoding else {},
+                    ),
+                content_disposition=(
+                    'attachment',
+                    {'filename': stream.name} if stream.name else {},
+                    )
                 )
             )
 

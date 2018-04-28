@@ -4,19 +4,19 @@
 import logging
 import os
 import os.path
-import json
-import base64
 
 from flask import Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
                   make_response
 from werkzeug.exceptions import NotFound
 
+from .http import DataCookie
 from .appconfig import Flask
 from .manager import PluginManager
 from .file import Node, secure_filename
 from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
-                        InvalidFilenameError, InvalidPathError
+                        InvalidFilenameError, InvalidPathError, \
+                        InvalidCookieSizeError
 from . import compat
 from . import __meta__ as meta
 
@@ -56,21 +56,7 @@ if 'BROWSEPY_SETTINGS' in os.environ:
     app.config.from_envvar('BROWSEPY_SETTINGS')
 
 plugin_manager = PluginManager(app)
-
-
-def iter_cookie_browse_sorting(cookies):
-    '''
-    Get sorting-cookie from cookies dictionary.
-
-    :yields: tuple of path and sorting property
-    :ytype: 2-tuple of strings
-    '''
-    try:
-        data = cookies.get('browse-sorting', 'e30=').encode('ascii')
-        for path, prop in json.loads(base64.b64decode(data).decode('utf-8')):
-            yield path, prop
-    except (ValueError, TypeError, KeyError) as e:
-        logger.exception(e)
+sorting_cookie = DataCookie('browse-sorting')
 
 
 def get_cookie_browse_sorting(path, default):
@@ -81,9 +67,12 @@ def get_cookie_browse_sorting(path, default):
     :rtype: string
     '''
     if request:
-        for cpath, cprop in iter_cookie_browse_sorting(request.cookies):
-            if path == cpath:
-                return cprop
+        try:
+            for cpath, cprop in sorting_cookie.load_headers(request.headers):
+                if path == cpath:
+                    return cprop
+        except BaseException:
+            pass
     return default
 
 
@@ -92,11 +81,12 @@ def browse_sortkey_reverse(prop):
     Get sorting function for directory listing based on given attribute
     name, with some caveats:
     * Directories will be first.
-    * If *name* is given, link widget lowercase text will be used istead.
+    * If *name* is given, link widget lowercase text will be used instead.
     * If *size* is given, bytesize will be used.
 
     :param prop: file attribute name
-    :returns: tuple with sorting gunction and reverse bool
+    :type prop: str
+    :returns: tuple with sorting function and reverse bool
     :rtype: tuple of a dict and a bool
     '''
     if prop.startswith('-'):
@@ -164,21 +154,26 @@ def sort(property, path):
     if not directory.is_directory or directory.is_excluded:
         return NotFound()
 
-    data = [
-        (cpath, cprop)
-        for cpath, cprop in iter_cookie_browse_sorting(request.cookies)
-        if cpath != path
-        ]
-    data.append((path, property))
-    raw_data = base64.b64encode(json.dumps(data).encode('utf-8'))
+    data = [(path, property)]
+    try:
+        data[:-1] = [
+            (cpath, cprop)
+            for cpath, cprop in sorting_cookie.load_headers(request.headers)
+            if cpath != path
+            ]
+    except BaseException:
+        pass
 
-    # prevent cookie becoming too large
-    while len(raw_data) > 3975:  # 4000 - len('browse-sorting=""; Path=/')
-        data.pop(0)
-        raw_data = base64.b64encode(json.dumps(data).encode('utf-8'))
+    # handle cookie becoming too large
+    while True:
+        try:
+            headers = sorting_cookie.dump_headers(data, request.headers)
+            break
+        except InvalidCookieSizeError:
+            data.pop(0)
 
     response = redirect(url_for(".browse", path=directory.urlpath))
-    response.set_cookie('browse-sorting', raw_data)
+    response.headers.extend(headers)
     return response
 
 

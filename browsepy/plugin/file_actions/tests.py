@@ -10,6 +10,8 @@ import bs4
 import flask
 
 from werkzeug.utils import cached_property
+from werkzeug.http import Headers, parse_cookie, dump_cookie, \
+                          parse_options_header
 
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.clipboard as file_actions_clipboard
@@ -17,21 +19,43 @@ import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
 import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.exceptions as browsepy_exceptions
-import browsepy.compat as compat
 import browsepy
 
 
-class CookieProxy(object):
-    def __init__(self, client):
-        self._client = client
-
+class CookieHeaderMock(object):
     @property
     def cookies(self):
         return {
-            cookie.name: cookie.value for cookie in self._client.cookie_jar
+            key: value
+            for header in self.headers.get_all('Set-Cookie')
+            for key, value in parse_cookie(header).items()
+            if parse_options_header(header)[1].get('expire', 1) > 0
             }
 
+    def __init__(self):
+        self.headers = Headers()
+
+    def set_cookie(self, name, value='', **kwargs):
+        self.headers.add('Set-Cookie', dump_cookie(name, value, **kwargs))
+        self.headers.add('Cookie', dump_cookie(name, value))
+
+
+class CookieProxy(CookieHeaderMock):
+    def __init__(self, client):
+        self._client = client
+        super(CookieProxy, self).__init__()
+
+    @property
+    def cookies(self):
+        result = {
+            cookie.name: cookie.value for cookie in self._client.cookie_jar
+            }
+        result.update(super(CookieProxy, self).cookies)
+        return result
+
     def set_cookie(self, name, value, **kwargs):
+        super(CookieProxy, self).set_cookie(name, value, **kwargs)
+
         for cookie in self._client.cookie_jar:
             if cookie.name == name:
                 self._client.cookie_jar.clear(
@@ -40,17 +64,9 @@ class CookieProxy(object):
             self._client.environ_base['REMOTE_ADDR'], name, value, **kwargs)
 
 
-class RequestMock(object):
-    def __init__(self):
-        self.cookies = {}
-
+class RequestMock(CookieHeaderMock):
     def set_cookie(self, name, value, expires=sys.maxsize, **kwargs):
-        if isinstance(value, compat.bytes):
-            value = value.decode('utf-8')
-        if expires:
-            self.cookies[name] = value
-        elif name in self.cookies:
-            del self.cookies[name]
+        super(RequestMock, self).set_cookie(name, value, **kwargs)
         field = file_actions_clipboard.Clipboard.request_cache_field
         setattr(self, field, None)
 
@@ -515,14 +531,14 @@ class TestClipboard(unittest.TestCase):
             )
 
     def test_unreadable(self):
-        name = self.module.Clipboard.cookie_name.format(0)
+        name = self.module.Clipboard.data_cookie._name_cookie_page(0)
         request = RequestMock()
         request.set_cookie(name, 'a')
         clipboard = self.module.Clipboard.from_request(request)
         self.assertFalse(clipboard)
 
     def test_cookie_cleanup(self):
-        name = self.module.Clipboard.cookie_name.format(0)
+        name = self.module.Clipboard.data_cookie._name_cookie_page(0)
         request = RequestMock()
         request.set_cookie(name, 'value')
         clipboard = self.module.Clipboard()

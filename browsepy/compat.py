@@ -358,3 +358,5 @@ else:
     unicode = str
     chr = chr
     bytes = bytes
+
+NoneType = type(None)

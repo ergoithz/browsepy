@@ -78,6 +78,7 @@ class TestGlob(unittest.TestCase):
                 '/a',
                 '/ñ',
                 '/1',
+                b'/\xc3\xa0',  # /à
                 ), (
                 '/_',
                 )),

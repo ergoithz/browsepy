@@ -442,8 +442,8 @@ class TestApp(unittest.TestCase):
         self.assertEqual(response.content_type, 'application/x-tar')
         self.assertEqual(response.encoding, 'gzip')
         self.assertEqual(
-            [f.name for f in response.files],
-            ['testfile.%s' % x for x in ('bin', 'exc', 'txt')]
+            [f1.name for f1 in response.files],
+            ['testfile.%s' % x1 for x1 in ('bin', 'exc', 'txt')]
             )
 
         self.app.config['exclude_fnc'] = lambda p: p.endswith('.exc')
@@ -453,8 +453,8 @@ class TestApp(unittest.TestCase):
         self.assertEqual(response.content_type, 'application/x-tar')
         self.assertEqual(response.encoding, 'gzip')
         self.assertEqual(
-            [f.name for f in response.files],
-            ['testfile.%s' % x for x in ('bin', 'txt')]
+            [f2.name for f2 in response.files],
+            ['testfile.%s' % x2 for x2 in ('bin', 'txt')]
             )
 
         self.app.config['exclude_fnc'] = exclude
