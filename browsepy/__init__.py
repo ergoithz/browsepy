@@ -5,6 +5,8 @@ import logging
 import os
 import os.path
 
+from datetime import timedelta
+
 from flask import Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
                   make_response
@@ -56,7 +58,21 @@ if 'BROWSEPY_SETTINGS' in os.environ:
     app.config.from_envvar('BROWSEPY_SETTINGS')
 
 plugin_manager = PluginManager(app)
-sorting_cookie = DataCookie('browse-sorting')
+sorting_cookie = DataCookie('browse-sorting', max_age=timedelta(days=90))
+
+
+def iter_cookie_browse_sorting(cookies):
+    '''
+    Get sorting-cookie from cookies dictionary.
+
+    :yields: tuple of path and sorting property
+    :ytype: 2-tuple of strings
+    '''
+    try:
+        for path, prop in sorting_cookie.load_cookies(cookies, ()):
+            yield path, prop
+    except ValueError as e:
+        logger.exception(e)
 
 
 def get_cookie_browse_sorting(path, default):
@@ -67,12 +83,9 @@ def get_cookie_browse_sorting(path, default):
     :rtype: string
     '''
     if request:
-        try:
-            for cpath, cprop in sorting_cookie.load_headers(request.headers):
-                if path == cpath:
-                    return cprop
-        except BaseException:
-            pass
+        for cpath, cprop in iter_cookie_browse_sorting(request.cookies):
+            if path == cpath:
+                return cprop
     return default
 
 
@@ -156,16 +169,17 @@ def sort(property, path):
 
     data = [(path, property)]
     try:
-        data[:-1] = [
+        data.extend(
             (cpath, cprop)
-            for cpath, cprop in sorting_cookie.load_headers(request.headers)
+            for cpath, cprop in iter_cookie_browse_sorting(request.cookies)
             if cpath != path
-            ]
+            )
     except BaseException:
         pass
 
     # handle cookie becoming too large
-    while True:
+    headers = ()
+    while data:
         try:
             headers = sorting_cookie.dump_headers(data, request.headers)
             break

@@ -16,6 +16,7 @@ from werkzeug.http import Headers, parse_cookie, dump_cookie, \
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.clipboard as file_actions_clipboard
 import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
+import browsepy.http as browsepy_http
 import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.exceptions as browsepy_exceptions
@@ -23,11 +24,13 @@ import browsepy
 
 
 class CookieHeaderMock(object):
+    header = 'Cookie'
+
     @property
     def cookies(self):
         return {
             key: value
-            for header in self.headers.get_all('Set-Cookie')
+            for header in self.headers.get_all(self.header)
             for key, value in parse_cookie(header).items()
             if parse_options_header(header)[1].get('expire', 1) > 0
             }
@@ -36,39 +39,31 @@ class CookieHeaderMock(object):
         self.headers = Headers()
 
     def set_cookie(self, name, value='', **kwargs):
-        self.headers.add('Set-Cookie', dump_cookie(name, value, **kwargs))
-        self.headers.add('Cookie', dump_cookie(name, value))
+        self.headers.add(self.header, dump_cookie(name, value))
 
 
-class CookieProxy(CookieHeaderMock):
-    def __init__(self, client):
-        self._client = client
-        super(CookieProxy, self).__init__()
+class ResponseMock(CookieHeaderMock):
+    header = 'Set-Cookie'
 
-    @property
-    def cookies(self):
-        result = {
-            cookie.name: cookie.value for cookie in self._client.cookie_jar
-            }
-        result.update(super(CookieProxy, self).cookies)
-        return result
-
-    def set_cookie(self, name, value, **kwargs):
-        super(CookieProxy, self).set_cookie(name, value, **kwargs)
-
-        for cookie in self._client.cookie_jar:
-            if cookie.name == name:
-                self._client.cookie_jar.clear(
+    def dump_cookies(self, client):
+        owned = self.cookies
+        for cookie in client.cookie_jar:
+            if cookie.name in owned:
+                client.cookie_jar.clear(
                     cookie.domain, cookie.path, cookie.name)
-        return self._client.set_cookie(
-            self._client.environ_base['REMOTE_ADDR'], name, value, **kwargs)
+
+        for name, value in owned.items():
+            client.set_cookie(client.environ_base['REMOTE_ADDR'], name, value)
 
 
 class RequestMock(CookieHeaderMock):
-    def set_cookie(self, name, value, expires=sys.maxsize, **kwargs):
-        super(RequestMock, self).set_cookie(name, value, **kwargs)
-        field = file_actions_clipboard.Clipboard.request_cache_field
-        setattr(self, field, None)
+    def load_cookies(self, client):
+        self.headers.clear()
+        for cookie in client.cookie_jar:
+            self.headers.add(
+                self.header,
+                dump_cookie(cookie.name, cookie.value)
+                )
 
 
 class Page(object):
@@ -201,11 +196,14 @@ class TestIntegration(unittest.TestCase):
                     page.widgets
                     )
 
-            proxy = CookieProxy(client)
-            clipboard = self.clipboard_module.Clipboard.from_request(proxy)
+            reqmock = RequestMock()
+            reqmock.load_cookies(client)
+            resmock = ResponseMock()
+            clipboard = self.clipboard_module.Clipboard.from_request(reqmock)
             clipboard.mode = 'copy'
             clipboard.add('whatever')
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
@@ -253,19 +251,23 @@ class TestIntegration(unittest.TestCase):
             page = Page(response.data)
             self.assertIn('potato', page.entries)
 
-            proxy = CookieProxy(client)
-            clipboard = self.clipboard_module.Clipboard.from_request(proxy)
+            reqmock = RequestMock()
+            reqmock.load_cookies(client)
+            resmock = ResponseMock()
+            clipboard = self.clipboard_module.Clipboard.from_request(reqmock)
             clipboard.mode = 'copy'
             clipboard.add('potato')
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
             page = Page(response.data)
             self.assertIn('potato', page.entries)
 
+            reqmock.load_cookies(client)
             clipboard.mode = 'cut'
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
 
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
@@ -431,35 +433,43 @@ class TestAction(unittest.TestCase):
             self.assertEqual(response.status_code, 404)
 
         with self.app.test_client() as client:
-            proxy = CookieProxy(client)
-            clipboard = self.clipboard_module.Clipboard.from_request(proxy)
+            reqmock = RequestMock()
+            reqmock.load_cookies(client)
+            resmock = ResponseMock()
+            clipboard = self.clipboard_module.Clipboard.from_request(reqmock)
             clipboard.mode = 'wrong-mode'
             clipboard.add('whatever')
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
+            reqmock.load_cookies(client)
             clipboard.mode = 'cut'
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 302)  # same location
 
             clipboard.mode = 'cut'
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/file-actions/clipboard/paste/target')
             self.assertEqual(response.status_code, 400)
 
             clipboard.mode = 'copy'
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
             clipboard.mode = 'copy'
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/file-actions/clipboard/paste/target')
             self.assertEqual(response.status_code, 400)
@@ -467,13 +477,15 @@ class TestAction(unittest.TestCase):
             self.app.config['exclude_fnc'] = lambda n: n.endswith('whatever')
 
             clipboard.mode = 'cut'
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
             clipboard.mode = 'copy'
-            clipboard.to_response(proxy, proxy)
+            clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
@@ -504,19 +516,20 @@ class TestClipboard(unittest.TestCase):
     module = file_actions_clipboard
 
     def test_count(self):
-        request = RequestMock()
-        self.assertEqual(self.module.Clipboard.count(request), 0)
+        reqmock = RequestMock()
+        resmock = ResponseMock()
+        self.assertEqual(self.module.Clipboard.count(resmock), 0)
 
         clipboard = self.module.Clipboard()
         clipboard.mode = 'test'
         clipboard.add('item')
-        clipboard.to_response(request, request)
+        clipboard.to_response(resmock, reqmock)
 
-        self.assertEqual(self.module.Clipboard.count(request), 1)
+        self.assertEqual(self.module.Clipboard.count(resmock), 1)
 
     def test_oveflow(self):
         class TinyClipboard(self.module.Clipboard):
-            max_pages = 2
+            data_cookie = browsepy_http.DataCookie('small-clipboard')
 
         request = RequestMock()
         clipboard = TinyClipboard()

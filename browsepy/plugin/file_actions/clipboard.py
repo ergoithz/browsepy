@@ -60,9 +60,9 @@ class Clipboard(set):
         return self
 
     @classmethod
-    def _signature(cls, items, method):
-        serialized = json.dumps(items).encode('utf-8')
-        data = cls.secret + method.encode('utf-8') + serialized
+    def _signature(cls, items, mode):
+        serialized = json.dumps([items, mode]).encode('utf-8')
+        data = cls.secret + serialized
         return base64.b64encode(hashlib.sha512(data).digest()).decode('ascii')
 
     def __init__(self, iterable=(), mode='copy'):

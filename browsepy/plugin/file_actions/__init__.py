@@ -18,6 +18,7 @@ from browsepy.exceptions import OutsideDirectoryBase
 from .clipboard import Clipboard
 from .exceptions import FileActionsException, \
                         InvalidClipboardItemsError, \
+                        InvalidClipboardModeError, \
                         InvalidDirnameError, \
                         DirectoryCreationError
 from .paste import paste_clipboard
@@ -100,13 +101,18 @@ def selection(path):
                 mode = action
                 break
 
+        clipboard = Clipboard(request.form.getlist('path'), mode)
+
         if mode in ('cut', 'copy'):
             response = redirect(url_for('browse', path=directory.urlpath))
-            clipboard = Clipboard(request.form.getlist('path'), mode)
             clipboard.to_response(response)
             return response
 
-        return redirect(request.path)
+        raise InvalidClipboardModeError(
+            path=directory.path,
+            clipboard=clipboard,
+            mode=clipboard.mode,
+            )
 
     clipboard = Clipboard.from_request()
     clipboard.mode = 'select'  # disables exclusion

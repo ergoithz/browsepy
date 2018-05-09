@@ -76,8 +76,9 @@ class InvalidCookieSizeError(ValueError):
     Exception raised when a paginated cookie exceeds its maximun page number.
     '''
     code = 'invalid-cookie-size'
-    template = 'Value too big to fit in {} cookies.'
+    template = 'Value too big to fit in {0.max_cookies} cookies.'
 
     def __init__(self, message=None, max_cookies=None):
         self.max_cookies = max_cookies
-        message = message or self.template.format(max_cookies=max_cookies)
+        message = self.template.format(self) if message is None else message
+        super(InvalidCookieSizeError, self).__init__(message)

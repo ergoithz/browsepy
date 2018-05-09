@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 
 import re
-import string
 import json
 import base64
 import logging
@@ -12,7 +11,7 @@ from werkzeug.http import dump_header, dump_options_header, dump_cookie, \
                           parse_cookie
 from werkzeug.datastructures import Headers as BaseHeaders
 
-from .compat import range, map
+from .compat import range
 from .exceptions import InvalidCookieSizeError
 
 
@@ -88,47 +87,44 @@ class DataCookie(object):
     >     return response
 
     '''
-    NOT_FOUND = object()
-    cookie_path = '/'
-    page_digits = string.digits + string.ascii_letters
-    max_pages = 5
-    max_length = 3990
+    page_length = 4000
     size_error = InvalidCookieSizeError
-    compress_fnc = staticmethod(zlib.compress)
-    decompress_fnc = staticmethod(zlib.decompress)
     headers_class = BaseHeaders
 
-    def __init__(self, cookie_name, max_pages=None):
+    @staticmethod
+    def _serialize(data):
+        '''
+        :type data: json-serializable
+        :rtype: bytes
+        '''
+        serialized = zlib.compress(json.dumps(data).encode('utf-8'))
+        return base64.b64encode(serialized).decode('ascii')
+
+    @staticmethod
+    def _deserialize(data):
+        '''
+        :type data: bytes
+        :rtype: json-serializable
+        '''
+        decoded = base64.b64decode(data)
+        serialized = zlib.decompress(decoded)
+        return json.loads(serialized)
+
+    def __init__(self, cookie_name, max_pages=1, max_age=None, path='/'):
+        '''
+        :param cookie_name: first cookie name and prefix for the following
+        :type cookie_name: str
+        :param max_pages: maximum allowed cookie parts, defaults to 1
+        :type max_pages: int
+        :param max_age: cookie lifetime in seconds or None (session, default)
+        :type max_age: int, datetime.timedelta or None
+        :param path: cookie path, defaults to /
+        :type path: str
+        '''
         self.cookie_name = cookie_name
-        self.request_cache_field = '_browsepy.cache.cookie.%s' % cookie_name
-        self.max_pages = max_pages or self.max_pages
-
-    @classmethod
-    def _name_page(cls, page):
-        '''
-        Converts page integer to string, using fewer characters as possible.
-        If string is given, it is returned as is.
-
-        :param page: page number
-        :type page: int or str
-        :return: page id
-        :rtype: str
-        '''
-        if isinstance(page, str):
-            return page
-
-        digits = []
-
-        if page > 1:
-            base = len(cls.page_digits)
-            remaining = page - 1
-            while remaining >= base:
-                remaining, modulus = divmod(remaining, base)
-                digits.append(modulus)
-            digits.append(remaining)
-            digits.reverse()
-
-        return ''.join(map(cls.page_digits.__getitem__, digits))
+        self.max_pages = max_pages
+        self.max_age = max_age
+        self.path = path
 
     def _name_cookie_page(self, page):
         '''
@@ -142,20 +138,35 @@ class DataCookie(object):
         :returns: cookie name
         :rtype: str
         '''
-        return '{}{}'.format(self.cookie_name, self._name_page(page))
+        return '{}{}'.format(
+            self.cookie_name,
+            page if isinstance(page, str) else
+            '-{:x}'.format(page - 1) if page else
+            ''
+            )
 
     def _available_cookie_size(self, name):
         '''
         Get available cookie size for value.
+
+        :param name: cookie name
+        :type name: str
+        :return: available bytes for cookie value
+        :rtype: int
         '''
-        return self.max_length - len(name + self.cookie_path)
+        empty = 'Set-Cookie: %s' % dump_cookie(
+            name,
+            value=' ',  # force quotes
+            max_age=self.max_age,
+            path=self.path
+            )
+        return self.page_length - len(empty)
 
     def _extract_cookies(self, headers):
         '''
         Extract relevant cookies from headers.
         '''
-        regex_page_name = '[%s]' % re.escape(self.page_digits)
-        regex = re.compile('^%s$' % self._name_cookie_page(regex_page_name))
+        regex = re.compile('^%s$' % self._name_cookie_page('(-[0-9a-f])?'))
         return {
             key: value
             for header in headers.get_all('cookie')
@@ -163,7 +174,31 @@ class DataCookie(object):
             if regex.match(key)
             }
 
-    def load_headers(self, headers):
+    def load_cookies(self, cookies, default=None):
+        '''
+        Parse data from relevant paginated cookie data given as mapping.
+
+        :param cookies: request cookies
+        :type cookies: collections.abc.Mapping
+        :returns: deserialized value
+        :rtype: browsepy.abc.JSONSerializable
+        '''
+        chunks = []
+        for i in range(self.max_pages):
+            name = self._name_cookie_page(i)
+            cookie = cookies.get(name, '').encode('ascii')
+            chunks.append(cookie)
+            if len(cookie) < self._available_cookie_size(name):
+                break
+        data = b''.join(chunks)
+        if data:
+            try:
+                return self._deserialize(data)
+            except BaseException:
+                pass
+        return default
+
+    def load_headers(self, headers, default=None):
         '''
         Parse data from relevant paginated cookie data on request headers.
 
@@ -173,20 +208,7 @@ class DataCookie(object):
         :rtype: browsepy.abc.JSONSerializable
         '''
         cookies = self._extract_cookies(headers)
-        chunks = []
-        for i in range(self.max_pages):
-            name = self._name_cookie_page(i)
-            cookie = cookies.get(name, '').encode('ascii')
-            chunks.append(cookie)
-            if len(cookie) < self._available_cookie_size(name):
-                break
-        data = b''.join(chunks)
-        try:
-            data = base64.b64decode(data)
-            serialized = self.decompress_fnc(data)
-            return json.loads(serialized.decode('utf-8'))
-        except (json.JSONDecodeError, ValueError, TypeError):
-            return None
+        return self.load_cookies(cookies)
 
     def dump_headers(self, data, headers=None):
         '''
@@ -201,26 +223,29 @@ class DataCookie(object):
         :rtype: werkzeug.http.Headers
         '''
         result = self.headers_class()
-        serialized = self.compress_fnc(json.dumps(data).encode('utf-8'))
-        data = base64.b64encode(serialized)
+        data = self._serialize(data)
         start = 0
-        total = len(data)
+        size = len(data)
         for i in range(self.max_pages):
             name = self._name_cookie_page(i)
             end = start + self._available_cookie_size(name)
-            result.set(name, data[start:end].decode('ascii'))
+            result.set(
+                'Set-Cookie',
+                dump_cookie(
+                    name,
+                    data[start:end],
+                    max_age=self.max_age,
+                    path=self.path,
+                    )
+                )
+            if end > size:
+                # incidentally, an empty page will be added after end == size
+                if headers:
+                    result.extend(self.truncate_headers(headers, i + 1))
+                return result
             start = end
-            if start > total:
-                # incidentally, an empty page will be added after start == size
-                break
-        else:
-            # pages exhausted, limit reached
-            raise self.size_error(max_cookies=self.max_pages)
-
-        if headers:
-            result.extend(self.truncate_headers(headers, i + 1))
-
-        return headers
+        # pages exhausted, limit reached
+        raise self.size_error(max_cookies=self.max_pages)
 
     def truncate_headers(self, headers, start=0):
         '''
