@@ -3,15 +3,15 @@ import tempfile
 import shutil
 import os
 import os.path
-import sys
 import functools
+import datetime
 
 import bs4
 import flask
 
 from werkzeug.utils import cached_property
 from werkzeug.http import Headers, parse_cookie, dump_cookie, \
-                          parse_options_header
+                          parse_options_header, parse_date
 
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.clipboard as file_actions_clipboard
@@ -25,45 +25,103 @@ import browsepy
 
 class CookieHeaderMock(object):
     header = 'Cookie'
+    def parse_cookie(self, header):
+        cookies = parse_cookie(header)
+        if len(cookies) != 1:
+            # multi-cookie header (Cookie), no options
+            return cookies, {}
+        name, value = tuple(cookies.items())[0]
+        cookie, _ = parse_options_header(header)
+        extra = header[len(cookie):]
+
+        for part in .split('; '):
+
+            if part.startswith('Expires='):
+                expire = part[8:].replace('"', '')
+                options['expires'] = parse_date(expire)
+
+
+    def check_expired(self, options):
+
+                    if expire and < datetime.datetime.now():
+                        return True
+
+    def check_expired(self, header):
+
+
+
+        cookie, options = parse_options_header(header)
+        if 'Expires' in options:  # implies Set-Cookie
+
+        if options.get('Max-Age', '1') == '0':
+            return True
+        return False
+
+    @property
+    def _cookies(self):
+        check_expired = self.check_expired
+        return [
+            (name, value, check_expired(header))
+            for header in self.headers.get_all(self.header)
+            for name, value in parse_cookie(header).items()
+            ]
 
     @property
     def cookies(self):
         return {
-            key: value
-            for header in self.headers.get_all(self.header)
-            for key, value in parse_cookie(header).items()
-            if parse_options_header(header)[1].get('expire', 1) > 0
+            name: value
+            for name, value, expired in self._cookies
+            if not expired
             }
 
     def __init__(self):
         self.headers = Headers()
 
     def set_cookie(self, name, value='', **kwargs):
-        self.headers.add(self.header, dump_cookie(name, value))
+        owned = [
+            for name, value, expires in self._cookies
+            if name != name
+            ]
+
+
+        for name, value in owned.items():
+            self.headers.add(self.header, dump_cookie(name, value, **kwargs))
+
+    def clear(self):
+        self.headers.clear()
 
 
 class ResponseMock(CookieHeaderMock):
     header = 'Set-Cookie'
 
     def dump_cookies(self, client):
-        owned = self.cookies
-        for cookie in client.cookie_jar:
-            if cookie.name in owned:
-                client.cookie_jar.clear(
-                    cookie.domain, cookie.path, cookie.name)
+        owned = self._cookies
+        if isinstance(client, CookieHeaderMock):
+            client.clear()
+            for name, value in owned.items():
+                client.set_cookie(name, value)
+        else:
+            for cookie in client.cookie_jar:
+                if cookie.name in owned:
+                    client.cookie_jar.clear(
+                        cookie.domain, cookie.path, cookie.name)
 
-        for name, value in owned.items():
-            client.set_cookie(client.environ_base['REMOTE_ADDR'], name, value)
+            for name, value in owned.items():
+                client.set_cookie(
+                    client.environ_base['REMOTE_ADDR'], name, value)
 
 
 class RequestMock(CookieHeaderMock):
     def load_cookies(self, client):
-        self.headers.clear()
+        self.clear()
+
         for cookie in client.cookie_jar:
-            self.headers.add(
-                self.header,
-                dump_cookie(cookie.name, cookie.value)
-                )
+            self.set_cookie(cookie.name, cookie.value)
+
+    def uncache(self):
+        field = file_actions_clipboard.Clipboard.request_cache_field
+        if hasattr(self, field):
+            delattr(self, field)
 
 
 class Page(object):
@@ -500,6 +558,7 @@ class TestAction(unittest.TestCase):
                 '/file-actions/selection',
                 data={
                     'path': files,
+                    'action-copy': 'whatever',
                     })
             self.assertEqual(response.status_code, 302)
 
@@ -518,14 +577,16 @@ class TestClipboard(unittest.TestCase):
     def test_count(self):
         reqmock = RequestMock()
         resmock = ResponseMock()
-        self.assertEqual(self.module.Clipboard.count(resmock), 0)
+        self.assertEqual(self.module.Clipboard.count(reqmock), 0)
 
         clipboard = self.module.Clipboard()
         clipboard.mode = 'test'
         clipboard.add('item')
         clipboard.to_response(resmock, reqmock)
+        resmock.dump_cookies(reqmock)
+        reqmock.uncache()
 
-        self.assertEqual(self.module.Clipboard.count(resmock), 1)
+        self.assertEqual(self.module.Clipboard.count(reqmock), 1)
 
     def test_oveflow(self):
         class TinyClipboard(self.module.Clipboard):
@@ -554,9 +615,12 @@ class TestClipboard(unittest.TestCase):
         name = self.module.Clipboard.data_cookie._name_cookie_page(0)
         request = RequestMock()
         request.set_cookie(name, 'value')
+        response = ResponseMock()
+        response.set_cookie(name, 'value')
         clipboard = self.module.Clipboard()
-        clipboard.to_response(request, request)
-        self.assertNotIn(name, request.cookies)
+        clipboard.to_response(response, request)
+        print(response.headers)
+        self.assertNotIn(name, response.cookies)
 
 
 class TestException(unittest.TestCase):
