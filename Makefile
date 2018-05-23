@@ -41,11 +41,11 @@ showdoc: doc
 eslint:
 	eslint ${CURDIR}/browsepy
 
-pep8:
+pycodestyle:
 	pycodestyle --show-source browsepy
 	pycodestyle --show-source setup.py
 
-pycodestyle: pep8
+pep8: pycodestyle
 
 flake8:
 	flake8 --show-source browsepy

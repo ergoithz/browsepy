@@ -10,8 +10,7 @@ import bs4
 import flask
 
 from werkzeug.utils import cached_property
-from werkzeug.http import Headers, parse_cookie, dump_cookie, \
-                          parse_options_header, parse_date
+from werkzeug.http import Headers, parse_cookie, dump_cookie
 
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.clipboard as file_actions_clipboard
@@ -25,67 +24,47 @@ import browsepy
 
 class CookieHeaderMock(object):
     header = 'Cookie'
-    def parse_cookie(self, header):
-        cookies = parse_cookie(header)
-        if len(cookies) != 1:
-            # multi-cookie header (Cookie), no options
-            return cookies, {}
-        name, value = tuple(cookies.items())[0]
-        cookie, _ = parse_options_header(header)
-        extra = header[len(cookie):]
-
-        for part in .split('; '):
-
-            if part.startswith('Expires='):
-                expire = part[8:].replace('"', '')
-                options['expires'] = parse_date(expire)
-
-
-    def check_expired(self, options):
-
-                    if expire and < datetime.datetime.now():
-                        return True
-
-    def check_expired(self, header):
-
-
-
-        cookie, options = parse_options_header(header)
-        if 'Expires' in options:  # implies Set-Cookie
-
-        if options.get('Max-Age', '1') == '0':
-            return True
-        return False
 
     @property
     def _cookies(self):
-        check_expired = self.check_expired
         return [
-            (name, value, check_expired(header))
+            (name, {'value': value})
             for header in self.headers.get_all(self.header)
             for name, value in parse_cookie(header).items()
             ]
 
     @property
     def cookies(self):
+        is_valid = self.valid
         return {
-            name: value
-            for name, value, expired in self._cookies
-            if not expired
+            name: options.get('value')
+            for name, options in self._cookies
+            if is_valid(options)
             }
+
+    def valid(self, cookie_options):
+        dt = datetime.datetime.now()
+        return (
+            cookie_options.get('max_age', 1) > 0 and
+            cookie_options.get('expiration', dt) >= dt
+            )
 
     def __init__(self):
         self.headers = Headers()
 
+    def add_cookie(self, name, value='', **kwargs):
+        self.headers.add(self.header, dump_cookie(name, value, **kwargs))
+
     def set_cookie(self, name, value='', **kwargs):
         owned = [
-            for name, value, expires in self._cookies
+            (name, options)
+            for name, options in self._cookies
             if name != name
             ]
-
-
-        for name, value in owned.items():
-            self.headers.add(self.header, dump_cookie(name, value, **kwargs))
+        self.clear()
+        for name, options in owned:
+            self.headers.add(self.header, dump_cookie(name, **options))
+        self.add_cookie(name, value, **kwargs)
 
     def clear(self):
         self.headers.clear()
@@ -94,21 +73,27 @@ class CookieHeaderMock(object):
 class ResponseMock(CookieHeaderMock):
     header = 'Set-Cookie'
 
+    @property
+    def _cookies(self):
+        return [
+            browsepy_http.parse_set_cookie(header)
+            for header in self.headers.get_all(self.header)
+            ]
+
     def dump_cookies(self, client):
         owned = self._cookies
         if isinstance(client, CookieHeaderMock):
             client.clear()
-            for name, value in owned.items():
-                client.set_cookie(name, value)
+            for name, options in owned:
+                client.add_cookie(name, **options)
         else:
             for cookie in client.cookie_jar:
-                if cookie.name in owned:
-                    client.cookie_jar.clear(
+                client.cookie_jar.clear(
                         cookie.domain, cookie.path, cookie.name)
 
-            for name, value in owned.items():
+            for name, options in owned:
                 client.set_cookie(
-                    client.environ_base['REMOTE_ADDR'], name, value)
+                    client.environ_base['REMOTE_ADDR'], name, **options)
 
 
 class RequestMock(CookieHeaderMock):

@@ -8,7 +8,7 @@ import logging
 import zlib
 
 from werkzeug.http import dump_header, dump_options_header, dump_cookie, \
-                          parse_cookie
+                          parse_cookie, parse_date
 from werkzeug.datastructures import Headers as BaseHeaders
 
 from .compat import range
@@ -267,3 +267,54 @@ class DataCookie(object):
         for name in cookie_names:
             result.add('Set-Cookie', dump_cookie(name, expires=0))
         return result
+
+
+def parse_set_cookie_option(name, value):
+    '''
+    Parse Set-Cookie header option (acepting option 'value' as cookie value),
+    both name and value.
+
+    Resulting names are compatible as :func:`werkzeug.http.dump_cookie`
+    keyword arguments.
+
+    :param name: option name
+    :type name: str
+    :param value: option value
+    :type value: str
+    :returns: tuple of parsed name and option, or None if name is unknown
+    :rtype: tuple of str or None
+    '''
+    try:
+        if name == 'Max-Age':
+            return 'max_age', int(value)
+        if name == 'Expires':
+            return 'expires', parse_date(value)
+        if name in ('value', 'Path', 'Domain', 'SameSite'):
+            return name.lower(), value
+        if name in ('Secure', 'HttpOnly'):
+            return name.lower(), True
+    except (AttributeError, ValueError, TypeError):
+        pass
+    except BaseException as e:
+        logger.exception(e)
+
+
+re_parse_set_cookie = re.compile(r'([^=;]+)(?:=([^;]*))?(?:$|;\s*)')
+
+
+def parse_set_cookie(header, option_parse_fnc=parse_set_cookie_option):
+    '''
+    Parse the content of a Set-Type HTTP header.
+
+    Result options are compatible as :func:`werkzeug.http.dump_cookie`
+    keyword arguments.
+
+    :param header: Set-Cookie header value
+    :type header: str
+    :returns: tuple with cookie name and its options
+    :rtype: tuple of str and dict
+    '''
+    pairs = re_parse_set_cookie.findall(header)
+    name, value = pairs[0]
+    pairs[0] = ('value', parse_cookie('v=%s' % value).get('v', None))
+    return name, dict(filter(None, (option_parse_fnc(*p) for p in pairs)))

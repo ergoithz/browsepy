@@ -108,6 +108,9 @@ setup(
     install_requires=(
         ['flask', 'unicategories'] + extra_requires
         ),
+    extras_require={
+        'tests': ['beautifulsoup4'],
+        },
     tests_require=['beautifulsoup4'],
     test_suite='browsepy.tests',
     test_runner='browsepy.tests.runner:DebuggerTextTestRunner',
