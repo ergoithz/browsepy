@@ -229,7 +229,7 @@ class DataCookie(object):
         for i in range(self.max_pages):
             name = self._name_cookie_page(i)
             end = start + self._available_cookie_size(name)
-            result.set(
+            result.add(
                 'Set-Cookie',
                 dump_cookie(
                     name,

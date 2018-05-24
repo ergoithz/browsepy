@@ -42,14 +42,12 @@ eslint:
 	eslint ${CURDIR}/browsepy
 
 pycodestyle:
-	pycodestyle --show-source browsepy
-	pycodestyle --show-source setup.py
+	pycodestyle browsepy setup.py
 
 pep8: pycodestyle
 
 flake8:
-	flake8 --show-source browsepy
-	flake8 --show-source setup.py
+	flake8 browsepy setup.py
 
 coverage:
 	coverage run --source=browsepy setup.py test

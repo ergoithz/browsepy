@@ -1,64 +1,10 @@
 
-import re
-import logging
+import os
 import unittest
-
-import werkzeug
+import datetime
+import base64
 
 import browsepy.http
-
-logger = logging.getLogger(__name__)
-rct = re.compile(
-    r'([^=;]+)(?:=([^;]*))?\s*(?:$|;\s+)'
-    )
-
-
-def parse_set_cookie_option(name, value):
-    '''
-    Parse Set-Cookie header option (acepting option 'value' as cookie value),
-    both name and value.
-
-    Resulting names are compatible as :func:`werkzeug.http.dump_cookie`
-    keyword arguments.
-
-    :param name: option name
-    :type name: str
-    :param value: option value
-    :type value: str
-    :returns: tuple of parsed name and option, or None if name is unknown
-    :rtype: tuple of str or None
-    '''
-    try:
-        if name == 'Max-Age':
-            return 'max_age', int(value)
-        if name == 'Expires':
-            return 'expires', werkzeug.parse_date(value)
-        if name in ('value', 'Path', 'Domain', 'SameSite'):
-            return name.lower(), value
-        if name in ('Secure', 'HttpOnly'):
-            return name.lower(), True
-    except (AttributeError, ValueError, TypeError):
-        pass
-    except BaseException as e:
-        logger.exception(e)
-
-
-def parse_set_cookie(header, option_parse_fnc=parse_set_cookie_option):
-    '''
-    Parse the content of a Set-Type HTTP header.
-
-    Result options are compatible as :func:`werkzeug.http.dump_cookie`
-    keyword arguments.
-
-    :param header: Set-Cookie header value
-    :type header: str
-    :returns: tuple with cookie name and its options
-    :rtype: tuple of str and dict
-    '''
-    pairs = rct.findall(header)
-    name, value = pairs[0]
-    pairs[0] = ('value', werkzeug.parse_cookie('v=%s' % value).get('v', None))
-    return name, dict(filter(None, (option_parse_fnc(*p) for p in pairs)))
 
 
 class TestHeaders(unittest.TestCase):
@@ -85,5 +31,55 @@ class TestHeaders(unittest.TestCase):
             )
 
 
+class TestParseSetCookie(unittest.TestCase):
+    module = browsepy.http
+
+    def test_parse(self):
+        tests = {
+            'value-cookie=value': {
+                'name': 'value-cookie',
+                'value': 'value',
+                },
+            'expiration-cookie=value; Expires=Thu, 24 May 2018 18:10:26 GMT': {
+                'name': 'expiration-cookie',
+                'value': 'value',
+                'expires': datetime.datetime(2018, 5, 24, 18, 10, 26),
+                },
+            'maxage-cookie="value with spaces"; Max-Age=0': {
+                'name': 'maxage-cookie',
+                'value': 'value with spaces',
+                'max_age': 0,
+                },
+            'secret-cookie; HttpOnly; Secure': {
+                'name': 'secret-cookie',
+                'value': '',
+                'httponly': True,
+                'secure': True,
+                },
+            'spaced name=value': {
+                'name': 'spaced name',
+                'value': 'value',
+                },
+            }
+        for cookie, data in tests.items():
+            name, parsed = self.module.parse_set_cookie(cookie)
+            parsed['name'] = name
+            self.assertEquals(parsed, data)
+
+
 class TestDataCookie(unittest.TestCase):
-    pass
+    module = browsepy.http
+    manager_cls = module.DataCookie
+
+    def random_text(self, size=2):
+        bytedata = base64.b64encode(os.urandom(size))
+        return bytedata.decode('ascii')[:size]
+
+    def test_pagination(self):
+        data = self.random_text(self.manager_cls.page_length)
+        manager = self.manager_cls('cookie', max_pages=3)
+        headers = manager.dump_headers(data)
+        print(headers)
+        self.assertEqual(len(headers), 2)
+        self.assertEqual(manager.load_headers(headers), data)
+
