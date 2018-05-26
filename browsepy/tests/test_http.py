@@ -3,8 +3,13 @@ import os
 import unittest
 import datetime
 import base64
+import zlib
+
+import werkzeug.http
+import werkzeug.datastructures
 
 import browsepy.http
+import browsepy.exceptions
 
 
 class TestHeaders(unittest.TestCase):
@@ -70,16 +75,69 @@ class TestParseSetCookie(unittest.TestCase):
 class TestDataCookie(unittest.TestCase):
     module = browsepy.http
     manager_cls = module.DataCookie
+    header_cls = werkzeug.datastructures.Headers
+    cookie_size_exception = browsepy.exceptions.InvalidCookieSizeError
 
     def random_text(self, size=2):
-        bytedata = base64.b64encode(os.urandom(size))
-        return bytedata.decode('ascii')[:size]
+        bytedata = zlib.compress(os.urandom(size * 3), 9)  # ensure entropy
+        b64data = base64.b64encode(bytedata)
+        return b64data.decode('ascii')[:size]
+
+    def parse_response_cookies(self, headers):
+        '''
+        :type headers: werkzeug.datastructures.Headers
+        '''
+        return {
+            name: options
+            for name, options in map(
+                self.module.parse_set_cookie,
+                headers.get_all('set-cookie')
+                )}
+
+    def response_to_request_headers(self, headers):
+        '''
+        :type headers: werkzeug.datastructures.Headers
+        '''
+        return self.header_cls(
+            ('Cookie', werkzeug.http.dump_cookie(name, options['value']))
+            for name, options in self.parse_response_cookies(headers).items()
+            )
 
     def test_pagination(self):
-        data = self.random_text(self.manager_cls.page_length)
-        manager = self.manager_cls('cookie', max_pages=3)
-        headers = manager.dump_headers(data)
-        print(headers)
-        self.assertEqual(len(headers), 2)
-        self.assertEqual(manager.load_headers(headers), data)
+        data = self.random_text(self.manager_cls.header_max_size)
+        manager = self.manager_cls('cookie', max_pages=2)
 
+        rheaders = manager.dump_headers(data)
+        self.assertEqual(len(rheaders), 2)
+
+        qheaders = self.response_to_request_headers(rheaders)
+        self.assertEqual(manager.load_headers(qheaders), data)
+
+        rheaders = manager.dump_headers('shorter-data', qheaders)
+        self.assertEqual(len(rheaders), 2)  # 1 for value, 1 for discard
+
+        cookies = self.parse_response_cookies(rheaders)
+
+        cookie1 = cookies['cookie']
+        deserialized = manager.load_cookies({'cookie': cookie1['value']})
+        self.assertEqual(deserialized, 'shorter-data')
+
+        cookie2 = cookies['cookie-2']
+        self.assertEqual(cookie2['value'], '')
+        self.assertLess(cookie2['expires'], datetime.datetime.now())
+        self.assertLess(cookie2['max_age'], 1)
+
+    def test_max_pagination(self):
+        manager = self.manager_cls('cookie', max_pages=2)
+        self.assertRaises(
+            self.cookie_size_exception,
+            manager.dump_headers,
+            self.random_text(self.manager_cls.header_max_size * 2)
+            )
+
+    def test_truncate(self):
+        qheaders = self.header_cls([('Cookie', 'cookie=value')])
+        manager = self.manager_cls('cookie', max_pages=2)
+        rheaders = manager.truncate_headers(qheaders)
+        parsed = self.parse_response_cookies(rheaders)
+        self.assertEqual(parsed['cookie']['value'], '')

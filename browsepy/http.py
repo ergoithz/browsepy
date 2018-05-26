@@ -87,9 +87,10 @@ class DataCookie(object):
     >     return response
 
     '''
-    page_length = 4000
     size_error = InvalidCookieSizeError
     headers_class = BaseHeaders
+    header_max_size = 4096
+    header_initial_size = len('Set-Cookie: ')
 
     @staticmethod
     def _serialize(data):
@@ -110,21 +111,44 @@ class DataCookie(object):
         serialized = zlib.decompress(decoded)
         return json.loads(serialized)
 
-    def __init__(self, cookie_name, max_pages=1, max_age=None, path='/'):
+    def __init__(self, cookie_name, max_pages=1,
+                 max_age=None, expires=None, path='/',
+                 domain=None, secure=False, httponly=False,
+                 charset='utf-8', sync_expires=True):
         '''
         :param cookie_name: first cookie name and prefix for the following
         :type cookie_name: str
         :param max_pages: maximum allowed cookie parts, defaults to 1
         :type max_pages: int
-        :param max_age: cookie lifetime in seconds or None (session, default)
-        :type max_age: int, datetime.timedelta or None
-        :param path: cookie path, defaults to /
+        :param max_age: cookie lifetime
+        :type max_age: int or datetime.timedelta
+        :param expires: date (or timestamp) of cookie expiration
+        :type expires: datetime.datetime or int
+        :param path: cookie domain path, defaults to '/'
         :type path: str
+        :param domain: cookie domain, defaults to current
+        :type domain: str
+        :param secure: either cookie will only be available via HTTPS or not
+        :type secure: bool
+        :param httponly: either cookie can be accessed via Javascript or not
+        :type httponly: bool
+        :param charset: the encoding for unicode values, defaults to utf-8
+        :type charset: str
+        :param sync_expires: set expires based on max_age as default
+        :type sync_expires: bool
         '''
-        self.cookie_name = cookie_name
         self.max_pages = max_pages
-        self.max_age = max_age
-        self.path = path
+        self.cookie_name = cookie_name
+        self.cookie_options = {
+            'max_age': max_age,
+            'expires': None,
+            'path': path,
+            'domain': domain,
+            'secure': secure,
+            'httponly': httponly,
+            'charset': charset,
+            'sync_expires': sync_expires,
+            }
 
     def _name_cookie_page(self, page):
         '''
@@ -141,9 +165,22 @@ class DataCookie(object):
         return '{}{}'.format(
             self.cookie_name,
             page if isinstance(page, str) else
-            '-{:x}'.format(page - 1) if page else
+            '-{:x}'.format(page + 1) if page else
             ''
             )
+
+    def _dump_cookie(self, name, value):
+        '''
+        Dump cookie with configured options.
+
+        :param name: cookie name
+        :type name: str
+        :param value: cookie value
+        :type value: str
+        :returns: Set-Cookie header value
+        :rtype: str
+        '''
+        return dump_cookie(name, value, **self.cookie_options)
 
     def _available_cookie_size(self, name):
         '''
@@ -154,19 +191,19 @@ class DataCookie(object):
         :return: available bytes for cookie value
         :rtype: int
         '''
-        empty = 'Set-Cookie: %s' % dump_cookie(
-            name,
-            value=' ',  # force quotes
-            max_age=self.max_age,
-            path=self.path
-            )
-        return self.page_length - len(empty)
+        empty = self._dump_cookie(name, ' ')  # forces quotes
+        return self.header_max_size - self.header_initial_size - len(empty)
 
     def _extract_cookies(self, headers):
         '''
         Extract relevant cookies from headers.
+
+        :param headers: request headers
+        :type headers: werkzeug.datasturctures.Headers
+        :returns: cookies
+        :rtype: dict
         '''
-        regex = re.compile('^%s$' % self._name_cookie_page('(-[0-9a-f])?'))
+        regex = re.compile('^%s$' % self._name_cookie_page('(-[0-9a-f]+)?'))
         return {
             key: value
             for header in headers.get_all('cookie')
@@ -229,15 +266,7 @@ class DataCookie(object):
         for i in range(self.max_pages):
             name = self._name_cookie_page(i)
             end = start + self._available_cookie_size(name)
-            result.add(
-                'Set-Cookie',
-                dump_cookie(
-                    name,
-                    data[start:end],
-                    max_age=self.max_age,
-                    path=self.path,
-                    )
-                )
+            result.add('Set-Cookie', self._dump_cookie(name, data[start:end]))
             if end > size:
                 # incidentally, an empty page will be added after end == size
                 if headers:
@@ -265,44 +294,14 @@ class DataCookie(object):
 
         result = self.headers_class()
         for name in cookie_names:
-            result.add('Set-Cookie', dump_cookie(name, expires=0))
+            result.add('Set-Cookie', dump_cookie(name, max_age=0, expires=0))
         return result
-
-
-def parse_set_cookie_option(name, value):
-    '''
-    Parse Set-Cookie header option (acepting option 'value' as cookie value),
-    both name and value.
-
-    Resulting names are compatible as :func:`werkzeug.http.dump_cookie`
-    keyword arguments.
-
-    :param name: option name
-    :type name: str
-    :param value: option value
-    :type value: str
-    :returns: tuple of parsed name and option, or None if name is unknown
-    :rtype: tuple of str or None
-    '''
-    try:
-        if name == 'Max-Age':
-            return 'max_age', int(value)
-        if name == 'Expires':
-            return 'expires', parse_date(value)
-        if name in ('value', 'Path', 'Domain', 'SameSite'):
-            return name.lower(), value
-        if name in ('Secure', 'HttpOnly'):
-            return name.lower(), True
-    except (AttributeError, ValueError, TypeError):
-        pass
-    except BaseException as e:
-        logger.exception(e)
 
 
 re_parse_set_cookie = re.compile(r'([^=;]+)(?:=([^;]*))?(?:$|;\s*)')
 
 
-def parse_set_cookie(header, option_parse_fnc=parse_set_cookie_option):
+def parse_set_cookie(header):
     '''
     Parse the content of a Set-Type HTTP header.
 
@@ -314,7 +313,26 @@ def parse_set_cookie(header, option_parse_fnc=parse_set_cookie_option):
     :returns: tuple with cookie name and its options
     :rtype: tuple of str and dict
     '''
+
+    def parse_option(pair):
+        name, value = pair
+        try:
+            if name == 'Max-Age':
+                return 'max_age', int(value)
+            if name == 'Expires':
+                return 'expires', parse_date(value)
+            if name in ('Path', 'Domain', 'SameSite'):
+                return name.lower(), value
+            if name in ('Secure', 'HttpOnly'):
+                return name.lower(), True
+        except (AttributeError, ValueError, TypeError):
+            pass
+        except BaseException as e:
+            logger.exception(e)
+        return None, None
+
     pairs = re_parse_set_cookie.findall(header)
-    name, value = pairs[0]
-    pairs[0] = ('value', parse_cookie('v=%s' % value).get('v', None))
-    return name, dict(filter(None, (option_parse_fnc(*p) for p in pairs)))
+    name, value = pairs.pop(0)
+    options = {k: v for k, v in map(parse_option, pairs) if k}
+    options['value'] = parse_cookie('v=%s' % value).get('v', None)
+    return name, options

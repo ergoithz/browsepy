@@ -8,13 +8,20 @@ import functools
 class DeferredReport(pycodestyle.StandardReport):
     def __init__(self, *args, **kwargs):
         self.print_fnc = kwargs.pop('print_fnc')
+        self.location_base = kwargs.pop('location_base')
         super(DeferredReport, self).__init__(*args, **kwargs)
+
+    @property
+    def location(self):
+        if self.filename:
+            return os.path.relpath(self.filename, self.location_base)
+        return self.filename
 
     def get_file_results(self):
         self._deferred_print.sort()
         for line_number, offset, code, text, doc in self._deferred_print:
             error = {
-                'path': self.filename,
+                'path': self.location,
                 'row': self.line_offset + line_number,
                 'col': offset + 1,
                 'code': code,
@@ -52,6 +59,7 @@ class TestCodeQuality(unittest.TestCase):
             paths=[self.base, self.setup_py],
             reporter=functools.partial(
                 DeferredReport,
+                location_base=self.base,
                 print_fnc=messages.append
                 )
             )
