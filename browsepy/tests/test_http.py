@@ -141,3 +141,9 @@ class TestDataCookie(unittest.TestCase):
         rheaders = manager.truncate_headers(qheaders)
         parsed = self.parse_response_cookies(rheaders)
         self.assertEqual(parsed['cookie']['value'], '')
+
+    def test_corrupted(self):
+        manager = self.manager_cls('cookie')
+        default = object()
+        data = manager.load_cookies({'cookie': 'corrupted'}, default)
+        self.assertIs(data, default)

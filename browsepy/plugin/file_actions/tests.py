@@ -35,19 +35,24 @@ class CookieHeaderMock(object):
 
     @property
     def cookies(self):
-        is_valid = self.valid
+        is_expired = self.expired
         return {
             name: options.get('value')
             for name, options in self._cookies
-            if is_valid(options)
+            if not is_expired(options)
             }
 
-    def valid(self, cookie_options):
-        dt = datetime.datetime.now()
-        return (
-            cookie_options.get('max_age', 1) > 0 and
-            cookie_options.get('expiration', dt) >= dt
-            )
+    @property
+    def expired_cookies(self):
+        is_expired = self.expired
+        return {
+            name: options.get('value')
+            for name, options in self._cookies
+            if is_expired(options)
+            }
+
+    def expired(self, options):
+        return False
 
     def __init__(self):
         self.headers = Headers()
@@ -79,6 +84,13 @@ class ResponseMock(CookieHeaderMock):
             browsepy_http.parse_set_cookie(header)
             for header in self.headers.get_all(self.header)
             ]
+
+    def expired(self, cookie_options):
+        dt = datetime.datetime.now()
+        return (
+            cookie_options.get('max_age', 1) < 1 or
+            cookie_options.get('expiration', dt) < dt
+            )
 
     def dump_cookies(self, client):
         owned = self._cookies
@@ -311,6 +323,7 @@ class TestIntegration(unittest.TestCase):
             reqmock.load_cookies(client)
             clipboard.mode = 'cut'
             clipboard.to_response(resmock, reqmock)
+            resmock.dump_cookies(client)
 
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
@@ -601,10 +614,9 @@ class TestClipboard(unittest.TestCase):
         request = RequestMock()
         request.set_cookie(name, 'value')
         response = ResponseMock()
-        response.set_cookie(name, 'value')
         clipboard = self.module.Clipboard()
         clipboard.to_response(response, request)
-        print(response.headers)
+        self.assertIn(name, response.expired_cookies)
         self.assertNotIn(name, response.cookies)
 
 
