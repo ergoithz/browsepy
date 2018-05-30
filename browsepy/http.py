@@ -218,7 +218,6 @@ class DataCookie(object):
         :param cookies: request cookies
         :type cookies: collections.abc.Mapping
         :returns: deserialized value
-        :rtype: browsepy.abc.JSONSerializable
         '''
         chunks = []
         for i in range(self.max_pages):
@@ -242,7 +241,6 @@ class DataCookie(object):
         :param headers: request headers
         :type headers: werkzeug.http.Headers
         :returns: deserialized value
-        :rtype: browsepy.abc.JSONSerializable
         '''
         cookies = self._extract_cookies(headers)
         return self.load_cookies(cookies)
@@ -253,7 +251,6 @@ class DataCookie(object):
         instance.
 
         :param data: any json-serializable value
-        :type data: browsepy.abc.JSONSerializable
         :param headers: optional request headers, used to truncate old pages
         :type headers: werkzeug.http.Headers
         :return: response headers

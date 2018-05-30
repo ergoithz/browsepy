@@ -50,7 +50,7 @@ flake8:
 	flake8 browsepy setup.py
 
 coverage:
-	coverage run --source=browsepy setup.py test
+	coverage run setup.py test
 
 showcoverage: coverage
 	coverage html
