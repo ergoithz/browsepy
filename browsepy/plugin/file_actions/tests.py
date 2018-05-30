@@ -62,13 +62,13 @@ class CookieHeaderMock(object):
 
     def set_cookie(self, name, value='', **kwargs):
         owned = [
-            (name, options)
-            for name, options in self._cookies
-            if name != name
+            (cname, coptions)
+            for cname, coptions in self._cookies
+            if cname != name
             ]
         self.clear()
-        for name, options in owned:
-            self.headers.add(self.header, dump_cookie(name, **options))
+        for cname, coptions in owned:
+            self.headers.add(self.header, dump_cookie(cname, **coptions))
         self.add_cookie(name, value, **kwargs)
 
     def clear(self):

@@ -28,4 +28,5 @@ wheel
 pycodestyle<2.4.0
 flake8
 coverage
+beautifulsoup4
 pyaml
