@@ -1,8 +1,9 @@
 import re
 import os.path
 import unittest
-import pycodestyle
 import functools
+
+import pycodestyle
 
 
 class DeferredReport(pycodestyle.StandardReport):

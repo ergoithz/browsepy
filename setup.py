@@ -109,9 +109,9 @@ setup(
         ['flask', 'unicategories'] + extra_requires
         ),
     extras_require={
-        'tests': ['beautifulsoup4'],
+        'tests': ['beautifulsoup4', 'pycodestyle'],
         },
-    tests_require=['beautifulsoup4'],
+    tests_require=['beautifulsoup4', 'pycodestyle'],
     test_suite='browsepy.tests',
     test_runner='browsepy.tests.runner:DebuggerTextTestRunner',
     zip_safe=False,
