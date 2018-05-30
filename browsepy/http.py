@@ -108,7 +108,7 @@ class DataCookie(object):
         :rtype: json-serializable
         '''
         decoded = base64.b64decode(data)
-        serialized = zlib.decompress(decoded)
+        serialized = zlib.decompress(decoded).decode('utf-8')
         return json.loads(serialized)
 
     def __init__(self, cookie_name, max_pages=1,
