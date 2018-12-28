@@ -39,6 +39,99 @@ The other way of loading a plugin programmatically is calling
 :meth:`browsepy.manager.PluginManager.load_plugin` for browsepy's plugin
 manager.
 
+.. _integrations-wsgi:
+
+Waitress and any WSGI application
+---------------------------------
+
+Startup script running browsepy inside
+`waitress <https://docs.pylonsproject.org/projects/waitress/en/latest/>`_
+along with a root wsgi application.
+
+.. code-block:: python
+
+    #!/env/bin/python
+
+    import os
+    import os.path
+    import sys
+
+    import flask
+    import werkzeug.wsgi
+    import waitress
+
+    import browsepy
+
+
+    class cfg():
+        base_path = os.path.abspath(os.path.dirname(__file__))
+        static_path = os.path.join(base_path, 'static')
+        media_path = os.path.expandvars('$HOME/media')
+
+        stderr_path = os.path.join(base_path, 'stderr.log')
+        stdout_path = os.path.join(base_path, 'stdout.log')
+        pid_path = os.path.join(base_path, 'pidfile.pid')
+
+
+    def setup_browsepy():
+        browsepy.app.config.update(
+            APPLICATION_ROOT='/browse',
+            directory_base=cfg.media_path,
+            directory_start=cfg.media_path,
+            directory_remove=cfg.media_path,
+            directory_upload=cfg.media_path,
+            plugin_modules=['player'],
+            )
+        browsepy.plugin_manager.load_arguments([
+            '--plugin=player',
+            '--player-directory-play'
+            ])
+        browsepy.plugin_manager.reload()
+        return browsepy.app
+
+
+    def setup_app():
+        app = flask.Flask(
+            __name__,
+            static_folder=cfg.static_path,
+            static_url_path='',
+            )
+
+        @app.route('/')
+        def index():
+            return flask.send_from_directory(cfg.static_path, 'index.html')
+
+        return app
+
+
+    def setup_dispatcher():
+        return werkzeug.wsgi.DispatcherMiddleware(
+            setup_app(),
+            {
+                '/browse': setup_browsepy(),
+                # add other wsgi apps here
+                }
+            )
+
+
+    def main():
+        sys.stderr = open(cfg.stderr_path, 'w')
+        sys.stdout = open(cfg.stdout_path, 'w')
+        with open(cfg.pid_path, 'w') as f:
+            f.write('%d' % os.getpid())
+
+        try:
+            print('Starting server')
+            waitress.serve(setup_dispatcher(), listen='127.0.0.1:8080')
+        finally:
+            sys.stderr.close()
+            sys.stdout.close()
+
+
+    if __name__ == '__main__':
+        main()
+
+
 .. _integrations-cherrymusic:
 
 Cherrypy and Cherrymusic
@@ -50,7 +143,6 @@ server provided by `cherrymusic <http://www.fomori.org/cherrymusic/>`_.
 .. code-block:: python
 
     #!/env/bin/python
-    # -*- coding: UTF-8 -*-
 
     import os
     import sys
@@ -73,7 +165,6 @@ server provided by `cherrymusic <http://www.fomori.org/cherrymusic/>`_.
     base_path = abspath(dirname(__file__))
     static_path = joinpath(base_path, 'static')
     media_path = expandvars('$HOME/media')
-    download_path = joinpath(media_path, 'downloads')
     root_config = {
         '/': {
             'tools.staticdir.on': True,
@@ -85,12 +176,12 @@ server provided by `cherrymusic <http://www.fomori.org/cherrymusic/>`_.
         'server.rootpath': '/player',
     }
     browsepy.config.update(
-        APPLICATION_ROOT = '/browse',
-        directory_base = media_path,
-        directory_start = media_path,
-        directory_remove = media_path,
-        directory_upload = media_path,
-        plugin_modules = ['player'],
+        APPLICATION_ROOT='/browse',
+        directory_base=media_path,
+        directory_start=media_path,
+        directory_remove=media_path,
+        directory_upload=media_path,
+        plugin_modules=['player'],
     )
     plugin_manager.reload()
 
