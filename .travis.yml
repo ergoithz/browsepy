@@ -27,7 +27,6 @@ install:
       nvm install stable
       nvm use stable
       npm install eslint
-      export PATH="$PWD/node_modules/.bin:$PATH"
     fi
   - |
     if [ "$sphinx" = "yes" ]; then
@@ -35,14 +34,16 @@ install:
     fi
 
 script:
-  - make flake8 coverage
+  - coverage run setup.py test
+  - coverage report
   - |
     if [ "$eslint" = "yes" ]; then
-      make eslint
+      node_modules/.bin/eslint browsepy
     fi
   - |
     if [ "$sphinx" = "yes" ]; then
-      make doc
+      make -C doc html 2>&1 | grep -v \
+		    'WARNING: more than one target found for cross-reference'
     fi
 
 after_success:
