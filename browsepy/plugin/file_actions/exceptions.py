@@ -67,7 +67,8 @@ class ClipboardException(FileActionsException):
     code = 'clipboard-invalid'
     template = 'Clipboard is invalid.'
 
-    def __init__(self, message=None, path=None, clipboard=None):
+    def __init__(self, message=None, path=None, mode=None, clipboard=None):
+        self.mode = mode
         self.clipboard = clipboard
         super(ClipboardException, self).__init__(message, path)
 
@@ -108,10 +109,11 @@ class InvalidClipboardItemsError(ClipboardException):
     code = 'clipboard-invalid-items'
     template = 'Clipboard has invalid items.'
 
-    def __init__(self, message=None, path=None, clipboard=None, issues=()):
+    def __init__(self, message=None, path=None, mode=None, clipboard=None,
+                 issues=()):
         self.issues = list(map(self.pair_class, issues))
         supa = super(InvalidClipboardItemsError, self)
-        supa.__init__(message, path, clipboard)
+        supa.__init__(message, path, mode, clipboard)
 
     def append(self, item, error):
         self.issues.append(self.pair_class((item, error)))
@@ -126,22 +128,6 @@ class InvalidClipboardModeError(ClipboardException):
     code = 'clipboard-invalid-mode'
     template = 'Clipboard mode {0.path!r} is not valid.'
 
-    def __init__(self, message=None, path=None, clipboard=None, mode=None):
-        self.mode = mode
+    def __init__(self, message=None, path=None, mode=None, clipboard=None):
         supa = super(InvalidClipboardModeError, self)
-        supa.__init__(message, path, clipboard)
-
-
-class InvalidClipboardSizeError(ClipboardException):
-    '''
-    Exception raised when a clipboard size exceeds cookie limit.
-
-    :property max_cookies: maximum allowed size
-    '''
-    code = 'clipboard-invalid-size'
-    template = 'Clipboard has too many items.'
-
-    def __init__(self, message=None, path=None, clipboard=None, max_cookies=0):
-        self.max_cookies = max_cookies
-        supa = super(InvalidClipboardSizeError, self)
-        supa.__init__(message, path, clipboard)
+        supa.__init__(message, path, mode, clipboard)

@@ -30,7 +30,8 @@ app = Flask(
     template_folder=utils.ppath('templates'),
     )
 app.config.update(
-    application_name='browsepy',
+    SECRET_KEY=utils.random_string(4096),
+    APPLICATION_NAME='browsepy',
     directory_base=compat.getcwd(),
     directory_start=None,
     directory_remove=None,
@@ -47,18 +48,15 @@ app.config.update(
     exclude_fnc=None,
     )
 app.jinja_env.add_extension('browsepy.transform.htmlcompress.HTMLCompress')
-app.secret_key = utils.random_string(4096)
+app.session_interface = cookieman.CookieMan()
 
 if 'BROWSEPY_SETTINGS' in os.environ:
     app.config.from_envvar('BROWSEPY_SETTINGS')
 
 plugin_manager = PluginManager(app)
-session_manager = cookieman.CookieMan()
-
-app.session_interface = session_manager
 
 
-@session_manager.register('browse:sort')
+@app.session_interface.register('browse:sort')
 def shrink_browse_sort(data, last):
     if data['browse:sort'] and not last:
         data['browse:sort'].pop()
@@ -74,7 +72,7 @@ def get_cookie_browse_sorting(path, default):
     :returns: sorting property
     :rtype: string
     '''
-    if request:
+    if session:
         for cpath, cprop in session.get('browse:sort', ()):
             if path == cpath:
                 return cprop
@@ -159,15 +157,10 @@ def sort(property, path):
     if not directory.is_directory or directory.is_excluded:
         return NotFound()
 
-    data = [(path, property)]
-    try:
-        data.extend(
-            (cpath, cprop)
-            for cpath, cprop in session.get('browse:sort', ())
-            if cpath != path
-            )
-    except BaseException:
-        pass
+    if session:
+        data = session.get('browse:sort', [])
+        data.insert(0, (path, property))
+        session.modified = True
 
     return redirect(url_for(".browse", path=directory.urlpath))
 

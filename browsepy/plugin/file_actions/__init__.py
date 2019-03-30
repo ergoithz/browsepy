@@ -40,10 +40,6 @@ re_basename = '^[^ {0}]([^{0}]*[^ {0}])?$'.format(
     )
 
 
-def get_clipboard():
-    return session.get('clipboard:paths', ('select', ()))
-
-
 @actions.route('/create/directory', methods=('GET', 'POST'),
                defaults={'path': ''})
 @actions.route('/create/directory/<path:path>', methods=('GET', 'POST'))
@@ -107,7 +103,8 @@ def selection(path):
         clipboard = request.form.getlist('path')
 
         if mode in ('cut', 'copy'):
-            session['clipboard:paths'] = (mode, clipboard)
+            session['clipboard:mode'] = mode
+            session['clipboard:items'] = clipboard
             return redirect(url_for('browse', path=directory.urlpath))
 
         raise InvalidClipboardModeError(
@@ -116,12 +113,11 @@ def selection(path):
             clipboard=clipboard,
             )
 
-    mode, clipboard = get_clipboard()
     return render_template(
         'selection.file_actions.html',
         file=directory,
-        mode=mode,
-        clipboard=clipboard,
+        mode=session.get('clipboard:mode'),
+        clipboard=session.get('clipboard:items', ()),
         cut_support=any(node.can_remove for node in directory.listdir()),
         sort_property=sort_property,
         sort_fnc=sort_fnc,
@@ -144,8 +140,14 @@ def clipboard_paste(path):
       ):
         return NotFound()
 
-    mode, clipboard = get_clipboard()
-    success, issues, mode = paste_clipboard(directory, mode, clipboard)
+    mode = session.get('clipboard:mode')
+    clipboard = session.get('clipboard:items', ())
+
+    success, issues, nmode = paste_clipboard(directory, mode, clipboard)
+    if clipboard and mode != nmode:
+        session['mode'] = nmode
+        mode = nmode
+
     if issues:
         raise InvalidClipboardItemsError(
             path=directory.path,
@@ -171,20 +173,25 @@ def clipboard_clear(path):
 @actions.errorhandler(FileActionsException)
 def clipboard_error(e):
     file = Node(e.path) if hasattr(e, 'path') else None
-    mode, clipboard = get_clipboard()
     issues = getattr(e, 'issues', ())
 
-    if clipboard:
+    if session.get('clipboard:items'):
+        clipboard = session['clipboard:mode']
         for issue in issues:
             if isinstance(issue.error, FileNotFoundError):
                 path = issue.item.urlpath
                 if path in clipboard:
                     clipboard.remove(path)
+                    session.modified = True
 
     return (
         render_template(
             '400.file_actions.html',
-            error=e, file=file, mode=mode, clipboard=clipboard, issues=issues,
+            error=e,
+            file=file,
+            mode=session.get('clipboard:mode'),
+            clipboard=session.get('clipboard:items', ()),
+            issues=issues,
             ),
         400
         )
@@ -201,14 +208,22 @@ def register_plugin(manager):
         return directory.is_directory and directory.can_upload
 
     def detect_clipboard(directory):
-        return directory.is_directory and 'clipboard:paths' in session
+        return directory.is_directory and session.get('clipboard:mode')
 
     def excluded_clipboard(path):
-        mode, clipboard = get_clipboard()
-        if mode == 'cut':
+        if session.get('clipboard:mode') == 'cut':
             base = manager.app.config['directory_base']
+            clipboard = session.get('clipboard:items', ())
             return abspath_to_urlpath(path, base) in clipboard
 
+    def shrink(data, last):
+        if last:
+            # TODO: add warning message
+            del data['clipboard:items']
+            del data['clipboard:mode']
+        return data
+
+    manager.register_session(('clipboard:items', 'clipboard:mode'), shrink)
     manager.register_exclude_function(excluded_clipboard)
     manager.register_blueprint(actions)
     manager.register_widget(
@@ -238,10 +253,8 @@ def register_plugin(manager):
         html=lambda file: render_template(
             'widget.clipboard.file_actions.html',
             file=file,
-            **dict(zip(
-                ('mode', 'clipboard'),
-                get_clipboard(),
-                )),
+            mode=session.get('clipboard:mode'),
+            clipboard=session.get('clipboard:items', ()),
             ),
         filter=detect_clipboard,
         )

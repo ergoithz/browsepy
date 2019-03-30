@@ -10,6 +10,8 @@ import collections
 from flask import current_app
 from werkzeug.utils import cached_property
 
+from cookieman import CookieMan
+
 from . import mimetype
 from . import compat
 from .compat import deprecated, usedoc
@@ -492,6 +494,31 @@ class MimetypePluginManager(RegistrablePluginManager):
         self._mimetype_functions.insert(0, fnc)
 
 
+class SessionPluginManager(PluginManagerBase):
+    def register_session(self, key_or_keys, shrink_fnc=None):
+        '''
+        Register session shrink function for specific session key or
+        keys. Can be used as decorator.
+
+        Usage:
+        >>> @app.session_interface.register('my_session_key')
+        ... def my_shrink_fnc(data):
+        ...     del data['my_session_key']
+        ...     return data
+
+        :param key_or_keys: key or iterable of keys would be affected
+        :type key_or_keys: Union[str, Iterable[str]]
+        :param shrink_fnc: shrinking function (optional for decorator)
+        :type shrink_fnc: cookieman.abc.ShrinkFunction
+        :returns: either original given shrink_fnc or decorator
+        :rtype: cookieman.abc.ShrinkFunction
+        '''
+        interface = self.app.session_interface
+        if isinstance(interface, CookieMan):
+            return interface.register(key_or_keys, shrink_fnc)
+        return shrink_fnc
+
+
 class ArgumentPluginManager(PluginManagerBase):
     '''
     Plugin manager for command-line argument registration.
@@ -753,6 +780,7 @@ class PluginManager(MimetypeActionPluginManager,
                     ExcludePluginManager,
                     WidgetPluginManager,
                     MimetypePluginManager,
+                    SessionPluginManager,
                     ArgumentPluginManager):
     '''
     Main plugin manager

@@ -4,107 +4,18 @@ import shutil
 import os
 import os.path
 import functools
-import datetime
 
 import bs4
 import flask
 
 from werkzeug.utils import cached_property
-from werkzeug.http import Headers, parse_cookie, dump_cookie
 
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
-import browsepy.http as browsepy_http
 import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.exceptions as browsepy_exceptions
 import browsepy
-
-
-class CookieHeaderMock(object):
-    header = 'Cookie'
-
-    @property
-    def _cookies(self):
-        return [
-            (name, {'value': value})
-            for header in self.headers.get_all(self.header)
-            for name, value in parse_cookie(header).items()
-            ]
-
-    @property
-    def cookies(self):
-        is_expired = self.expired
-        return {
-            name: options.get('value')
-            for name, options in self._cookies
-            if not is_expired(options)
-            }
-
-    @property
-    def expired_cookies(self):
-        is_expired = self.expired
-        return {
-            name: options.get('value')
-            for name, options in self._cookies
-            if is_expired(options)
-            }
-
-    def expired(self, options):
-        return False
-
-    def __init__(self):
-        self.headers = Headers()
-
-    def add_cookie(self, name, value='', **kwargs):
-        self.headers.add(self.header, dump_cookie(name, value, **kwargs))
-
-    def set_cookie(self, name, value='', **kwargs):
-        owned = [
-            (cname, coptions)
-            for cname, coptions in self._cookies
-            if cname != name
-            ]
-        self.clear()
-        for cname, coptions in owned:
-            self.headers.add(self.header, dump_cookie(cname, **coptions))
-        self.add_cookie(name, value, **kwargs)
-
-    def clear(self):
-        self.headers.clear()
-
-
-class ResponseMock(CookieHeaderMock):
-    header = 'Set-Cookie'
-
-    @property
-    def _cookies(self):
-        return [
-            browsepy_http.parse_set_cookie(header)
-            for header in self.headers.get_all(self.header)
-            ]
-
-    def expired(self, cookie_options):
-        dt = datetime.datetime.now()
-        return (
-            cookie_options.get('max_age', 1) < 1 or
-            cookie_options.get('expiration', dt) < dt
-            )
-
-    def dump_cookies(self, client):
-        owned = self._cookies
-        if isinstance(client, CookieHeaderMock):
-            client.clear()
-            for name, options in owned:
-                client.add_cookie(name, **options)
-        else:
-            for cookie in client.cookie_jar:
-                client.cookie_jar.clear(
-                        cookie.domain, cookie.path, cookie.name)
-
-            for name, options in owned:
-                client.set_cookie(
-                    client.environ_base['REMOTE_ADDR'], name, **options)
 
 
 class Page(object):
@@ -200,6 +111,7 @@ class TestIntegration(unittest.TestCase):
         self.base = tempfile.mkdtemp()
         self.app = self.browsepy_module.app
         self.app.config.update(
+            SECRET_KEY='secret',
             directory_base=self.base,
             directory_start=self.base,
             directory_upload=None,
@@ -236,8 +148,9 @@ class TestIntegration(unittest.TestCase):
                     page.widgets
                     )
 
-            with client.request_context():
-                flask.session['clipboard:paths'] = ('copy', ['whatever'])
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'copy'
+                session['clipboard:items'] = ['whatever']
 
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
@@ -285,25 +198,16 @@ class TestIntegration(unittest.TestCase):
             page = Page(response.data)
             self.assertIn('potato', page.entries)
 
-            reqmock = RequestMock()
-            reqmock.load_cookies(client)
-            resmock = ResponseMock()
-            clipboard = self.clipboard_module.Clipboard.from_request(reqmock)
-            clipboard.mode = 'copy'
-            clipboard.add('potato')
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'copy'
+                session['clipboard:items'] = ['potato']
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
             page = Page(response.data)
             self.assertIn('potato', page.entries)
 
-            reqmock.load_cookies(client)
-            clipboard.mode = 'cut'
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'cut'
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
             page = Page(response.data)
@@ -312,7 +216,6 @@ class TestIntegration(unittest.TestCase):
 
 class TestAction(unittest.TestCase):
     module = file_actions
-    clipboard_module = file_actions_clipboard
 
     def setUp(self):
         self.base = tempfile.mkdtemp()
@@ -320,6 +223,7 @@ class TestAction(unittest.TestCase):
         self.app = flask.Flask('browsepy')
         self.app.register_blueprint(self.module.actions)
         self.app.config.update(
+            SECRET_KEY='secret',
             directory_base=self.base,
             directory_upload=self.base,
             directory_remove=self.base,
@@ -468,60 +372,41 @@ class TestAction(unittest.TestCase):
             self.assertEqual(response.status_code, 404)
 
         with self.app.test_client() as client:
-            reqmock = RequestMock()
-            reqmock.load_cookies(client)
-            resmock = ResponseMock()
-            clipboard = self.clipboard_module.Clipboard.from_request(reqmock)
-            clipboard.mode = 'wrong-mode'
-            clipboard.add('whatever')
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'wrong-mode'
+                session['clipboard:items'] = ['whatever']
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
-            reqmock.load_cookies(client)
-            clipboard.mode = 'cut'
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'cut'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 302)  # same location
 
-            clipboard.mode = 'cut'
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'cut'
             response = client.get('/file-actions/clipboard/paste/target')
             self.assertEqual(response.status_code, 400)
 
-            clipboard.mode = 'copy'
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'copy'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
-            clipboard.mode = 'copy'
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'copy'
             response = client.get('/file-actions/clipboard/paste/target')
             self.assertEqual(response.status_code, 400)
 
             self.app.config['exclude_fnc'] = lambda n: n.endswith('whatever')
 
-            clipboard.mode = 'cut'
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'cut'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
-            clipboard.mode = 'copy'
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
-
+            with client.session_transaction() as session:
+                session['clipboard:mode'] = 'copy'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
@@ -548,73 +433,19 @@ class TestAction(unittest.TestCase):
             self.assertFalse(page.selected)
 
 
-class TestClipboard(unittest.TestCase):
-    module = file_actions_clipboard
-
-    def test_count(self):
-        reqmock = RequestMock()
-        resmock = ResponseMock()
-        self.assertEqual(self.module.Clipboard.count(reqmock), 0)
-
-        clipboard = self.module.Clipboard()
-        clipboard.mode = 'test'
-        clipboard.add('item')
-        clipboard.to_response(resmock, reqmock)
-        resmock.dump_cookies(reqmock)
-        reqmock.uncache()
-
-        self.assertEqual(self.module.Clipboard.count(reqmock), 1)
-
-    def test_oveflow(self):
-        class TinyClipboard(self.module.Clipboard):
-            data_cookie = browsepy_http.DataCookie('small-clipboard')
-
-        request = RequestMock()
-        clipboard = TinyClipboard()
-        clipboard.mode = 'test'
-        clipboard.update('item-%04d' % i for i in range(4000))
-
-        self.assertRaises(
-            file_actions_exceptions.InvalidClipboardSizeError,
-            clipboard.to_response,
-            request,
-            request
-            )
-
-    def test_unreadable(self):
-        name = self.module.Clipboard.data_cookie._name_cookie_page(0)
-        request = RequestMock()
-        request.set_cookie(name, 'a')
-        clipboard = self.module.Clipboard.from_request(request)
-        self.assertFalse(clipboard)
-
-    def test_cookie_cleanup(self):
-        name = self.module.Clipboard.data_cookie._name_cookie_page(0)
-        request = RequestMock()
-        request.set_cookie(name, 'value')
-        response = ResponseMock()
-        clipboard = self.module.Clipboard()
-        clipboard.to_response(response, request)
-        self.assertIn(name, response.expired_cookies)
-        self.assertNotIn(name, response.cookies)
-
-
 class TestException(unittest.TestCase):
     module = file_actions_exceptions
-    clipboard_class = file_actions_clipboard.Clipboard
     node_class = browsepy_file.Node
 
     def test_invalid_clipboard_items_error(self):
-        clipboard = self.clipboard_class((
-            'asdf',
-            ))
         pair = (
             self.node_class('/base/asdf'),
             Exception('Uncaught exception /base/asdf'),
             )
         e = self.module.InvalidClipboardItemsError(
             path='/',
-            clipboard=clipboard,
+            mode='cut',
+            clipboard=('asdf,'),
             issues=[pair]
             )
         e.append(

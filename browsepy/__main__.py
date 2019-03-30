@@ -52,7 +52,7 @@ class ArgParse(argparse.ArgumentParser):
         )
     default_removable = app.config['directory_remove']
     default_upload = app.config['directory_upload']
-    name = app.config['application_name']
+    name = app.config['APPLICATION_NAME']
 
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
