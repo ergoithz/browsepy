@@ -12,7 +12,6 @@
 # ---------------------------------
 #
 # - requirements.txt
-#   - requirements/compat.txt
 #   - requirements/development.txt
 #     - requirements/base.txt
 #
@@ -20,10 +19,8 @@
 # --------
 #
 # - requirements/ci.txt
-# - requirements/compat.txt
 # - requirements/development.txt
 #
 
--r requirements/compat.txt
 -r requirements/development.txt
 

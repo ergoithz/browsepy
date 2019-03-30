@@ -18,15 +18,26 @@
 #
 # - requirements.txt
 # - requirements/ci.txt
-# - requirements/compat.txt
 #
 
 -r base.txt
 
+# linting
+flake8
+doc8
+yapf
+coverage
+jedi
+
+# dev
+sphinx
+pycodestyle
+importlib_resources  # pycodestyle unittest with python < 3.7
+six  # compatible metaclass with python 2-3
+pyyaml
+beautifulsoup4
+
+# dist
 setuptools
 wheel
-pycodestyle
-flake8
-coverage
-beautifulsoup4
-pyaml
+twine

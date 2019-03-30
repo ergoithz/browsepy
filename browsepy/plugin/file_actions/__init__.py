@@ -6,7 +6,7 @@ import os.path
 import logging
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
-                  make_response
+                  session
 from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
@@ -15,7 +15,6 @@ from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
 from browsepy.compat import re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase
 
-from .clipboard import Clipboard
 from .exceptions import FileActionsException, \
                         InvalidClipboardItemsError, \
                         InvalidClipboardModeError, \
@@ -39,6 +38,10 @@ actions = Blueprint(
 re_basename = '^[^ {0}]([^{0}]*[^ {0}])?$'.format(
     re_escape(current_restricted_chars + common_path_separators)
     )
+
+
+def get_clipboard():
+    return session.get('clipboard:paths', ('select', ()))
 
 
 @actions.route('/create/directory', methods=('GET', 'POST'),
@@ -101,24 +104,23 @@ def selection(path):
                 mode = action
                 break
 
-        clipboard = Clipboard(request.form.getlist('path'), mode)
+        clipboard = request.form.getlist('path')
 
         if mode in ('cut', 'copy'):
-            response = redirect(url_for('browse', path=directory.urlpath))
-            clipboard.to_response(response)
-            return response
+            session['clipboard:paths'] = (mode, clipboard)
+            return redirect(url_for('browse', path=directory.urlpath))
 
         raise InvalidClipboardModeError(
             path=directory.path,
+            mode=mode,
             clipboard=clipboard,
-            mode=clipboard.mode,
             )
 
-    clipboard = Clipboard.from_request()
-    clipboard.mode = 'select'  # disables exclusion
+    mode, clipboard = get_clipboard()
     return render_template(
         'selection.file_actions.html',
         file=directory,
+        mode=mode,
         clipboard=clipboard,
         cut_support=any(node.can_remove for node in directory.listdir()),
         sort_property=sort_property,
@@ -142,52 +144,50 @@ def clipboard_paste(path):
       ):
         return NotFound()
 
-    clipboard = Clipboard.from_request()
-    success, issues = paste_clipboard(directory, clipboard)
+    mode, clipboard = get_clipboard()
+    success, issues, mode = paste_clipboard(directory, mode, clipboard)
     if issues:
         raise InvalidClipboardItemsError(
             path=directory.path,
+            mode=mode,
             clipboard=clipboard,
             issues=issues
             )
 
-    if clipboard.mode == 'cut':
-        clipboard.clear()
+    if mode == 'cut':
+        del session['clipboard:paths']
 
-    response = redirect(url_for('browse', path=directory.urlpath))
-    clipboard.to_response(response)
-    return response
+    return redirect(url_for('browse', path=directory.urlpath))
 
 
 @actions.route('/clipboard/clear', defaults={'path': ''})
 @actions.route('/clipboard/clear/<path:path>')
 def clipboard_clear(path):
-    response = redirect(url_for('browse', path=path))
-    clipboard = Clipboard.from_request()
-    clipboard.clear()
-    clipboard.to_response(response)
-    return response
+    if 'clipboard:paths' in session:
+        del session['clipboard:paths']
+    return redirect(url_for('browse', path=path))
 
 
 @actions.errorhandler(FileActionsException)
 def clipboard_error(e):
     file = Node(e.path) if hasattr(e, 'path') else None
-    clipboard = getattr(e, 'clipboard', None)
+    mode, clipboard = get_clipboard()
     issues = getattr(e, 'issues', ())
 
-    response = make_response((
-        render_template(
-            '400.file_actions.html',
-            error=e, file=file, clipboard=clipboard, issues=issues,
-            ),
-        400
-        ))
     if clipboard:
         for issue in issues:
             if isinstance(issue.error, FileNotFoundError):
-                clipboard.remove(issue.item.urlpath)
-        clipboard.to_response(response)
-    return response
+                path = issue.item.urlpath
+                if path in clipboard:
+                    clipboard.remove(path)
+
+    return (
+        render_template(
+            '400.file_actions.html',
+            error=e, file=file, mode=mode, clipboard=clipboard, issues=issues,
+            ),
+        400
+        )
 
 
 def register_plugin(manager):
@@ -201,11 +201,11 @@ def register_plugin(manager):
         return directory.is_directory and directory.can_upload
 
     def detect_clipboard(directory):
-        return directory.is_directory and Clipboard.from_request()
+        return directory.is_directory and 'clipboard:paths' in session
 
     def excluded_clipboard(path):
-        clipboard = Clipboard.from_request(request)
-        if clipboard.mode == 'cut':
+        mode, clipboard = get_clipboard()
+        if mode == 'cut':
             base = manager.app.config['directory_base']
             return abspath_to_urlpath(path, base) in clipboard
 
@@ -238,7 +238,10 @@ def register_plugin(manager):
         html=lambda file: render_template(
             'widget.clipboard.file_actions.html',
             file=file,
-            clipboard=Clipboard.from_request()
+            **dict(zip(
+                ('mode', 'clipboard'),
+                get_clipboard(),
+                )),
             ),
         filter=detect_clipboard,
         )

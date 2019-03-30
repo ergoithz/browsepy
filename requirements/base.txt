@@ -5,16 +5,18 @@
 # This module lists the strict minimal subset of dependencies required to
 # run this application.
 #
-# Depending on your python environment, optional modules could be also
-# required. They're defined on `requirements/compat.txt`.
-#
 # See also
 # --------
 #
 # - requirements.txt
-# - requirements/compat.txt
 # - requirements/development.txt
 #
 
 flask
+cookieman
 unicategories
+
+# compat
+six
+scandir # python < 3.6
+backports.shutil_get_terminal_size # python < 3.3

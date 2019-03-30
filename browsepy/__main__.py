@@ -11,7 +11,6 @@ import warnings
 import flask
 
 from . import app
-from . import __meta__ as meta
 from .compat import PY_LEGACY, getdebug, get_terminal_size
 from .transform.glob import translate
 
@@ -53,15 +52,16 @@ class ArgParse(argparse.ArgumentParser):
         )
     default_removable = app.config['directory_remove']
     default_upload = app.config['directory_upload']
+    name = app.config['application_name']
 
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
     plugin_action_class = PluginAction
 
     defaults = {
-        'prog': meta.app,
+        'prog': name,
         'formatter_class': HelpFormatter,
-        'description': 'description: starts a %s web file browser' % meta.app
+        'description': 'description: starts a %s web file browser' % name
         }
 
     def __init__(self, sep=os.sep):

@@ -40,11 +40,10 @@ def move(target, node, join_fnc=os.path.join):
     return node.path
 
 
-def paste_clipboard(target, clipboard):
+def paste_clipboard(target, mode, clipboard):
     '''
     Get pasting function for given directory and keyboard.
     '''
-    mode = clipboard.mode
     if mode == 'cut':
         paste_fnc = functools.partial(move, target)
     elif mode == 'copy':
@@ -52,18 +51,15 @@ def paste_clipboard(target, clipboard):
     else:
         raise InvalidClipboardModeError(
             path=target.path,
+            mode=mode,
             clipboard=clipboard,
-            mode=mode
             )
     success = []
     issues = []
-    try:
-        clipboard.mode = 'paste'  # deactivates excluded_clipboard fnc
-        for node in map(Node.from_urlpath, clipboard):
-            try:
-                success.append(paste_fnc(node))
-            except BaseException as e:
-                issues.append((node, e))
-    finally:
-        clipboard.mode = mode
-    return success, issues
+    mode = 'paste'  # deactivates excluded_clipboard fnc
+    for node in map(Node.from_urlpath, clipboard):
+        try:
+            success.append(paste_fnc(node))
+        except BaseException as e:
+            issues.append((node, e))
+    return success, issues, mode

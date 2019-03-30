@@ -18,7 +18,6 @@
 #
 # - requirements.txt
 # - requirements/ci.txt
-# - requirements/compat.txt
 #
 
 -r base.txt

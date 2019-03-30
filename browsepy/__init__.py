@@ -1,42 +1,36 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+
+__version__ = '0.5.6'
 
 import logging
 import os
 import os.path
 
-from datetime import timedelta
+import cookieman
 
 from flask import Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
-                  make_response
+                  make_response, session
 from werkzeug.exceptions import NotFound
 
-from .http import DataCookie
 from .appconfig import Flask
 from .manager import PluginManager
 from .file import Node, secure_filename
 from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
-                        InvalidFilenameError, InvalidPathError, \
-                        InvalidCookieSizeError
+                        InvalidFilenameError, InvalidPathError
 from . import compat
-from . import __meta__ as meta
-
-__app__ = meta.app  # noqa
-__version__ = meta.version  # noqa
-__license__ = meta.license  # noqa
-__author__ = meta.author  # noqa
-__basedir__ = os.path.abspath(os.path.dirname(compat.fsdecode(__file__)))
+from . import utils
 
 logger = logging.getLogger(__name__)
 
 app = Flask(
     __name__,
     static_url_path='/static',
-    static_folder=os.path.join(__basedir__, "static"),
-    template_folder=os.path.join(__basedir__, "templates")
+    static_folder=utils.ppath('static'),
+    template_folder=utils.ppath('templates'),
     )
 app.config.update(
+    application_name='browsepy',
     directory_base=compat.getcwd(),
     directory_start=None,
     directory_remove=None,
@@ -53,26 +47,24 @@ app.config.update(
     exclude_fnc=None,
     )
 app.jinja_env.add_extension('browsepy.transform.htmlcompress.HTMLCompress')
+app.secret_key = utils.random_string(4096)
 
 if 'BROWSEPY_SETTINGS' in os.environ:
     app.config.from_envvar('BROWSEPY_SETTINGS')
 
 plugin_manager = PluginManager(app)
-sorting_cookie = DataCookie('browse-sorting', max_age=timedelta(days=90))
+session_manager = cookieman.CookieMan()
+
+app.session_interface = session_manager
 
 
-def iter_cookie_browse_sorting(cookies):
-    '''
-    Get sorting-cookie from cookies dictionary.
-
-    :yields: tuple of path and sorting property
-    :ytype: 2-tuple of strings
-    '''
-    try:
-        for path, prop in sorting_cookie.load_cookies(cookies, ()):
-            yield path, prop
-    except ValueError as e:
-        logger.exception(e)
+@session_manager.register('browse:sort')
+def shrink_browse_sort(data, last):
+    if data['browse:sort'] and not last:
+        data['browse:sort'].pop()
+    else:
+        del data['browse:sort']
+    return data
 
 
 def get_cookie_browse_sorting(path, default):
@@ -83,7 +75,7 @@ def get_cookie_browse_sorting(path, default):
     :rtype: string
     '''
     if request:
-        for cpath, cprop in iter_cookie_browse_sorting(request.cookies):
+        for cpath, cprop in session.get('browse:sort', ()):
             if path == cpath:
                 return cprop
     return default
@@ -171,24 +163,13 @@ def sort(property, path):
     try:
         data.extend(
             (cpath, cprop)
-            for cpath, cprop in iter_cookie_browse_sorting(request.cookies)
+            for cpath, cprop in session.get('browse:sort', ())
             if cpath != path
             )
     except BaseException:
         pass
 
-    # handle cookie becoming too large
-    headers = ()
-    while data:
-        try:
-            headers = sorting_cookie.dump_headers(data, request.headers)
-            break
-        except InvalidCookieSizeError:
-            data.pop(0)
-
-    response = redirect(url_for(".browse", path=directory.urlpath))
-    response.headers.extend(headers)
-    return response
+    return redirect(url_for(".browse", path=directory.urlpath))
 
 
 @app.route("/browse", defaults={"path": ""})

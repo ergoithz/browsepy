@@ -13,7 +13,6 @@ from werkzeug.utils import cached_property
 from werkzeug.http import Headers, parse_cookie, dump_cookie
 
 import browsepy.plugin.file_actions as file_actions
-import browsepy.plugin.file_actions.clipboard as file_actions_clipboard
 import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
 import browsepy.http as browsepy_http
 import browsepy.file as browsepy_file
@@ -108,19 +107,6 @@ class ResponseMock(CookieHeaderMock):
                     client.environ_base['REMOTE_ADDR'], name, **options)
 
 
-class RequestMock(CookieHeaderMock):
-    def load_cookies(self, client):
-        self.clear()
-
-        for cookie in client.cookie_jar:
-            self.set_cookie(cookie.name, cookie.value)
-
-    def uncache(self):
-        field = file_actions_clipboard.Clipboard.request_cache_field
-        if hasattr(self, field):
-            delattr(self, field)
-
-
 class Page(object):
     def __init__(self, source):
         self.tree = bs4.BeautifulSoup(source, 'html.parser')
@@ -209,7 +195,6 @@ class TestIntegration(unittest.TestCase):
     actions_module = file_actions
     manager_module = browsepy_manager
     browsepy_module = browsepy
-    clipboard_module = file_actions_clipboard
 
     def setUp(self):
         self.base = tempfile.mkdtemp()
@@ -251,14 +236,8 @@ class TestIntegration(unittest.TestCase):
                     page.widgets
                     )
 
-            reqmock = RequestMock()
-            reqmock.load_cookies(client)
-            resmock = ResponseMock()
-            clipboard = self.clipboard_module.Clipboard.from_request(reqmock)
-            clipboard.mode = 'copy'
-            clipboard.add('whatever')
-            clipboard.to_response(resmock, reqmock)
-            resmock.dump_cookies(client)
+            with client.request_context():
+                flask.session['clipboard:paths'] = ('copy', ['whatever'])
 
             response = client.get('/')
             self.assertEqual(response.status_code, 200)

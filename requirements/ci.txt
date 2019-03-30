@@ -16,7 +16,6 @@
 # --------
 #
 # - requirements.txt
-# - requirements/compat.txt
 # - requirements/development.txt
 #
 

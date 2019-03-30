@@ -43,7 +43,7 @@
               <tr>
                 <td>
                   <input type="checkbox" name="path" value="{{ f.urlpath }}"
-                  {%- if f.urlpath in clipboard %} checked="checked"{% endif -%}
+                  {%- if f.urlpath in items %} checked="checked"{% endif -%}
                   >
                 </td>
                 <td>{{ f.link.text }}</td>
