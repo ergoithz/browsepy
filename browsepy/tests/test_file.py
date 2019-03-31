@@ -112,7 +112,7 @@ class TestFile(unittest.TestCase):
 
         bad_file = os.path.join(bad_path, 'file')
         with open(bad_file, 'w') as f:
-            f.write('#!/usr/bin/env bash\nexit 1\n')
+            f.write('#!/bin/sh\nexit 1\n')
         os.chmod(bad_file, os.stat(bad_file).st_mode | stat.S_IEXEC)
 
         old_path = os.environ['PATH']

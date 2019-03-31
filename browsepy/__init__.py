@@ -72,7 +72,7 @@ def get_cookie_browse_sorting(path, default):
     :returns: sorting property
     :rtype: string
     '''
-    if session:
+    if request:
         for cpath, cprop in session.get('browse:sort', ()):
             if path == cpath:
                 return cprop
@@ -157,10 +157,9 @@ def sort(property, path):
     if not directory.is_directory or directory.is_excluded:
         return NotFound()
 
-    if session:
-        data = session.get('browse:sort', [])
-        data.insert(0, (path, property))
-        session.modified = True
+    if request:
+        session['browse:sort'] = \
+            [(path, property)] + session.get('browse:sort', [])
 
     return redirect(url_for(".browse", path=directory.urlpath))
 
