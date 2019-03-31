@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 import flask
 import flask.config
 

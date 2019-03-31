@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
 import os
@@ -10,6 +9,11 @@ from browsepy.file import Node
 from browsepy.compat import map
 
 from .exceptions import InvalidClipboardModeError
+
+ppath = functools.partial(
+    os.path.join,
+    os.path.dirname(os.path.realpath(__file__)),
+    )
 
 
 def copy(target, node, join_fnc=os.path.join):
@@ -40,7 +44,7 @@ def move(target, node, join_fnc=os.path.join):
     return node.path
 
 
-def paste_clipboard(target, mode, clipboard):
+def paste(target, mode, clipboard):
     '''
     Get pasting function for given directory and keyboard.
     '''

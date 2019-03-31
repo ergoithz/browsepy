@@ -1,9 +1,7 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
 import os
 import os.path
-import logging
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
                   session
@@ -20,19 +18,16 @@ from .exceptions import FileActionsException, \
                         InvalidClipboardModeError, \
                         InvalidDirnameError, \
                         DirectoryCreationError
-from .paste import paste_clipboard
 
+from . import utils
 
-__basedir__ = os.path.dirname(os.path.abspath(__file__))
-
-logger = logging.getLogger(__name__)
 
 actions = Blueprint(
     'file_actions',
     __name__,
     url_prefix='/file-actions',
-    template_folder=os.path.join(__basedir__, 'templates'),
-    static_folder=os.path.join(__basedir__, 'static'),
+    template_folder=utils.ppath('templates'),
+    static_folder=utils.ppath('static'),
     )
 
 re_basename = '^[^ {0}]([^{0}]*[^ {0}])?$'.format(
@@ -143,7 +138,7 @@ def clipboard_paste(path):
     mode = session.get('clipboard:mode')
     clipboard = session.get('clipboard:items', ())
 
-    success, issues, nmode = paste_clipboard(directory, mode, clipboard)
+    success, issues, nmode = utils.paste(directory, mode, clipboard)
     if clipboard and mode != nmode:
         session['mode'] = nmode
         mode = nmode
@@ -197,6 +192,14 @@ def clipboard_error(e):
         )
 
 
+def shrink_session(data, last):
+    if last:
+        # TODO: add warning message
+        del data['clipboard:items']
+        del data['clipboard:mode']
+    return data
+
+
 def register_plugin(manager):
     '''
     Register blueprints and actions using given plugin manager.
@@ -216,14 +219,6 @@ def register_plugin(manager):
             clipboard = session.get('clipboard:items', ())
             return abspath_to_urlpath(path, base) in clipboard
 
-    def shrink(data, last):
-        if last:
-            # TODO: add warning message
-            del data['clipboard:items']
-            del data['clipboard:mode']
-        return data
-
-    manager.register_session(('clipboard:items', 'clipboard:mode'), shrink)
     manager.register_exclude_function(excluded_clipboard)
     manager.register_blueprint(actions)
     manager.register_widget(
@@ -257,4 +252,8 @@ def register_plugin(manager):
             clipboard=session.get('clipboard:items', ()),
             ),
         filter=detect_clipboard,
+        )
+    manager.register_session(
+        ('clipboard:items', 'clipboard:mode'),
+        shrink_session,
         )

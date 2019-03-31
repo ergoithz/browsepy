@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 
 import os
 import os.path
@@ -5,12 +6,12 @@ import unittest
 import shutil
 import tempfile
 
+import six
 import flask
 
 from werkzeug.exceptions import NotFound
 
 import browsepy
-import browsepy.compat as compat
 import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
@@ -366,7 +367,7 @@ class TestBlueprint(TestPlayerBase):
 
 def p(*args):
     args = [
-        arg if isinstance(arg, compat.unicode) else arg.decode('utf-8')
+        arg if isinstance(arg, six.text_type) else arg.decode('utf-8')
         for arg in args
         ]
     return os.path.join(*args)

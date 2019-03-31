@@ -1,9 +1,11 @@
+# -*- coding: UTF-8 -*-
 '''
 WARNING: deprecated module.
 
-API defined in this module has been deprecated in version 0.5 will likely be
+API defined in this module has been deprecated in version 0.5 and it will be
 removed at 0.6.
 '''
+
 import warnings
 
 from markupsafe import Markup

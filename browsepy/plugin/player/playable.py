@@ -1,26 +1,18 @@
+# -*- coding: UTF-8 -*-
+
 
 import sys
 import codecs
 import os.path
 import warnings
 
+import six
+import six.moves
+
 from werkzeug.utils import cached_property
 
-from browsepy.compat import range, PY_LEGACY  # noqa
 from browsepy.file import Node, File, Directory, \
                           underscore_replace, check_under_base
-
-
-if PY_LEGACY:
-    import ConfigParser as configparser
-else:
-    import configparser
-
-ConfigParserBase = (
-    configparser.SafeConfigParser
-    if hasattr(configparser, 'SafeConfigParser') else
-    configparser.ConfigParser
-    )
 
 
 class PLSFileParser(object):
@@ -30,10 +22,14 @@ class PLSFileParser(object):
     This wraps instead of inheriting due ConfigParse being classobj on python2.
     '''
     NOT_SET = type('NotSetType', (object,), {})
-    parser_class = (
-        configparser.SafeConfigParser
-        if hasattr(configparser, 'SafeConfigParser') else
-        configparser.ConfigParser
+    option_exceptions = (
+        six.moves.configparser.NoOptionError,
+        ValueError,
+        )
+    parser_class = getattr(
+        six.moves.configparser,
+        'SafeConfigParser',
+        six.moves.configparser.ConfigParser
         )
 
     def __init__(self, path):
@@ -46,7 +42,7 @@ class PLSFileParser(object):
     def getint(self, section, key, fallback=NOT_SET):
         try:
             return self._parser.getint(section, key)
-        except (configparser.NoOptionError, ValueError):
+        except self.option_exceptions:
             if fallback is self.NOT_SET:
                 raise
             return fallback
@@ -54,7 +50,7 @@ class PLSFileParser(object):
     def get(self, section, key, fallback=NOT_SET):
         try:
             return self._parser.get(section, key)
-        except (configparser.NoOptionError, ValueError):
+        except self.option_exceptions:
             if fallback is self.NOT_SET:
                 raise
             return fallback
@@ -159,6 +155,7 @@ class PLSFile(PlayListFile):
     def _entries(self):
         parser = self.ini_parser_class(self.path)
         maxsize = parser.getint('playlist', 'NumberOfEntries', None)
+        range = six.moves.range
         for i in range(1, self.maxsize if maxsize is None else maxsize + 1):
             path = parser.get('playlist', 'File%d' % i, None)
             if not path:

@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-
-import os.path
 
 from flask import Blueprint, render_template
 from werkzeug.exceptions import NotFound
@@ -13,15 +10,15 @@ from browsepy.file import OutsideDirectoryBase
 from .playable import PlayableFile, PlayableDirectory, \
                       PlayListFile, detect_playable_mimetype
 
+from . import utils
 
-__basedir__ = os.path.dirname(os.path.abspath(__file__))
 
 player = Blueprint(
     'player',
     __name__,
     url_prefix='/play',
-    template_folder=os.path.join(__basedir__, 'templates'),
-    static_folder=os.path.join(__basedir__, 'static'),
+    template_folder=utils.ppath('templates'),
+    static_folder=utils.ppath('static'),
     )
 
 
