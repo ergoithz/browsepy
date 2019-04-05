@@ -19,6 +19,12 @@ def random_string(size, sample=tuple(map(chr, range(256)))):
     return ''.join(sample[randrange()] for i in range(size))
 
 
+def solve_local(context_local):
+    if callable(getattr(context_local, '_get_current_object', None)):
+        return context_local._get_current_object()
+    return context_local
+
+
 def stream_template(template_name, **context):
     '''
     Some templates can be huge, this function returns an streaming response,
@@ -28,7 +34,7 @@ def stream_template(template_name, **context):
     :param **context: parameters for templates.
     :yields: HTML strings
     '''
-    app = flask.current_app
+    app = solve_local(context.get('current_app') or flask.current_app)
     app.update_template_context(context)
     template = app.jinja_env.get_template(template_name)
     stream = template.generate(context)

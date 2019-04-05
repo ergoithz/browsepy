@@ -15,6 +15,8 @@ from werkzeug.utils import cached_property
 
 from . import compat
 from . import manager
+from . import utils
+
 from .compat import range
 from .http import Headers
 from .stream import TarFileStream
@@ -84,6 +86,7 @@ class Node(object):
         Get current app's plugin manager.
 
         :returns: plugin manager instance
+        :type: browsepy.manager.PluginManagerBase
         '''
         return (
             self.app.extensions.get('plugin_manager') or
@@ -259,12 +262,12 @@ class Node(object):
         '''
         :param path: local path
         :type path: str
-        :param path: optional app instance
-        :type path: flask.app
-        :param **defaults: attributes will be set to object
+        :param app: app instance (optional inside application context)
+        :type app: flask.Flask
+        :param **defaults: initial property values
         '''
         self.path = compat.fsdecode(path) if path else None
-        self.app = current_app if app is None else app
+        self.app = utils.solve_local(current_app if app is None else app)
         self.__dict__.update(defaults)  # only for attr and cached_property
 
     def __repr__(self):

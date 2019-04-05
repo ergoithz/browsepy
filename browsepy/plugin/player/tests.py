@@ -346,6 +346,7 @@ class TestBlueprint(TestPlayerBase):
         self.file('directory/test.mp3')
         result = self.get('player.directory', path=name)
         self.assertEqual(result.status_code, 200)
+        self.assertIn(b'test.mp3', result.data)
 
     def test_endpoints(self):
         with self.app.app_context():
