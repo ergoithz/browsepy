@@ -12,6 +12,7 @@ from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
                           current_restricted_chars, common_path_separators
 from browsepy.compat import re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase
+from browsepy.utils import stream_template
 
 from .exceptions import FileActionsException, \
                         InvalidClipboardItemsError, \
@@ -108,7 +109,7 @@ def selection(path):
             clipboard=clipboard,
             )
 
-    return render_template(
+    return stream_template(
         'selection.file_actions.html',
         file=directory,
         mode=session.get('clipboard:mode'),

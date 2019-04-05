@@ -13,5 +13,6 @@
     "python.linting.pep8Enabled": true,
     "python.linting.pep8Path": "pycodestyle",
     "python.linting.pylintEnabled": false,
-    "python.jediEnabled": true
+    "python.jediEnabled": true,
+    "python.pythonPath": "env/bin/python"
 }

@@ -8,14 +8,15 @@ import os.path
 
 import cookieman
 
-from flask import Response, request, render_template, redirect, \
-                  url_for, send_from_directory, stream_with_context, \
+from flask import request, render_template, redirect, \
+                  url_for, send_from_directory, \
                   make_response, session
 from werkzeug.exceptions import NotFound
 
 from .appconfig import Flask
 from .manager import PluginManager
 from .file import Node, secure_filename
+from .utils import stream_template
 from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
                         InvalidFilenameError, InvalidPathError
 from . import compat
@@ -121,21 +122,6 @@ def browse_sortkey_reverse(prop):
             ),
         reverse
         )
-
-
-def stream_template(template_name, **context):
-    '''
-    Some templates can be huge, this function returns an streaming response,
-    sending the content in chunks and preventing from timeout.
-
-    :param template_name: template
-    :param **context: parameters for templates.
-    :yields: HTML strings
-    '''
-    app.update_template_context(context)
-    template = app.jinja_env.get_template(template_name)
-    stream = template.generate(context)
-    return Response(stream_with_context(stream))
 
 
 @app.context_processor
