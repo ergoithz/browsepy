@@ -662,14 +662,14 @@ class Directory(Node):
             new_filename = alternative_filename(filename)
         return new_filename
 
-    def _listdir(self, precomputed_stats=(os.name == 'nt')):
+    def _listdir(self, precomputed_stats=(os.name == 'nt'), only_show_media=True):
         '''
         Iter unsorted entries on this directory.
 
         :yields: Directory or File instance for each entry in directory
         :ytype: Node
         '''
-        for entry in scandir(self.path, self.app):
+        for entry in scandir(self.path, self.app, only_show_media):
             kwargs = {
                 'path': entry.path,
                 'app': self.app,
@@ -686,7 +686,7 @@ class Directory(Node):
             except OSError as e:
                 logger.exception(e)
 
-    def listdir(self, sortkey=None, reverse=False):
+    def listdir(self, sortkey=None, reverse=False, only_show_media=True):
         '''
         Get sorted list (by given sortkey and reverse params) of File objects.
 
@@ -694,7 +694,7 @@ class Directory(Node):
         :rtype: list of File instances
         '''
         if self._listdir_cache is None:
-            self._listdir_cache = tuple(self._listdir())
+            self._listdir_cache = tuple(self._listdir(only_show_media=only_show_media))
         if sortkey:
             return sorted(self._listdir_cache, key=sortkey, reverse=reverse)
         data = list(self._listdir_cache)
@@ -953,8 +953,13 @@ def alternative_filename(filename, attempt=None):
         extra = u' (%d)' % attempt
     return u'%s%s%s' % (name, extra, ext)
 
-def myExclude(path):
+def myExclude(path, only_show_media):
     #print("Judge the path '{}' for ex/inclusion...".format(path))
+    if not only_show_media:
+    	return False #temporariy show evertying. Need to make this a parameter
+    #iif os.path.isdir(path):
+    #    return False
+
     exclude = True
     desired_extensions = ['png', 'jpeg', 'jpg','bmp','gif', 'mp4', 'mov', 'webm', 'swf', 'avi', 'ts']
 
@@ -994,7 +999,7 @@ def getOrGenerateThumbnail(path=None):
         return False
     #print("def getOrGenerateThumbnail(path)::def getOrGenerateThumbnail({}):".format(path))
     image_extensions = ['png', 'jpeg', 'jpg','bmp']
-    video_extensions = ['gif', 'mp4', 'webm', 'avi', 'ts']
+    video_extensions = ['gif', 'mp4', 'MP4', 'webm', 'avi', 'ts']
     #video_extensions = ['gif', 'mp4', 'mov', 'webm', 'swf', 'avi', 'ts']
 
     image_path_parts = os.path.splitext(path)
@@ -1059,7 +1064,7 @@ def getOrGenerateThumbnail(path=None):
     else:
         return False
 
-def scandir(path, app=None):
+def scandir(path, app=None, only_show_media=False):
     '''
     Config-aware scandir. Currently, only aware of ``exclude_fnc``.
 
@@ -1076,6 +1081,6 @@ def scandir(path, app=None):
         return (
             item
             for item in compat.scandir(path)
-            if not exclude(item.path)
+            if not exclude(item.path, only_show_media)
             )
     return compat.scandir(path)

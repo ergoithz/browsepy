@@ -121,7 +121,7 @@
         </thead>
     </table>
     <div class="container">
-      {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse) %}
+      {% for f in file.listdir(sortkey=sort_fnc, reverse=sort_reverse, only_show_media=True) %}
           <div class="box">
               {% if f.link %}
                 {{ draw_widget(f, f.link) }}
