@@ -15,6 +15,11 @@ PY_LEGACY = sys.version_info < (3, )
 TRUE_VALUES = frozenset(('true', 'yes', '1', 'enable', 'enabled', True, 1))
 
 try:
+    import importlib.resources as res  # to support python >= 3.7
+except ImportError:
+    import importlib_resources as res  # noqa
+
+try:
     from os import scandir, walk  # python 3.5+
 except ImportError:
     from scandir import scandir, walk  # noqa
@@ -32,7 +37,7 @@ except ImportError:
 try:
     from collections.abc import Iterator as BaseIterator  # python 3.3+
 except ImportError:
-    from collections import Iterator as BaseIterator
+    from collections import Iterator as BaseIterator  # noqa
 
 
 def isexec(path):

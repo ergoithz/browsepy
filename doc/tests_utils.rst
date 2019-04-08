@@ -5,7 +5,7 @@ Test Utility Module
 
 Convenience functions for unit testing.
 
-.. automodule:: browsepy.tests.utils
+.. automodule:: browsepy.utils
   :show-inheritance:
   :members:
   :inherited-members:

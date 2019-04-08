@@ -10,11 +10,6 @@ from browsepy.compat import map
 
 from .exceptions import InvalidClipboardModeError
 
-ppath = functools.partial(
-    os.path.join,
-    os.path.dirname(os.path.realpath(__file__)),
-    )
-
 
 def copy(target, node, join_fnc=os.path.join):
     if node.is_excluded:

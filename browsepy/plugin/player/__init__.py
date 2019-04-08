@@ -5,20 +5,18 @@ from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.file import OutsideDirectoryBase
-from browsepy.utils import stream_template
+from browsepy.utils import stream_template, ppath
 
 from .playable import PlayableFile, PlayableDirectory, \
                       PlayListFile, detect_playable_mimetype
-
-from . import utils
 
 
 player = Blueprint(
     'player',
     __name__,
     url_prefix='/play',
-    template_folder=utils.ppath('templates'),
-    static_folder=utils.ppath('static'),
+    template_folder=ppath('templates', module=__name__),
+    static_folder=ppath('static', module=__name__),
     )
 
 

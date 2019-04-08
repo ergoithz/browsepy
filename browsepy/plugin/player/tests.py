@@ -12,11 +12,11 @@ import flask
 from werkzeug.exceptions import NotFound
 
 import browsepy
+import browsepy.utils as utils
 import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
 import browsepy.plugin.player.playable as player_playable
-import browsepy.tests.utils as test_utils
 
 
 class ManagerMock(object):
@@ -61,8 +61,14 @@ class TestPlayerBase(unittest.TestCase):
     def setUp(self):
         self.base = 'c:\\base' if os.name == 'nt' else '/base'
         self.app = flask.Flask(self.__class__.__name__)
-        self.app.config['directory_base'] = self.base
+        self.app.config.update(
+            directory_base=self.base,
+            SERVER_NAME='localhost',
+            )
         self.manager = ManagerMock()
+
+    def tearDown(self):
+        utils.clear_flask_context()
 
 
 class TestPlayer(TestPlayerBase):
@@ -108,6 +114,9 @@ class TestIntegrationBase(TestPlayerBase):
     player_module = player
     browsepy_module = browsepy
     manager_module = browsepy_manager
+
+    def tearDown(self):
+        utils.clear_flask_context()
 
 
 class TestIntegration(TestIntegrationBase):
@@ -199,7 +208,7 @@ class TestPlayable(TestIntegrationBase):
         try:
             file = p(tmpdir, 'playable.mp3')
             open(file, 'w').close()
-            node = browsepy_file.Directory(tmpdir)
+            node = browsepy_file.Directory(tmpdir, app=self.app)
             self.assertTrue(self.module.PlayableDirectory.detect(node))
 
             directory = self.module.PlayableDirectory(tmpdir, app=self.app)
@@ -288,27 +297,20 @@ class TestPlayable(TestIntegrationBase):
 class TestBlueprint(TestPlayerBase):
     def setUp(self):
         super(TestBlueprint, self).setUp()
-        self.app = flask.Flask('browsepy')
-        self.app.config.update(
-            directory_base=tempfile.mkdtemp(),
-            SERVER_NAME='test'
-            )
-        self.app.register_blueprint(self.module.player)
-
         app = self.app
-        @app.route("/open", defaults={"path": ""})
-        @app.route('/open/<path:path>')
-        def open(path):
-            pass
+        app.template_folder = utils.ppath('templates')
+        app.config['directory_base'] = tempfile.mkdtemp()
+        app.register_blueprint(self.module.player)
 
-    def tearDown(self):
-        shutil.rmtree(self.app.config['directory_base'])
-        test_utils.clear_flask_context()
+        @app.route("/browse", defaults={"path": ""}, endpoint='browse')
+        @app.route('/browse/<path:path>', endpoint='browse')
+        @app.route('/open/<path:path>', endpoint='open')
+        def dummy(path):
+            pass
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():
-            print(flask.current_app)
-            return flask.url_for(endpoint, _external=False, **kwargs)
+            return flask.url_for(endpoint, **kwargs)
 
     def get(self, endpoint, **kwargs):
         with self.app.test_client() as client:

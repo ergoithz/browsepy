@@ -64,7 +64,7 @@ class PlayableBase(File):
         'm3u': 'audio/x-mpegurl',
         'm3u8': 'audio/x-mpegurl',
         'pls': 'audio/x-scpls',
-    }
+        }
 
     @classmethod
     def extensions_from_mimetypes(cls, mimetypes):
@@ -137,12 +137,11 @@ class PlayListFile(PlayableBase):
         return None
 
     def _entries(self):
-        return
-        yield  # noqa
+        return ()
 
     def entries(self, sortkey=None, reverse=None):
         for file in self._entries():
-            if PlayableFile.detect(file):
+            if self.playable_class.detect(file):
                 yield file
 
 
@@ -220,20 +219,20 @@ class PlayableDirectory(Directory):
 
     @cached_property
     def parent(self):
-        return Directory(self.path)
+        return self.directory_class(self.path, app=self.app)
 
     @classmethod
     def detect(cls, node):
         if node.is_directory:
             for file in node._listdir():
-                if PlayableFile.detect(file):
+                if cls.file_class.detect(file):
                     return cls.mimetype
         return None
 
     def entries(self, sortkey=None, reverse=None):
         listdir_fnc = super(PlayableDirectory, self).listdir
         for file in listdir_fnc(sortkey=sortkey, reverse=reverse):
-            if PlayableFile.detect(file):
+            if self.file_class.detect(file):
                 yield file
 
 

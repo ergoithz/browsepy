@@ -1,7 +1,4 @@
-try:
-    import importlib.resources as res
-except ImportError:  # pragma: no cover
-    import importlib_resources as res  # to support python < 3.7
+from browsepy.compat import res
 
 
 class TestFileMeta(type):

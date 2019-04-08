@@ -9,6 +9,7 @@ import string
 import random
 import datetime
 import logging
+import contextlib
 
 from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
@@ -16,10 +17,11 @@ from werkzeug.utils import cached_property
 from . import compat
 from . import manager
 from . import utils
+from . import stream
 
 from .compat import range
 from .http import Headers
-from .stream import TarFileStream
+
 from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
                         PathTooLongError, FilenameTooLongError
 
@@ -27,11 +29,12 @@ from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
 logger = logging.getLogger(__name__)
 unicode_underscore = '_'.decode('utf-8') if compat.PY_LEGACY else '_'
 underscore_replace = '%s:underscore' % __name__
-codecs.register_error(underscore_replace,
-                      lambda error: (unicode_underscore, error.start + 1)
-                      )
-binary_units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
-standard_units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+codecs.register_error(
+    underscore_replace,
+    lambda error: (unicode_underscore, error.start + 1)
+    )
+binary_units = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
+standard_units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
 common_path_separators = '\\/'
 restricted_chars = '/\0'
 nt_restricted_chars = '/\0\\<>:"|?*' + ''.join(map(chr, range(1, 32)))
@@ -139,7 +142,7 @@ class Node(object):
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
         '''
-        dirbase = self.app.config["directory_remove"]
+        dirbase = self.app.config.get('directory_remove')
         return bool(dirbase and check_under_base(self.path, dirbase))
 
     @cached_property
@@ -171,7 +174,8 @@ class Node(object):
         :returns: parent object if available
         :rtype: Node instance or None
         '''
-        if check_path(self.path, self.app.config['directory_base']):
+        directory_base = self.app.config.get('directory_base', self.path)
+        if check_path(self.path, directory_base):
             return None
         parent = os.path.dirname(self.path) if self.path else None
         return self.directory_class(parent, self.app) if parent else None
@@ -214,7 +218,10 @@ class Node(object):
         :returns: relative-url-like for node's path
         :rtype: str
         '''
-        return abspath_to_urlpath(self.path, self.app.config['directory_base'])
+        return abspath_to_urlpath(
+            self.path,
+            self.app.config.get('directory_base', self.path),
+            )
 
     @property
     def name(self):
@@ -267,7 +274,7 @@ class Node(object):
         :param **defaults: initial property values
         '''
         self.path = compat.fsdecode(path) if path else None
-        self.app = utils.solve_local(current_app if app is None else app)
+        self.app = utils.solve_local(app or current_app)
         self.__dict__.update(defaults)  # only for attr and cached_property
 
     def __repr__(self):
@@ -302,8 +309,8 @@ class Node(object):
         :return: file object pointing to path
         :rtype: File
         '''
-        app = app or current_app
-        base = app.config['directory_base']
+        app = utils.solve_local(app or current_app)
+        base = app.config.get('directory_base', path)
         path = urlpath_to_abspath(path, base)
         if not cls.generic:
             kls = cls
@@ -425,7 +432,7 @@ class File(Node):
         try:
             size, unit = fmt_size(
                 self.stats.st_size,
-                self.app.config['use_binary_multiples'] if self.app else False
+                self.app.config.get('use_binary_multiples', False)
                 )
         except OSError:
             return None
@@ -481,6 +488,8 @@ class Directory(Node):
     * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
       will always return instances of this class.
     '''
+    stream_class = stream.TarFileStream
+
     _listdir_cache = None
     mimetype = 'inode/directory'
     is_file = False
@@ -584,7 +593,7 @@ class Directory(Node):
         :returns: True if downloadable, False otherwise
         :rtype: bool
         '''
-        return self.app.config['directory_downloadable']
+        return self.app.config.get('directory_downloadable', False)
 
     @cached_property
     def can_upload(self):
@@ -595,7 +604,7 @@ class Directory(Node):
         :returns: True if a file can be upload to directory, False otherwise
         :rtype: bool
         '''
-        dirbase = self.app.config["directory_upload"]
+        dirbase = self.app.config.get('directory_upload', False)
         return dirbase and check_base(self.path, dirbase)
 
     @cached_property
@@ -639,9 +648,9 @@ class Directory(Node):
         :returns: Response object
         :rtype: flask.Response
         '''
-        stream = TarFileStream(
+        stream = self.stream_class(
             self.path,
-            self.app.config['directory_tar_buffsize'],
+            self.app.config.get('directory_tar_buffsize', 10240),
             self.plugin_manager.check_excluded,
             )
         return self.app.response_class(
@@ -711,29 +720,31 @@ class Directory(Node):
         Iter unsorted entries on this directory.
 
         :yields: Directory or File instance for each entry in directory
-        :ytype: Node
+        :rtype: Iterator of browsepy.file.Node
         '''
         directory_class = self.directory_class
         file_class = self.file_class
         exclude_fnc = self.plugin_manager.check_excluded
-        for entry in compat.scandir(self.path):
-            if exclude_fnc(entry.path):
-                continue
-            kwargs = {
-                'path': entry.path,
-                'app': self.app,
-                'parent': self,
-                'is_excluded': False
-                }
-            try:
-                if precomputed_stats and not entry.is_symlink():
-                    kwargs['stats'] = entry.stat()
-                if entry.is_dir(follow_symlinks=True):
-                    yield directory_class(**kwargs)
-                else:
-                    yield file_class(**kwargs)
-            except OSError as e:
-                logger.exception(e)
+        with contextlib.closing(compat.scandir(self.path)) as files:
+            for entry in files:
+                if exclude_fnc(entry.path):
+                    continue
+                kwargs = {
+                    'path': entry.path,
+                    'app': self.app,
+                    'parent': self,
+                    'is_excluded': False,
+                    }
+                try:
+                    if precomputed_stats and not entry.is_symlink():
+                        kwargs['stats'] = entry.stat()
+                    yield (
+                        directory_class(**kwargs)
+                        if entry.is_dir(follow_symlinks=True) else
+                        file_class(**kwargs)
+                        )
+                except OSError as e:
+                    logger.exception(e)
 
     def listdir(self, sortkey=None, reverse=False):
         '''

@@ -53,7 +53,7 @@ Specific information about functions, class or methods.
    stream
    compat
    exceptions
-   tests_utils
+   utils
 
 Indices and tables
 ==================

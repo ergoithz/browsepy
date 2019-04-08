@@ -124,7 +124,7 @@ def register_plugin(manager):
 class TestPlayerBase(unittest.TestCase):
     module = player
     scheme = 'test'
-    hostname = 'testing'
+    hostname = 'localhost'
     urlprefix = '%s://%s' % (scheme, hostname)
 
     def assertUrlEqual(self, a, b):

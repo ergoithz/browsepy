@@ -9,7 +9,7 @@ import stat
 import browsepy
 import browsepy.file
 import browsepy.compat
-import browsepy.tests.utils as test_utils
+import browsepy.utils as utils
 
 
 PY_LEGACY = browsepy.compat.PY_LEGACY
@@ -31,7 +31,7 @@ class TestFile(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.workbench)
-        test_utils.clear_flask_context()
+        utils.clear_flask_context()
 
     def textfile(self, name, text):
         tmp_txt = os.path.join(self.workbench, name)

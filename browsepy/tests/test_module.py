@@ -22,7 +22,7 @@ import browsepy.file
 import browsepy.manager
 import browsepy.__main__
 import browsepy.compat
-import browsepy.tests.utils as test_utils
+import browsepy.utils as utils
 
 PY_LEGACY = browsepy.compat.PY_LEGACY
 range = browsepy.compat.range  # noqa
@@ -200,7 +200,7 @@ class TestApp(unittest.TestCase):
             directory_remove=self.remove,
             directory_upload=self.upload,
             exclude_fnc=exclude_fnc,
-            SERVER_NAME='test',
+            SERVER_NAME='localhost',
             )
 
         self.base_directories = [
@@ -225,7 +225,7 @@ class TestApp(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base)
-        test_utils.clear_flask_context()
+        utils.clear_flask_context()
 
     def get(self, endpoint, **kwargs):
         status_code = kwargs.pop('status_code', 200)
@@ -240,11 +240,11 @@ class TestApp(unittest.TestCase):
             page_class = self.directory_download_class
         else:
             page_class = self.generic_page_class
-        with kwargs.pop('client', None) or self.app.test_client() as client:
-            response = client.get(
+        mclient = kwargs.pop('client', None) or self.app.test_client()
+        try:
+            response = mclient.get(
                 self.url_for(endpoint, **kwargs),
-                follow_redirects=follow_redirects
-                )
+                follow_redirects=follow_redirects)
             if response.status_code != status_code:
                 raise self.page_exceptions.get(
                     response.status_code,
@@ -252,7 +252,9 @@ class TestApp(unittest.TestCase):
                     )(response.status_code)
             result = page_class.from_source(response.data, response)
             response.close()
-        test_utils.clear_flask_context()
+        finally:
+            if mclient == kwargs.get('client'):
+                mclient.close()
         return result
 
     def post(self, endpoint, **kwargs):
@@ -270,7 +272,7 @@ class TestApp(unittest.TestCase):
                     self.page_exceptions[None]
                     )(response.status_code)
             result = self.list_page_class.from_source(response.data, response)
-        test_utils.clear_flask_context()
+        utils.clear_flask_context()
         return result
 
     def url_for(self, endpoint, **kwargs):
@@ -602,44 +604,44 @@ class TestApp(unittest.TestCase):
             with open(path, 'wb') as f:
                 f.write(content.encode('ascii'))
 
-        client = self.app.test_client()
-        page = self.get('browse', client=client)
-        self.assertListEqual(page.files, by_name)
+        with self.app.test_client() as client:
+            page = self.get('browse', client=client)
+            self.assertListEqual(page.files, by_name)
 
-        self.assertRaises(
-            Page302Exception,
-            self.get, 'sort', property='text', client=client
-            )
+            self.assertRaises(
+                Page302Exception,
+                self.get, 'sort', property='text', client=client
+                )
 
-        page = self.get('browse', client=client)
-        self.assertListEqual(page.files, by_name)
+            page = self.get('browse', client=client)
+            self.assertListEqual(page.files, by_name)
 
-        page = self.get('sort', property='-text', client=client,
-                        follow_redirects=True)
-        self.assertListEqual(page.files, by_name_desc)
+            page = self.get('sort', property='-text', client=client,
+                            follow_redirects=True)
+            self.assertListEqual(page.files, by_name_desc)
 
-        page = self.get('sort', property='type', client=client,
-                        follow_redirects=True)
-        self.assertListEqual(page.files, by_type)
+            page = self.get('sort', property='type', client=client,
+                            follow_redirects=True)
+            self.assertListEqual(page.files, by_type)
 
-        page = self.get('sort', property='-type', client=client,
-                        follow_redirects=True)
-        self.assertListEqual(page.files, by_type_desc)
+            page = self.get('sort', property='-type', client=client,
+                            follow_redirects=True)
+            self.assertListEqual(page.files, by_type_desc)
 
-        page = self.get('sort', property='size', client=client,
-                        follow_redirects=True)
-        self.assertListEqual(page.files, by_size)
+            page = self.get('sort', property='size', client=client,
+                            follow_redirects=True)
+            self.assertListEqual(page.files, by_size)
 
-        page = self.get('sort', property='-size', client=client,
-                        follow_redirects=True)
-        self.assertListEqual(page.files, by_size_desc)
+            page = self.get('sort', property='-size', client=client,
+                            follow_redirects=True)
+            self.assertListEqual(page.files, by_size_desc)
 
-        # We're unable to test modified sorting due filesystem time resolution
-        page = self.get('sort', property='modified', client=client,
-                        follow_redirects=True)
+            # Cannot to test modified sorting due filesystem time resolution
+            page = self.get('sort', property='modified', client=client,
+                            follow_redirects=True)
 
-        page = self.get('sort', property='-modified', client=client,
-                        follow_redirects=True)
+            page = self.get('sort', property='-modified', client=client,
+                            follow_redirects=True)
 
     def test_sort_cookie_size(self):
         files = [chr(i) * 150 for i in range(97, 123)]
@@ -647,14 +649,14 @@ class TestApp(unittest.TestCase):
             path = os.path.join(self.base, name)
             os.mkdir(path)
 
-        client = self.app.test_client()
-        for name in files:
-            page = self.get('sort', property='modified', path=name,
-                            client=client, status_code=302)
+        with self.app.test_client() as client:
+            for name in files:
+                page = self.get('sort', property='modified', path=name,
+                                client=client, status_code=302)
 
-            for cookie in page.response.headers.getlist('set-cookie'):
-                if cookie.startswith('browse-sorting='):
-                    self.assertLessEqual(len(cookie), 4000)
+                for cookie in page.response.headers.getlist('set-cookie'):
+                    if cookie.startswith('browse-sorting='):
+                        self.assertLessEqual(len(cookie), 4000)
 
     def test_endpoints(self):
         # test endpoint function for the library use-case

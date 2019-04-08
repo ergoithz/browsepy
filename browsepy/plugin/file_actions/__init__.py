@@ -12,7 +12,7 @@ from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
                           current_restricted_chars, common_path_separators
 from browsepy.compat import re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase
-from browsepy.utils import stream_template
+from browsepy.utils import stream_template, ppath
 
 from .exceptions import FileActionsException, \
                         InvalidClipboardItemsError, \
@@ -27,9 +27,9 @@ actions = Blueprint(
     'file_actions',
     __name__,
     url_prefix='/file-actions',
-    template_folder=utils.ppath('templates'),
-    static_folder=utils.ppath('static'),
-    )
+    template_folder=ppath('templates', module=__name__),
+    static_folder=ppath('static', module=__name__),
+)
 
 re_basename = '^[^ {0}]([^{0}]*[^ {0}])?$'.format(
     re_escape(current_restricted_chars + common_path_separators)

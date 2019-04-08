@@ -12,6 +12,7 @@ import flask
 
 from werkzeug.utils import cached_property
 
+import browsepy.utils as utils
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
 import browsepy.file as browsepy_file
@@ -73,6 +74,9 @@ class TestRegistration(unittest.TestCase):
             exclude_fnc=None,
             )
 
+    def tearDown(self):
+        utils.clear_flask_context()
+
     def test_register_plugin(self):
         self.app.config.update(self.browsepy_module.app.config)
         self.app.config['plugin_namespaces'] = ('browsepy.plugin',)
@@ -130,6 +134,7 @@ class TestIntegration(unittest.TestCase):
         shutil.rmtree(self.base)
         self.app.config['plugin_modules'] = []
         self.manager.clear()
+        utils.clear_flask_context()
 
     def test_detection(self):
         with self.app.test_client() as client:
@@ -244,6 +249,7 @@ class TestAction(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base)
+        utils.clear_flask_context()
 
     def mkdir(self, *path):
         os.mkdir(os.path.join(self.base, *path))
@@ -441,6 +447,9 @@ class TestException(unittest.TestCase):
 
     def setUp(self):
         self.app = flask.Flask('browsepy')
+
+    def tearDown(self):
+        utils.clear_flask_context()
 
     def test_invalid_clipboard_items_error(self):
         pair = (

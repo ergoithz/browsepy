@@ -132,7 +132,7 @@ def template_globals():
         }
 
 
-@app.route('/sort/<string:property>', defaults={"path": ""})
+@app.route('/sort/<string:property>', defaults={'path': ''})
 @app.route('/sort/<string:property>/<path:path>')
 def sort(property, path):
     try:
@@ -146,7 +146,6 @@ def sort(property, path):
     if request:
         session['browse:sort'] = \
             [(path, property)] + session.get('browse:sort', [])
-
     return redirect(url_for(".browse", path=directory.urlpath))
 
 

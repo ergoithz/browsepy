@@ -4,7 +4,7 @@ import flask
 
 import browsepy
 import browsepy.manager
-import browsepy.tests.utils as test_utils
+import browsepy.utils as utils
 
 from browsepy.plugin.player.tests import *  # noqa
 from browsepy.plugin.file_actions.tests import *  # noqa
@@ -55,7 +55,7 @@ class TestPlugins(unittest.TestCase):
     def tearDown(self):
         self.app.config['plugin_namespaces'] = self.original_namespaces
         self.manager.clear()
-        test_utils.clear_flask_context()
+        utils.clear_flask_context()
 
     def test_manager(self):
         self.manager.load_plugin(self.plugin_name)
