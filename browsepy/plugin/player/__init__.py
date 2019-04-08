@@ -48,7 +48,7 @@ def playlist(path):
     return NotFound()
 
 
-@player.route("/directory", defaults={"path": ""})
+@player.route('/directory', defaults={'path': ''})
 @player.route('/directory/<path:path>')
 def directory(path):
     sort_property = get_cookie_browse_sorting(path, 'text')

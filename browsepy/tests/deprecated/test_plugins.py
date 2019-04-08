@@ -209,7 +209,7 @@ class TestIntegration(TestIntegrationBase):
         self.assertEqual(actions[5].widget, widget)
 
     def test_register_widget(self):
-        file = self.file_module.Node()
+        file = self.file_module.Node(app=self.app)
         manager = self.manager_module.MimetypeActionPluginManager(self.app)
         widget = self.widget_module.StyleWidget('static', filename='a.css')
         manager.register_widget(widget)
@@ -261,9 +261,10 @@ class TestIntegration(TestIntegrationBase):
         self.assertEqual(file.link.text, 'asdf.txt')
 
     def test_from_file(self):
-        file = self.file_module.File('asdf.txt')
-        widget = self.widget_module.LinkWidget.from_file(file)
-        self.assertEqual(widget.text, 'asdf.txt')
+        with self.app.app_context():
+            file = self.file_module.File('asdf.txt')
+            widget = self.widget_module.LinkWidget.from_file(file)
+            self.assertEqual(widget.text, 'asdf.txt')
 
 
 class TestPlayable(TestIntegrationBase):

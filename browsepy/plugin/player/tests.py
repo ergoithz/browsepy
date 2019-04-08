@@ -288,12 +288,18 @@ class TestPlayable(TestIntegrationBase):
 class TestBlueprint(TestPlayerBase):
     def setUp(self):
         super(TestBlueprint, self).setUp()
-        self.app = browsepy.app  # required for our url_for calls
+        self.app = flask.Flask('browsepy')
         self.app.config.update(
             directory_base=tempfile.mkdtemp(),
             SERVER_NAME='test'
             )
         self.app.register_blueprint(self.module.player)
+
+        app = self.app
+        @app.route("/open", defaults={"path": ""})
+        @app.route('/open/<path:path>')
+        def open(path):
+            pass
 
     def tearDown(self):
         shutil.rmtree(self.app.config['directory_base'])
@@ -301,6 +307,7 @@ class TestBlueprint(TestPlayerBase):
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():
+            print(flask.current_app)
             return flask.url_for(endpoint, _external=False, **kwargs)
 
     def get(self, endpoint, **kwargs):

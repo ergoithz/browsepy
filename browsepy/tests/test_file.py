@@ -41,7 +41,7 @@ class TestFile(unittest.TestCase):
 
     def test_repr(self):
         self.assertIsInstance(
-            repr(self.module.Node('a')),
+            repr(self.module.Node('a', app=self.app)),
             browsepy.compat.basestring
             )
 

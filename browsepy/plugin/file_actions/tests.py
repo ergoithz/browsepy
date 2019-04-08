@@ -439,9 +439,12 @@ class TestException(unittest.TestCase):
     module = file_actions_exceptions
     node_class = browsepy_file.Node
 
+    def setUp(self):
+        self.app = flask.Flask('browsepy')
+
     def test_invalid_clipboard_items_error(self):
         pair = (
-            self.node_class('/base/asdf'),
+            self.node_class('/base/asdf', app=self.app),
             Exception('Uncaught exception /base/asdf'),
             )
         e = self.module.InvalidClipboardItemsError(
@@ -451,7 +454,7 @@ class TestException(unittest.TestCase):
             issues=[pair]
             )
         e.append(
-            self.node_class('/base/other'),
+            self.node_class('/base/other', app=self.app),
             OSError(2, 'Not found with random message'),
             )
         self.assertIn('Uncaught exception asdf', e.issues[0].message)
