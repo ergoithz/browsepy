@@ -9,11 +9,19 @@ import functools
 import flask
 
 
-def ppath(*args, module=__name__):
+def ppath(*args, **kwargs):
     '''
     Get joined file path relative to module location.
+
+    :param module: Module name
+    :type module: str
     '''
-    module = get_module(module)
+    module = get_module(kwargs.pop('module', __name__))
+    if kwargs:
+        raise TypeError(
+            'ppath() got an unexpected keyword argument \'%s\''
+            % next(iter(kwargs))
+            )
     path = os.path.realpath(module.__file__)
     return os.path.join(os.path.dirname(path), *args)
 
