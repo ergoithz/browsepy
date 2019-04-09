@@ -420,11 +420,7 @@ class MimetypePluginManager(RegistrablePluginManager):
     '''
     Plugin manager for mimetype-function registration.
     '''
-    _default_mimetype_functions = (
-        mimetype.by_python,
-        mimetype.by_file,
-        mimetype.by_default,
-        )
+    _default_mimetype_functions = mimetype.alternatives
 
     def clear(self):
         '''

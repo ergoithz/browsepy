@@ -21,26 +21,26 @@ def by_python(path):
         )
 
 
-if which('file'):
-    def by_file(path):
-        try:
-            output = subprocess.check_output(
-                ("file", "-ib", path),
-                universal_newlines=True
-                ).strip()
-            if (
-              re_mime_validate.match(output) and
-              output not in generic_mimetypes
-              ):
-                # 'file' command can return status zero with invalid output
-                return output
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pass
-        return None
-else:
-    def by_file(path):
-        return None
+def by_file(path):
+    try:
+        output = subprocess.check_output(
+            ("file", "-ib", path),
+            universal_newlines=True
+            ).strip()
+        if re_mime_validate.match(output) and output not in generic_mimetypes:
+            # 'file' command can return status zero with invalid output
+            return output
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    return None
 
 
 def by_default(path):
     return "application/octet-stream"
+
+
+alternatives = (
+    (by_python, by_file, by_default)
+    if which('file') else
+    (by_python, by_default)
+    )

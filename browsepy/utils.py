@@ -10,7 +10,7 @@ import functools
 import flask
 
 
-RE_WORDS = re.compile(r'\b((?:[._]+|\w)+)\b')
+re_words = re.compile(r'\b((?:[._]+|\w)+)\b')
 
 
 def ppath(*args, **kwargs):
@@ -45,7 +45,7 @@ def get_module(name):
     except (ImportError, KeyError) as error:
         if isinstance(error, ImportError):
             message = error.args[0] if error.args else ''
-            words = frozenset(RE_WORDS.findall(message))
+            words = frozenset(re_words.findall(message))
             parts = name.split('.')
             for i in range(len(parts) - 1, -1, -1):
                 if '.'.join(parts[i:]) in words:
