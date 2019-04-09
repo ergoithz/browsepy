@@ -23,6 +23,7 @@ class PLSFileParser(object):
     '''
     NOT_SET = type('NotSetType', (object,), {})
     option_exceptions = (
+        six.moves.configparser.NoSectionError,
         six.moves.configparser.NoOptionError,
         ValueError,
         )

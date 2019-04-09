@@ -42,8 +42,7 @@ script:
     fi
   - |
     if [ "$sphinx" = "yes" ]; then
-      make -C doc html 2>&1 | grep -v \
-		    'WARNING: more than one target found for cross-reference'
+      make -C doc html
     fi
 
 after_success:

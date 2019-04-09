@@ -7,6 +7,7 @@ import shutil
 import tempfile
 
 import six
+import six.moves
 import flask
 
 from werkzeug.exceptions import NotFound
@@ -41,6 +42,29 @@ class ManagerMock(object):
 
     def get_argument(self, name, default=None):
         return self.argument_values.get(name, default)
+
+
+class TestPLSFileParser(unittest.TestCase):
+    module = player_playable
+    exceptions = player_playable.PLSFileParser.option_exceptions
+
+    def get_parser(self, content=''):
+        with tempfile.NamedTemporaryFile(mode='w') as f:
+            f.write(content)
+            f.flush()
+            return self.module.PLSFileParser(f.name)
+
+    def test_getint(self):
+        parser = self.get_parser()
+        self.assertEqual(parser.getint('a', 'a', 2), 2)
+        with self.assertRaises(self.exceptions):
+            parser.getint('a', 'a')
+
+    def test_get(self):
+        parser = self.get_parser()
+        self.assertEqual(parser.get('a', 'a', 2), 2)
+        with self.assertRaises(self.exceptions):
+            parser.get('a', 'a')
 
 
 class TestPlayerBase(unittest.TestCase):
