@@ -47,7 +47,7 @@ def get_module(name):
             message = error.args[0] if error.args else ''
             words = frozenset(RE_WORDS.findall(message))
             parts = name.split('.')
-            for i in range(len(parts) - 1, 0, -1):
+            for i in range(len(parts) - 1, -1, -1):
                 if '.'.join(parts[i:]) in words:
                     return None
         raise
