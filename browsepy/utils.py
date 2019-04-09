@@ -3,10 +3,14 @@
 import sys
 import os
 import os.path
+import re
 import random
 import functools
 
 import flask
+
+
+RE_WORDS = re.compile(r'\b((?:[._]+|\w)+)\b')
 
 
 def ppath(*args, **kwargs):
@@ -28,22 +32,24 @@ def ppath(*args, **kwargs):
 
 def get_module(name):
     '''
-    Get module object by name
+    Get module object by name.
+
+    :param name: module name
+    :type name: str
+    :return: module or None if not found
+    :rtype: module or None
     '''
     try:
         __import__(name)
         return sys.modules[name]
     except (ImportError, KeyError) as error:
-        if error.args:
-            message = error.args[0]
-            parts = (name,) if isinstance(error, KeyError) else name.split('.')
-            part = ''
-            for component in parts:
-                part += component
-                for fmt in (' \'%s\'', ' "%s"', ' %s'):
-                    if message.endswith(fmt % part):
-                        return None
-                part += '.'
+        if isinstance(error, ImportError):
+            message = error.args[0] if error.args else ''
+            words = frozenset(RE_WORDS.findall(message))
+            parts = name.split('.')
+            for i in range(len(parts) - 1, 0, -1):
+                if '.'.join(parts[i:]) in words:
+                    return None
         raise
 
 
