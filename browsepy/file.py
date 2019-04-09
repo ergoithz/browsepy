@@ -9,7 +9,6 @@ import string
 import random
 import datetime
 import logging
-import contextlib
 
 from flask import current_app, send_from_directory
 from werkzeug.utils import cached_property
@@ -725,7 +724,8 @@ class Directory(Node):
         directory_class = self.directory_class
         file_class = self.file_class
         exclude_fnc = self.plugin_manager.check_excluded
-        with contextlib.closing(compat.scandir(self.path)) as files:
+        files = compat.scandir(self.path)
+        try:
             for entry in files:
                 if exclude_fnc(entry.path):
                     continue
@@ -745,6 +745,9 @@ class Directory(Node):
                         )
                 except OSError as e:
                     logger.exception(e)
+        finally:
+            if callable(getattr(files, 'close', None)):
+                files.close()
 
     def listdir(self, sortkey=None, reverse=False):
         '''
