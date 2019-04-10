@@ -87,6 +87,11 @@ class TestPlugins(unittest.TestCase):
             self.manager.register_widget
             )
 
+    def test_list(self):
+        names = list(self.manager.iter_plugins())
+        self.assertIn('player', names)
+        self.assertIn('file_actions', names)
+
     def test_namespace_prefix(self):
         self.assertTrue(self.manager.import_plugin(self.plugin_name))
         self.app.config['plugin_namespaces'] = (

@@ -65,6 +65,10 @@ class PluginManagerBase(object):
         return self.app.config['plugin_namespaces'] if self.app else []
 
     def __init__(self, app=None):
+        '''
+        :param app: flask application
+        :type app: flask.Flask
+        '''
         if app is None:
             self.clear()
         else:
@@ -73,6 +77,9 @@ class PluginManagerBase(object):
     def init_app(self, app):
         '''
         Initialize this Flask extension for given app.
+
+        :param app: flask application
+        :type app: flask.Flask
         '''
         self.app = app
         if not hasattr(app, 'extensions'):
@@ -97,6 +104,25 @@ class PluginManagerBase(object):
         Clear plugin manager state.
         '''
         pass
+
+    def iter_plugins(self):
+        '''
+        Iterate through all loadable plugins on default import locations
+        '''
+        res = compat.res
+        for base in self.namespaces:
+            for item in res.contents(base):
+                if not res.is_resource(base, item):
+                    submodule = '%s.%s' % (base, item)
+                    module = get_module(submodule)
+                    if module and self.check_plugin(module):
+                        yield submodule
+
+    def check_plugin(self, plugin):
+        '''
+        Check if given object (usually a python module) is a valid plugin
+        '''
+        return True
 
     def import_plugin(self, plugin):
         '''
@@ -143,6 +169,12 @@ class RegistrablePluginManager(PluginManagerBase):
     Base plugin manager for plugin registration via :func:`register_plugin`
     functions at plugin module level.
     '''
+    def check_plugin(self, plugin):
+        return (
+            super(RegistrablePluginManager, self).check_plugin(plugin) and
+            callable(getattr(plugin, 'register_plugin'))
+            )
+
     def load_plugin(self, plugin):
         '''
         Import plugin (see :meth:`import_plugin`) and load related data.
