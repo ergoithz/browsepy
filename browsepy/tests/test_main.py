@@ -3,6 +3,7 @@ import os
 import os.path
 import tempfile
 import shutil
+import contextlib
 import browsepy.__main__
 
 
@@ -80,17 +81,19 @@ class TestMain(unittest.TestCase):
         self.assertListEqual(result.exclude_from, [])
         self.assertListEqual(result.plugin, [])
 
-        self.assertRaises(
-            SystemExit,
-            self.parser.parse_args,
-            ['--directory=%s' % __file__]
-        )
+        with open(os.devnull, 'w') as f:
+            with contextlib.redirect_stderr(f):
+                self.assertRaises(
+                    SystemExit,
+                    self.parser.parse_args,
+                    ['--directory=%s' % __file__]
+                )
 
-        self.assertRaises(
-            SystemExit,
-            self.parser.parse_args,
-            ['--exclude-from=non-existing']
-        )
+                self.assertRaises(
+                    SystemExit,
+                    self.parser.parse_args,
+                    ['--exclude-from=non-existing']
+                )
 
     def test_exclude(self):
         result = self.parser.parse_args([

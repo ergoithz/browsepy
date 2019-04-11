@@ -6,12 +6,11 @@ import sys
 import os
 import os.path
 import argparse
-import warnings
 
 import flask
 
-from . import app
-from .compat import PY_LEGACY, getdebug, get_terminal_size
+from . import app, plugin_manager, __version__
+from .compat import PY_LEGACY, getdebug, get_terminal_size, SafeArgumentParser
 from .transform.glob import translate
 
 
@@ -27,15 +26,8 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
             prog, indent_increment, max_help_position, width)
 
 
-class PluginAction(argparse.Action):
+class CommaSeparatedAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
-        warned = '%s_warning' % self.dest
-        if ',' in value and not getattr(namespace, warned, False):
-            setattr(namespace, warned, True)
-            warnings.warn(
-                'Comma-separated --plugin value is deprecated, '
-                'use multiple --plugin options instead.'
-                )
         values = value.split(',')
         prev = getattr(namespace, self.dest, None)
         if isinstance(prev, list):
@@ -43,7 +35,7 @@ class PluginAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-class ArgParse(argparse.ArgumentParser):
+class ArgParse(SafeArgumentParser):
     default_directory = app.config['directory_base']
     default_initial = (
         None
@@ -56,10 +48,14 @@ class ArgParse(argparse.ArgumentParser):
 
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
     default_port = os.getenv('BROWSEPY_PORT', '8080')
-    plugin_action_class = PluginAction
 
     defaults = {
+        'add_help': True,
         'prog': name,
+        'epilog': 'available plugins:\n%s' % '\n'.join(
+            '  %s, %s' % (short, name) if short else '  %s' % name
+            for name, short in plugin_manager.iter_plugins()
+            ),
         'formatter_class': HelpFormatter,
         'description': 'description: starts a %s web file browser' % name
         }
@@ -74,6 +70,9 @@ class ArgParse(argparse.ArgumentParser):
             'port', nargs='?', type=int,
             default=self.default_port,
             help='port to listen (default: %(default)s)')
+        self.add_argument(
+            '--help-all', action='store_true',
+            help='show help for all available plugins and exit')
         self.add_argument(
             '--directory', metavar='PATH', type=self._directory,
             default=self.default_directory,
@@ -102,8 +101,11 @@ class ArgParse(argparse.ArgumentParser):
             default=[],
             help='exclude paths by pattern file (multiple)')
         self.add_argument(
+            '--version', action='version',
+            version=__version__)
+        self.add_argument(
             '--plugin', metavar='MODULE',
-            action=self.plugin_action_class,
+            action=CommaSeparatedAction,
             default=[],
             help='load plugin module (multiple)')
         self.add_argument(

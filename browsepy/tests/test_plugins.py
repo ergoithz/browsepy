@@ -88,9 +88,10 @@ class TestPlugins(unittest.TestCase):
             )
 
     def test_list(self):
+        self.app.config['plugin_namespaces'] = self.original_namespaces
         names = list(self.manager.iter_plugins())
-        self.assertIn('player', names)
-        self.assertIn('file_actions', names)
+        self.assertIn(('browsepy.plugin.player', 'player'), names)
+        self.assertIn(('browsepy.plugin.file_actions', 'file_actions'), names)
 
     def test_namespace_prefix(self):
         self.assertTrue(self.manager.import_plugin(self.plugin_name))

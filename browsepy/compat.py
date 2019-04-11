@@ -9,6 +9,7 @@ import functools
 import warnings
 import posixpath
 import ntpath
+import argparse
 
 FS_ENCODING = sys.getfilesystemencoding()
 PY_LEGACY = sys.version_info < (3, )
@@ -38,6 +39,19 @@ try:
     from collections.abc import Iterator as BaseIterator  # python 3.3+
 except ImportError:
     from collections import Iterator as BaseIterator  # noqa
+
+
+class SafeArgumentParser(argparse.ArgumentParser):
+    allow_abbrev_support = sys.version_info >= (3, 5, 0)
+
+    def _get_option_tuples(self, option_string):
+        return []
+
+    def __init__(self, **kwargs):
+        if self.allow_abbrev_support:
+            kwargs.setdefault('allow_abbrev', False)
+        kwargs.setdefault('add_help', False)
+        super(SafeArgumentParser, self).__init__(**kwargs)
 
 
 def isexec(path):

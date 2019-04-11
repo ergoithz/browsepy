@@ -2,6 +2,7 @@
 
 import re
 import sys
+import pkgutil
 import argparse
 import warnings
 import collections
@@ -13,7 +14,7 @@ from cookieman import CookieMan
 
 from . import mimetype
 from . import compat
-from .compat import deprecated, usedoc
+from .compat import deprecated, usedoc, SafeArgumentParser
 from .utils import get_module
 
 
@@ -69,6 +70,8 @@ class PluginManagerBase(object):
         :param app: flask application
         :type app: flask.Flask
         '''
+        self.plugin_filters = []
+
         if app is None:
             self.clear()
         else:
@@ -105,24 +108,47 @@ class PluginManagerBase(object):
         '''
         pass
 
+    def _iter_modules(self, prefix):
+        '''
+        Iterate thru all root modules containing given prefix.
+        '''
+        for info in pkgutil.iter_modules():
+            if info.name.startswith(prefix):
+                yield info.name, None
+
+    def _iter_submodules(self, prefix):
+        '''
+        Iterate thru all submodules which full name contains given prefix.
+        '''
+        res = compat.res
+        parent = prefix.rsplit('.', 1)[0]
+        for base in (prefix, parent):
+            try:
+                for item in res.contents(base):
+                    name = '%s.%s' % (base, item)
+                    if name.startswith(prefix) and \
+                       not res.is_resource(base, item):
+                        yield name, item
+                break
+            except ImportError:
+                pass
+
     def iter_plugins(self):
         '''
         Iterate through all loadable plugins on default import locations
         '''
-        res = compat.res
-        for base in self.namespaces:
-            for item in res.contents(base):
-                if not res.is_resource(base, item):
-                    submodule = '%s.%s' % (base, item)
-                    module = get_module(submodule)
-                    if module and self.check_plugin(module):
-                        yield submodule
-
-    def check_plugin(self, plugin):
-        '''
-        Check if given object (usually a python module) is a valid plugin
-        '''
-        return True
+        for prefix in self.namespaces:
+            names = (
+                self._iter_submodules(prefix)
+                if '.' in prefix else
+                self._iter_modules(prefix)
+                if prefix else
+                ()
+                )
+            for name, short in names:
+                module = get_module(name)
+                if module and any(f(module) for f in self.plugin_filters):
+                    yield name, short
 
     def import_plugin(self, plugin):
         '''
@@ -169,10 +195,10 @@ class RegistrablePluginManager(PluginManagerBase):
     Base plugin manager for plugin registration via :func:`register_plugin`
     functions at plugin module level.
     '''
-    def check_plugin(self, plugin):
-        return (
-            super(RegistrablePluginManager, self).check_plugin(plugin) and
-            callable(getattr(plugin, 'register_plugin'))
+    def __init__(self, app=None):
+        super(RegistrablePluginManager, self).__init__(app)
+        self.plugin_filters.append(
+            lambda o: callable(getattr(o, 'register_plugin', None))
             )
 
     def load_plugin(self, plugin):
@@ -532,6 +558,12 @@ class ArgumentPluginManager(PluginManagerBase):
     _argparse_kwargs = {'add_help': False}
     _argparse_arguments = argparse.Namespace()
 
+    def __init__(self, app=None):
+        super(ArgumentPluginManager, self).__init__(app)
+        self.plugin_filters.append(
+            lambda o: callable(getattr(o, 'register_arguments', None))
+            )
+
     def extract_plugin_arguments(self, plugin):
         '''
         Given a plugin name, extracts its registered_arguments as an
@@ -548,6 +580,13 @@ class ArgumentPluginManager(PluginManagerBase):
             module.register_arguments(manager)
             return manager._argparse_argkwargs
         return ()
+
+    @cached_property
+    def _default_argument_parser(self):
+        parser = SafeArgumentParser()
+        parser.add_argument('--plugin', action='append', default=[])
+        parser.add_argument('--help-all', action='store_true')
+        return parser
 
     def load_arguments(self, argv, base=None):
         '''
@@ -568,25 +607,37 @@ class ArgumentPluginManager(PluginManagerBase):
                   given by :meth:`argparse.ArgumentParser.parse_args`.
         :rtype: argparse.Namespace
         '''
-        plugin_parser = argparse.ArgumentParser(add_help=False)
-        plugin_parser.add_argument('--plugin', action='append', default=[])
-        parent = base or plugin_parser
-        parser = argparse.ArgumentParser(
-            parents=(parent,),
-            add_help=False,
-            **getattr(parent, 'defaults', {})
+        parser = SafeArgumentParser(
+            parents=[base or self._default_argument_parser],
             )
+        options, _ = parser.parse_known_args(argv)
+
         plugins = [
             plugin
-            for plugins in plugin_parser.parse_known_args(argv)[0].plugin
+            for plugins in options.plugin
             for plugin in plugins.split(',')
             ]
+
+        if options.help_all:
+            plugins.extend(
+                short if short else name
+                for name, short in self.iter_plugins()
+                if not (name in plugins or short in plugins)
+                )
+
         for plugin in sorted(set(plugins), key=plugins.index):
             arguments = self.extract_plugin_arguments(plugin)
             if arguments:
-                group = parser.add_argument_group('%s arguments' % plugin)
+                group = parser.add_argument_group(
+                    '%s arguments' % plugin
+                    )
                 for argargs, argkwargs in arguments:
                     group.add_argument(*argargs, **argkwargs)
+
+        if options.help_all:
+            parser.print_help()
+            parser.exit()
+
         self._argparse_arguments = parser.parse_args(argv)
         return self._argparse_arguments
 
