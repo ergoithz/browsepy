@@ -10,25 +10,25 @@ is supported. Also, browsepy's public API could be easily reused.
 Browsepy app config (available at :attr:`browsepy.app.config`) exposes the
 following configuration options.
 
-* **directory_base**: anything under this directory will be served,
+* **DIRECTORY_BASE**: anything under this directory will be served,
   defaults to current path.
-* **directory_start**: directory will be served when accessing root URL
-* **directory_remove**: file removing will be available under this path,
+* **DIRECTORY_START**: directory will be served when accessing root URL
+* **DIRECTORY_REMOVE**: file removing will be available under this path,
   defaults to **None**.
-* **directory_upload**: file upload will be available under this path,
+* **DIRECTORY_UPLOAD**: file upload will be available under this path,
   defaults to **None**.
-* **directory_tar_buffsize**, directory tar streaming buffer size,
+* **DIRECTORY_TAR_BUFFSIZE**, directory tar streaming buffer size,
   defaults to **262144** and must be multiple of 512.
-* **directory_downloadable** whether enable directory download or not,
+* **DIRECTORY_DOWNLOADABLE** whether enable directory download or not,
   defaults to **True**.
-* **use_binary_multiples** whether use binary units (bi-bytes, like KiB)
+* **USE_BINARY_MULTIPLES** whether use binary units (bi-bytes, like KiB)
   instead of common ones (bytes, like KB), defaults to **True**.
-* **plugin_modules** list of module names (absolute or relative to
+* **PLUGIN_MODULES** list of module names (absolute or relative to
   plugin_namespaces) will be loaded.
-* **plugin_namespaces** prefixes for module names listed at plugin_modules
-  where relative plugin_modules are searched.
+* **PLUGIN_NAMESPACES** prefixes for module names listed at PLUGIN_MODULES
+  where relative PLUGIN_MODULES are searched.
 
-Please note: After editing `plugin_modules` value, plugin manager (available
+Please note: After editing `PLUGIN_MODULES` value, plugin manager (available
 at module :data:`browsepy.plugin_manager` and
 :data:`browsepy.app.extensions['plugin_manager']`) should be reloaded using
 the :meth:`browsepy.plugin_manager.reload` instance method of :meth:`browsepy.manager.PluginManager.reload` for browsepy's plugin
@@ -76,11 +76,11 @@ along with a root wsgi application.
     def setup_browsepy():
         browsepy.app.config.update(
             APPLICATION_ROOT='/browse',
-            directory_base=cfg.media_path,
-            directory_start=cfg.media_path,
-            directory_remove=cfg.media_path,
-            directory_upload=cfg.media_path,
-            plugin_modules=['player'],
+            DIRECTORY_BASE=cfg.media_path,
+            DIRECTORY_START=cfg.media_path,
+            DIRECTORY_REMOVE=cfg.media_path,
+            DIRECTORY_UPLOAD=cfg.media_path,
+            PLUGIN_MODULES=['player'],
             )
         browsepy.plugin_manager.load_arguments([
             '--plugin=player',
@@ -177,11 +177,11 @@ server provided by `cherrymusic <http://www.fomori.org/cherrymusic/>`_.
     }
     browsepy.config.update(
         APPLICATION_ROOT='/browse',
-        directory_base=media_path,
-        directory_start=media_path,
-        directory_remove=media_path,
-        directory_upload=media_path,
-        plugin_modules=['player'],
+        DIRECTORY_BASE=media_path,
+        DIRECTORY_START=media_path,
+        DIRECTORY_REMOVE=media_path,
+        DIRECTORY_UPLOAD=media_path,
+        PLUGIN_MODULES=['player'],
     )
     plugin_manager.reload()
 

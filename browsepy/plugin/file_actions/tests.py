@@ -70,8 +70,8 @@ class TestRegistration(unittest.TestCase):
         self.base = 'c:\\base' if os.name == 'nt' else '/base'
         self.app = flask.Flask(self.__class__.__name__)
         self.app.config.update(
-            directory_base=self.base,
-            exclude_fnc=None,
+            DIRECTORY_BASE=self.base,
+            EXCLUDE_FNC=None,
             )
 
     def tearDown(self):
@@ -79,7 +79,7 @@ class TestRegistration(unittest.TestCase):
 
     def test_register_plugin(self):
         self.app.config.update(self.browsepy_module.app.config)
-        self.app.config['plugin_namespaces'] = ('browsepy.plugin',)
+        self.app.config['PLUGIN_NAMESPACES'] = ('browsepy.plugin',)
         manager = self.manager_module.PluginManager(self.app)
         manager.load_plugin('file-actions')
         self.assertIn(
@@ -89,8 +89,8 @@ class TestRegistration(unittest.TestCase):
 
     def test_reload(self):
         self.app.config.update(
-            plugin_modules=[],
-            plugin_namespaces=[]
+            PLUGIN_MODULES=[],
+            PLUGIN_NAMESPACES=[]
             )
         manager = self.manager_module.PluginManager(self.app)
         self.assertNotIn(
@@ -98,8 +98,8 @@ class TestRegistration(unittest.TestCase):
             self.app.blueprints.values()
             )
         self.app.config.update(
-            plugin_modules=['file-actions'],
-            plugin_namespaces=['browsepy.plugin']
+            PLUGIN_MODULES=['file-actions'],
+            PLUGIN_NAMESPACES=['browsepy.plugin']
             )
         manager.reload()
         self.assertIn(
@@ -118,12 +118,12 @@ class TestIntegration(unittest.TestCase):
         self.app = self.browsepy_module.app
         self.app.config.update(
             SECRET_KEY='secret',
-            directory_base=self.base,
-            directory_start=self.base,
-            directory_upload=None,
-            exclude_fnc=None,
-            plugin_modules=['file-actions'],
-            plugin_namespaces=[
+            DIRECTORY_BASE=self.base,
+            DIRECTORY_START=self.base,
+            DIRECTORY_UPLOAD=None,
+            EXCLUDE_FNC=None,
+            PLUGIN_MODULES=['file-actions'],
+            PLUGIN_NAMESPACES=[
                 'browsepy.plugin'
                 ]
             )
@@ -132,16 +132,17 @@ class TestIntegration(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base)
-        self.app.config['plugin_modules'] = []
+        self.app.config['PLUGIN_MODULES'] = []
         self.manager.clear()
         utils.clear_flask_context()
 
     def test_detection(self):
+        url = functools.partial(flask.url_for, path='')
+
         with self.app.test_client() as client:
+            self.app.config['DIRECTORY_UPLOAD'] = self.base
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
-
-            url = functools.partial(flask.url_for, path='')
 
             page = Page(response.data)
             with self.app.app_context():
@@ -159,6 +160,7 @@ class TestIntegration(unittest.TestCase):
                 session['clipboard:mode'] = 'copy'
                 session['clipboard:items'] = ['whatever']
 
+            self.app.config['DIRECTORY_UPLOAD'] = 'whatever'
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
 
@@ -177,7 +179,7 @@ class TestIntegration(unittest.TestCase):
                     page.widgets
                     )
 
-            self.app.config['directory_upload'] = self.base
+            self.app.config['DIRECTORY_UPLOAD'] = self.base
             response = client.get('/')
             self.assertEqual(response.status_code, 200)
 
@@ -231,11 +233,11 @@ class TestAction(unittest.TestCase):
         self.app.register_blueprint(self.module.actions)
         self.app.config.update(
             SECRET_KEY='secret',
-            directory_base=self.base,
-            directory_upload=self.base,
-            directory_remove=self.base,
-            exclude_fnc=None,
-            use_binary_multiples=True,
+            DIRECTORY_BASE=self.base,
+            DIRECTORY_UPLOAD=self.base,
+            DIRECTORY_REMOVE=self.base,
+            EXCLUDE_FNC=None,
+            USE_BINARY_MULTIPLES=True,
             )
         self.app.add_url_rule(
             '/browse/<path:path>',
@@ -406,7 +408,7 @@ class TestAction(unittest.TestCase):
             response = client.get('/file-actions/clipboard/paste/target')
             self.assertEqual(response.status_code, 400)
 
-            self.app.config['exclude_fnc'] = lambda n: n.endswith('whatever')
+            self.app.config['EXCLUDE_FNC'] = lambda n: n.endswith('whatever')
 
             with client.session_transaction() as session:
                 session['clipboard:mode'] = 'cut'

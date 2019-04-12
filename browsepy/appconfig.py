@@ -1,5 +1,7 @@
 # -*- coding: UTF-8 -*-
 
+import warnings
+
 import flask
 import flask.config
 
@@ -8,17 +10,17 @@ from .compat import basestring
 
 class Config(flask.config.Config):
     '''
-    Flask-compatible case-insensitive Config classt.
+    Flask-compatible case-insensitive Config class.
 
     See :type:`flask.config.Config` for more info.
     '''
     def __init__(self, root, defaults=None):
+        self._warned = set()
         if defaults:
             defaults = self.gendict(defaults)
         super(Config, self).__init__(root, defaults)
 
-    @classmethod
-    def genkey(cls, k):
+    def genkey(self, k):
         '''
         Key translation function.
 
@@ -27,10 +29,19 @@ class Config(flask.config.Config):
         :returns: uppercase key
         ;rtype: str
         '''
-        return k.upper() if isinstance(k, basestring) else k
+        if isinstance(k, basestring):
+            if k not in self._warned and k != k.upper():
+                self._warned.add(k)
+                warnings.warn(
+                    'Config accessed with lowercase key '
+                    '%r, lowercase config is deprecated.' % k,
+                    DeprecationWarning,
+                    3
+                    )
+            return k.upper()
+        return k
 
-    @classmethod
-    def gendict(cls, *args, **kwargs):
+    def gendict(self, *args, **kwargs):
         '''
         Pre-translated key dictionary constructor.
 
@@ -39,7 +50,7 @@ class Config(flask.config.Config):
         :returns: dictionary with uppercase keys
         :rtype: dict
         '''
-        gk = cls.genkey
+        gk = self.genkey
         return dict((gk(k), v) for k, v in dict(*args, **kwargs).items())
 
     def __getitem__(self, k):

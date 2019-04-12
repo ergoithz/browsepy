@@ -146,15 +146,18 @@ class GlobTransform(StateMachine):
     def transform_posix_collating_symbol(self, data, mark, next):
         warnings.warn(
             'Posix collating symbols (like %s%s) are not supported.'
-            % (data, mark))
+            % (data, mark),
+            RuntimeWarning
+            )
         return None
 
     def transform_posix_character_class(self, data, mark, next):
         name = data[len(self.start):]
         if name not in self.character_classes:
             warnings.warn(
-                'Posix character class %s is not supported.'
-                % name)
+                'Posix character class %s is not supported.' % name,
+                RuntimeWarning
+                )
             return None
         return ''.join(
             chr(start)
@@ -166,7 +169,9 @@ class GlobTransform(StateMachine):
     def transform_posix_equivalence_class(self, data, mark, next):
         warnings.warn(
             'Posix equivalence class expresions (like %s%s) are not supported.'
-            % (data, mark))
+            % (data, mark),
+            RuntimeWarning
+            )
         return None
 
     def transform_wildcard(self, data, mark, next):

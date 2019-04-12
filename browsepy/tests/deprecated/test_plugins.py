@@ -71,12 +71,12 @@ class TestPlugins(unittest.TestCase):
     def setUp(self):
         self.app = self.app_module.app
         self.manager = self.manager_module.PluginManager(self.app)
-        self.original_namespaces = self.app.config['plugin_namespaces']
+        self.original_namespaces = self.app.config['PLUGIN_NAMESPACES']
         self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
-        self.app.config['plugin_namespaces'] = (self.plugin_namespace,)
+        self.app.config['PLUGIN_NAMESPACES'] = (self.plugin_namespace,)
 
     def tearDown(self):
-        self.app.config['plugin_namespaces'] = self.original_namespaces
+        self.app.config['PLUGIN_NAMESPACES'] = self.original_namespaces
         self.manager.clear()
 
     def test_manager(self):
@@ -132,7 +132,7 @@ class TestPlayerBase(unittest.TestCase):
 
     def setUp(self):
         self.app = flask.Flask(self.__class__.__name__)
-        self.app.config['directory_remove'] = None
+        self.app.config['DIRECTORY_REMOVE'] = None
         self.app.config['SERVER_NAME'] = self.hostname
         self.app.config['PREFERRED_URL_SCHEME'] = self.scheme
         self.manager = ManagerMock()
@@ -171,7 +171,7 @@ class TestIntegration(TestIntegrationBase):
         self.app.config.update(
             SERVER_NAME=self.hostname,
             PREFERRED_URL_SCHEME=self.scheme,
-            plugin_namespaces=('browsepy.tests.deprecated.plugin',)
+            PLUGIN_NAMESPACES=('browsepy.tests.deprecated.plugin',)
         )
         manager = self.manager_module.PluginManager(self.app)
         manager.load_plugin('player')

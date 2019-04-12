@@ -4,6 +4,7 @@ import re
 import sys
 import pkgutil
 import argparse
+import functools
 import warnings
 import collections
 
@@ -14,7 +15,7 @@ from cookieman import CookieMan
 
 from . import mimetype
 from . import compat
-from .compat import deprecated, usedoc, SafeArgumentParser
+from .compat import deprecated, usedoc
 from .utils import get_module
 
 
@@ -63,7 +64,7 @@ class PluginManagerBase(object):
         '''
         List of plugin namespaces taken from app config.
         '''
-        return self.app.config['plugin_namespaces'] if self.app else []
+        return self.app.config['PLUGIN_NAMESPACES'] if self.app else []
 
     def __init__(self, app=None):
         '''
@@ -96,10 +97,10 @@ class PluginManagerBase(object):
 
         This method will make use of :meth:`clear` and :meth:`load_plugin`,
         so all internal state will be cleared, and all plugins defined in
-        :data:`self.app.config['plugin_modules']` will be loaded.
+        :data:`self.app.config['PLUGIN_MODULES']` will be loaded.
         '''
         self.clear()
-        for plugin in self.app.config.get('plugin_modules', ()):
+        for plugin in self.app.config.get('PLUGIN_MODULES', ()):
             self.load_plugin(plugin)
 
     def clear(self):
@@ -114,11 +115,11 @@ class PluginManagerBase(object):
         '''
         for info in pkgutil.iter_modules():
             if info.name.startswith(prefix):
-                yield info.name, None
+                yield info.name
 
     def _iter_submodules(self, prefix):
         '''
-        Iterate thru all submodules which full name contains given prefix.
+        Iterate thru all modules which full name contains given prefix.
         '''
         res = compat.res
         parent = prefix.rsplit('.', 1)[0]
@@ -128,27 +129,40 @@ class PluginManagerBase(object):
                     name = '%s.%s' % (base, item)
                     if name.startswith(prefix) and \
                        not res.is_resource(base, item):
-                        yield name, item
+                        yield name
                 break
             except ImportError:
                 pass
 
-    def iter_plugins(self):
+    def _iter_plugin_modules(self):
+        '''
+        Iterate plugin modules, yielding both full qualified name and
+        short plugin name as tuple.
+        '''
+        nameset = set()
+        shortset = set()
+        filters = self.plugin_filters
+        for prefix in self.namespaces:
+            for name in (self._iter_submodules(prefix)
+                         if '.' in prefix else
+                         self._iter_modules(prefix)
+                         if prefix else
+                         ()):
+                module = get_module(name) if name not in nameset else None
+                if module and any(f(module) for f in filters):
+                    short = name[len(prefix):].lstrip('.').replace('_', '-')
+                    if short in shortset or '.' in short or not short:
+                        short = None
+                    yield name, short
+                    nameset.add(name)
+                    shortset.add(short)
+
+    @cached_property
+    def available_plugins(self):
         '''
         Iterate through all loadable plugins on default import locations
         '''
-        for prefix in self.namespaces:
-            names = (
-                self._iter_submodules(prefix)
-                if '.' in prefix else
-                self._iter_modules(prefix)
-                if prefix else
-                ()
-                )
-            for name, short in names:
-                module = get_module(name)
-                if module and any(f(module) for f in self.plugin_filters):
-                    yield name, short
+        return list(self._iter_plugin_modules())
 
     def import_plugin(self, plugin):
         '''
@@ -269,7 +283,7 @@ class ExcludePluginManager(PluginManagerBase):
         '''
         Check if given path is excluded.
         '''
-        exclude_fnc = self.app.config.get('exclude_fnc')
+        exclude_fnc = self.app.config.get('EXCLUDE_FNC')
         if exclude_fnc and exclude_fnc(path):
             return True
         for fnc in self._exclude_functions:
@@ -581,12 +595,29 @@ class ArgumentPluginManager(PluginManagerBase):
             return manager._argparse_argkwargs
         return ()
 
-    @cached_property
     def _default_argument_parser(self):
-        parser = SafeArgumentParser()
+        parser = compat.SafeArgumentParser()
         parser.add_argument('--plugin', action='append', default=[])
         parser.add_argument('--help-all', action='store_true')
         return parser
+
+    def _plugin_argument_parser(self, base=None):
+        plugins = self.available_plugins
+        parent = base or self._default_argument_parser
+        prop = functools.partial(getattr, parent)
+        epilog = prop('epilog') or ''
+        if plugins:
+            epilog += '\n\navailable plugins:\n%s' % '\n'.join(
+                '  %s, %s' % (short, name) if short else '  %s' % name
+                for name, short in plugins
+                )
+        return compat.SafeArgumentParser(
+            parents=[parent],
+            prog=prop('prog', self.app.config['APPLICATION_NAME']),
+            description=prop('description'),
+            formatter_class=prop('formatter_class', compat.HelpFormatter),
+            epilog=epilog.strip(),
+            )
 
     def load_arguments(self, argv, base=None):
         '''
@@ -607,9 +638,7 @@ class ArgumentPluginManager(PluginManagerBase):
                   given by :meth:`argparse.ArgumentParser.parse_args`.
         :rtype: argparse.Namespace
         '''
-        parser = SafeArgumentParser(
-            parents=[base or self._default_argument_parser],
-            )
+        parser = self._plugin_argument_parser(base)
         options, _ = parser.parse_known_args(argv)
 
         plugins = [
@@ -621,7 +650,7 @@ class ArgumentPluginManager(PluginManagerBase):
         if options.help_all:
             plugins.extend(
                 short if short else name
-                for name, short in self.iter_plugins()
+                for name, short in self.available_plugins
                 if not (name in plugins or short in plugins)
                 )
 
@@ -797,7 +826,7 @@ class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
         if isinstance(place or widget, self._widget.WidgetBase):
             warnings.warn(
                 'Deprecated use of register_widget',
-                category=DeprecationWarning
+                DeprecationWarning
                 )
             widget = place or widget
             props = self._widget_props(widget)
@@ -813,7 +842,7 @@ class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
           place in self._deprecated_places:
             warnings.warn(
                 'Deprecated use of get_widgets',
-                category=DeprecationWarning
+                DeprecationWarning
                 )
             place = file or place
             return [

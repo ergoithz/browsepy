@@ -195,11 +195,11 @@ class TestApp(unittest.TestCase):
                 or path.startswith(self.exclude + os.sep)
 
         self.app.config.update(
-            directory_base=self.base,
-            directory_start=self.start,
-            directory_remove=self.remove,
-            directory_upload=self.upload,
-            exclude_fnc=exclude_fnc,
+            DIRECTORY_BASE=self.base,
+            DIRECTORY_START=self.start,
+            DIRECTORY_REMOVE=self.remove,
+            DIRECTORY_UPLOAD=self.upload,
+            EXCLUDE_FNC=exclude_fnc,
             SERVER_NAME='localhost',
             )
 
@@ -284,14 +284,14 @@ class TestApp(unittest.TestCase):
         self.assertEqual(page.path, '%s/start' % os.path.basename(self.base))
 
         start = os.path.abspath(os.path.join(self.base, '..'))
-        self.app.config['directory_start'] = start
+        self.app.config['DIRECTORY_START'] = start
 
         self.assertRaises(
             Page404Exception,
             self.get, 'index'
             )
 
-        self.app.config['directory_start'] = self.start
+        self.app.config['DIRECTORY_START'] = self.start
 
     def test_browse(self):
         basename = os.path.basename(self.base)
@@ -334,10 +334,10 @@ class TestApp(unittest.TestCase):
             self.get, 'browse', path='exclude'
             )
 
-        self.app.config['directory_downloadable'] = True
+        self.app.config['DIRECTORY_DOWNLOADABLE'] = True
         page = self.get('browse')
         self.assertTrue(page.tarfile)
-        self.app.config['directory_downloadable'] = False
+        self.app.config['DIRECTORY_DOWNLOADABLE'] = False
         page = self.get('browse')
         self.assertFalse(page.tarfile)
 
@@ -382,14 +382,14 @@ class TestApp(unittest.TestCase):
             self.post, 'remove', path='start/testfile.txt'
             )
 
-        self.app.config['directory_remove'] = None
+        self.app.config['DIRECTORY_REMOVE'] = None
 
         self.assertRaises(
             Page404Exception,
             self.get, 'remove', path='remove/testfile.txt'
             )
 
-        self.app.config['directory_remove'] = self.remove
+        self.app.config['DIRECTORY_REMOVE'] = self.remove
 
         self.assertRaises(
             Page404Exception,
@@ -431,13 +431,13 @@ class TestApp(unittest.TestCase):
         binfile = os.path.join(self.start, 'testfile.bin')
         excfile = os.path.join(self.start, 'testfile.exc')
         bindata = bytes(range(256))
-        exclude = self.app.config['exclude_fnc']
+        exclude = self.app.config['EXCLUDE_FNC']
 
         for path in (binfile, excfile):
             with open(path, 'wb') as f:
                 f.write(bindata)
 
-        self.app.config['exclude_fnc'] = None
+        self.app.config['EXCLUDE_FNC'] = None
 
         response = self.get('download_directory', path='start')
         self.assertEqual(response.filename, 'start.tgz')
@@ -448,7 +448,7 @@ class TestApp(unittest.TestCase):
             ['testfile.%s' % x1 for x1 in ('bin', 'exc', 'txt')]
             )
 
-        self.app.config['exclude_fnc'] = lambda p: p.endswith('.exc')
+        self.app.config['EXCLUDE_FNC'] = lambda p: p.endswith('.exc')
 
         response = self.get('download_directory', path='start')
         self.assertEqual(response.filename, 'start.tgz')
@@ -459,7 +459,7 @@ class TestApp(unittest.TestCase):
             ['testfile.%s' % x2 for x2 in ('bin', 'txt')]
             )
 
-        self.app.config['exclude_fnc'] = exclude
+        self.app.config['EXCLUDE_FNC'] = exclude
 
         self.assertRaises(
             Page404Exception,

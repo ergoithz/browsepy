@@ -121,7 +121,7 @@ class Node(object):
     @cached_property
     def link(self):
         '''
-        Get last widget with place "entry-link".
+        Get last widget with place `entry-link`.
 
         :returns: widget on entry-link (ideally a link one)
         :rtype: namedtuple instance
@@ -136,18 +136,18 @@ class Node(object):
     def can_remove(self):
         '''
         Get if current node can be removed based on app config's
-        directory_remove.
+        `DIRECTORY_REMOVE`.
 
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
         '''
-        dirbase = self.app.config.get('directory_remove')
+        dirbase = self.app.config.get('DIRECTORY_REMOVE')
         return bool(dirbase and check_under_base(self.path, dirbase))
 
     @cached_property
     def stats(self):
         '''
-        Get current stats object as returned by os.stat function.
+        Get current stats object as returned by `os.stat` function.
 
         :returns: stats object
         :rtype: posix.stat_result or nt.stat_result
@@ -168,12 +168,12 @@ class Node(object):
     @cached_property
     def parent(self):
         '''
-        Get parent node if available based on app config's directory_base.
+        Get parent node if available based on app config's `DIRECTORY_BASE`.
 
         :returns: parent object if available
         :rtype: Node instance or None
         '''
-        directory_base = self.app.config.get('directory_base', self.path)
+        directory_base = self.app.config.get('DIRECTORY_BASE', self.path)
         if check_path(self.path, directory_base):
             return None
         parent = os.path.dirname(self.path) if self.path else None
@@ -182,7 +182,7 @@ class Node(object):
     @cached_property
     def ancestors(self):
         '''
-        Get list of ancestors until app config's directory_base is reached.
+        Get list of ancestors until app config's `DIRECTORY_BASE` is reached.
 
         :returns: list of ancestors starting from nearest.
         :rtype: list of Node objects
@@ -219,7 +219,7 @@ class Node(object):
         '''
         return abspath_to_urlpath(
             self.path,
-            self.app.config.get('directory_base', self.path),
+            self.app.config.get('DIRECTORY_BASE', self.path),
             )
 
     @property
@@ -309,7 +309,7 @@ class Node(object):
         :rtype: File
         '''
         app = utils.solve_local(app or current_app)
-        base = app.config.get('directory_base', path)
+        base = app.config.get('DIRECTORY_BASE', path)
         path = urlpath_to_abspath(path, base)
         if not cls.generic:
             kls = cls
@@ -431,7 +431,7 @@ class File(Node):
         try:
             size, unit = fmt_size(
                 self.stats.st_size,
-                self.app.config.get('use_binary_multiples', False)
+                self.app.config.get('USE_BINARY_MULTIPLES', False)
                 )
         except OSError:
             return None
@@ -586,24 +586,24 @@ class Directory(Node):
     @cached_property
     def can_download(self):
         '''
-        Get if path is downloadable (if app's `directory_downloadable` config
+        Get if path is downloadable (if app's `DIRECTORY_DOWNLOADABLE` config
         property is True).
 
         :returns: True if downloadable, False otherwise
         :rtype: bool
         '''
-        return self.app.config.get('directory_downloadable', False)
+        return self.app.config.get('DIRECTORY_DOWNLOADABLE', False)
 
     @cached_property
     def can_upload(self):
         '''
         Get if a file can be uploaded to path (if directory path is under app's
-        `directory_upload` config property).
+        `DIRECTORY_UPLOAD` config property).
 
         :returns: True if a file can be upload to directory, False otherwise
         :rtype: bool
         '''
-        dirbase = self.app.config.get('directory_upload', False)
+        dirbase = self.app.config.get('DIRECTORY_UPLOAD', False)
         return dirbase and check_base(self.path, dirbase)
 
     @cached_property
@@ -649,7 +649,7 @@ class Directory(Node):
         '''
         stream = self.stream_class(
             self.path,
-            self.app.config.get('directory_tar_buffsize', 10240),
+            self.app.config.get('DIRECTORY_TAR_BUFFSIZE', 10240),
             self.plugin_manager.check_excluded,
             )
         return self.app.response_class(

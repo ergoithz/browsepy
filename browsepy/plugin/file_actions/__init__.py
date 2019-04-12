@@ -2,9 +2,10 @@
 
 import os
 import os.path
+import functools
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
-                  session
+                  session, current_app
 from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
@@ -201,6 +202,27 @@ def shrink_session(data, last):
     return data
 
 
+def detect_upload(directory):
+    return directory.is_directory and directory.can_upload
+
+
+def detect_clipboard(directory):
+    return directory.is_directory and session.get('clipboard:mode')
+
+
+def detect_selection(directory):
+    return directory.is_directory and \
+            current_app.config.get('DIRECTORY_UPLOAD')
+
+
+def excluded_clipboard(manager, path):
+    if session.get('clipboard:mode') == 'cut':
+        base = manager.app.config['DIRECTORY_BASE']
+        clipboard = session.get('clipboard:items', ())
+        return abspath_to_urlpath(path, base) in clipboard
+    return False
+
+
 def register_plugin(manager):
     '''
     Register blueprints and actions using given plugin manager.
@@ -208,19 +230,9 @@ def register_plugin(manager):
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
     '''
-    def detect_upload(directory):
-        return directory.is_directory and directory.can_upload
-
-    def detect_clipboard(directory):
-        return directory.is_directory and session.get('clipboard:mode')
-
-    def excluded_clipboard(path):
-        if session.get('clipboard:mode') == 'cut':
-            base = manager.app.config['directory_base']
-            clipboard = session.get('clipboard:items', ())
-            return abspath_to_urlpath(path, base) in clipboard
-
-    manager.register_exclude_function(excluded_clipboard)
+    manager.register_exclude_function(
+        functools.partial(excluded_clipboard, manager)
+        )
     manager.register_blueprint(actions)
     manager.register_widget(
         place='styles',
@@ -240,7 +252,7 @@ def register_plugin(manager):
         place='header',
         type='button',
         endpoint='file_actions.selection',
-        filter=lambda directory: directory.is_directory,
+        filter=detect_selection,
         text='Selection...',
         )
     manager.register_widget(

@@ -4,7 +4,7 @@
 class OutsideDirectoryBase(Exception):
     '''
     Exception raised when trying to access to a file outside path defined on
-    `directory_base` config property.
+    `DIRECTORY_BASE` config property.
     '''
     pass
 

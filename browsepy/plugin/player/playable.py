@@ -36,7 +36,7 @@ class PLSFileParser(object):
     def __init__(self, path):
         with warnings.catch_warnings():
             # We already know about SafeConfigParser deprecation!
-            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            warnings.simplefilter('ignore', category=DeprecationWarning)
             self._parser = self.parser_class()
         self._parser.read(path)
 
@@ -133,7 +133,7 @@ class PlayListFile(PlayableBase):
         drive = os.path.splitdrive(self.path)[0]
         if drive and not os.path.splitdrive(path)[0]:
             path = drive + path
-        if check_under_base(path, self.app.config['directory_base']):
+        if check_under_base(path, self.app.config['DIRECTORY_BASE']):
             return path
         return None
 

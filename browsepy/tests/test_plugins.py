@@ -1,4 +1,3 @@
-
 import unittest
 import flask
 
@@ -47,13 +46,13 @@ class TestPlugins(unittest.TestCase):
 
     def setUp(self):
         self.app = self.app_module.app
-        self.original_namespaces = self.app.config['plugin_namespaces']
+        self.original_namespaces = self.app.config['PLUGIN_NAMESPACES']
         self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
-        self.app.config['plugin_namespaces'] = (self.plugin_namespace,)
+        self.app.config['PLUGIN_NAMESPACES'] = (self.plugin_namespace,)
         self.manager = self.manager_module.PluginManager(self.app)
 
     def tearDown(self):
-        self.app.config['plugin_namespaces'] = self.original_namespaces
+        self.app.config['PLUGIN_NAMESPACES'] = self.original_namespaces
         self.manager.clear()
         utils.clear_flask_context()
 
@@ -88,14 +87,14 @@ class TestPlugins(unittest.TestCase):
             )
 
     def test_list(self):
-        self.app.config['plugin_namespaces'] = self.original_namespaces
-        names = list(self.manager.iter_plugins())
+        self.app.config['PLUGIN_NAMESPACES'] = self.original_namespaces
+        names = self.manager.available_plugins
         self.assertIn(('browsepy.plugin.player', 'player'), names)
-        self.assertIn(('browsepy.plugin.file_actions', 'file_actions'), names)
+        self.assertIn(('browsepy.plugin.file_actions', 'file-actions'), names)
 
     def test_namespace_prefix(self):
         self.assertTrue(self.manager.import_plugin(self.plugin_name))
-        self.app.config['plugin_namespaces'] = (
+        self.app.config['PLUGIN_NAMESPACES'] = (
             self.plugin_namespace + '.test_',
             )
         self.assertTrue(self.manager.import_plugin('module'))

@@ -54,6 +54,18 @@ class SafeArgumentParser(argparse.ArgumentParser):
         super(SafeArgumentParser, self).__init__(**kwargs)
 
 
+class HelpFormatter(argparse.RawTextHelpFormatter):
+    def __init__(self, prog, indent_increment=2, max_help_position=24,
+                 width=None):
+        if width is None:
+            try:
+                width = get_terminal_size().columns - 2
+            except ValueError:  # https://bugs.python.org/issue24966
+                pass
+        super(HelpFormatter, self).__init__(
+            prog, indent_increment, max_help_position, width)
+
+
 def isexec(path):
     '''
     Check if given path points to an executable file.
@@ -173,8 +185,7 @@ def deprecated(func_or_text, environ=os.environ):
             with warnings.catch_warnings():
                 if getdebug(environ):
                     warnings.simplefilter('always', DeprecationWarning)
-                warnings.warn(message, category=DeprecationWarning,
-                              stacklevel=3)
+                warnings.warn(message, DeprecationWarning, 3)
             return func(*args, **kwargs)
         return new_func
     return inner(func_or_text) if callable(func_or_text) else inner

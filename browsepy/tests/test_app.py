@@ -2,6 +2,7 @@ import os
 import os.path
 import unittest
 import tempfile
+import warnings
 
 import browsepy
 import browsepy.appconfig
@@ -11,17 +12,25 @@ class TestApp(unittest.TestCase):
     module = browsepy
     app = browsepy.app
 
+    def setUp(self):
+        self.app.config._warned.clear()
+
     def test_config(self):
-        try:
-            with tempfile.NamedTemporaryFile(delete=False) as f:
-                f.write(b'DIRECTORY_DOWNLOADABLE = False\n')
-                name = f.name
-            os.environ['BROWSEPY_TEST_SETTINGS'] = name
-            self.app.config['directory_downloadable'] = True
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(b'DIRECTORY_DOWNLOADABLE = False\n')
+            f.flush()
+
+            os.environ['BROWSEPY_TEST_SETTINGS'] = f.name
+            with warnings.catch_warnings(record=True) as warns:
+                warnings.simplefilter('always')
+                self.app.config['directory_downloadable'] = True
+                self.assertTrue(warns)
+
             self.app.config.from_envvar('BROWSEPY_TEST_SETTINGS')
-            self.assertFalse(self.app.config['directory_downloadable'])
-        finally:
-            os.remove(name)
+            with warnings.catch_warnings(record=True) as warns:
+                warnings.simplefilter('always')
+                self.assertFalse(self.app.config['directory_downloadable'])
+                self.assertFalse(warns)
 
 
 class TestConfig(unittest.TestCase):

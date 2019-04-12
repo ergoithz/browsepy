@@ -9,21 +9,10 @@ import argparse
 
 import flask
 
-from . import app, plugin_manager, __version__
-from .compat import PY_LEGACY, getdebug, get_terminal_size, SafeArgumentParser
+from . import app, __version__
+from .compat import PY_LEGACY, getdebug, \
+                    SafeArgumentParser, HelpFormatter
 from .transform.glob import translate
-
-
-class HelpFormatter(argparse.RawTextHelpFormatter):
-    def __init__(self, prog, indent_increment=2, max_help_position=24,
-                 width=None):
-        if width is None:
-            try:
-                width = get_terminal_size().columns - 2
-            except ValueError:  # https://bugs.python.org/issue24966
-                pass
-        super(HelpFormatter, self).__init__(
-            prog, indent_increment, max_help_position, width)
 
 
 class CommaSeparatedAction(argparse.Action):
@@ -36,14 +25,14 @@ class CommaSeparatedAction(argparse.Action):
 
 
 class ArgParse(SafeArgumentParser):
-    default_directory = app.config['directory_base']
+    default_directory = app.config['DIRECTORY_BASE']
     default_initial = (
         None
-        if app.config['directory_start'] == app.config['directory_base'] else
-        app.config['directory_start']
+        if app.config['DIRECTORY_START'] == app.config['DIRECTORY_BASE'] else
+        app.config['DIRECTORY_START']
         )
-    default_removable = app.config['directory_remove']
-    default_upload = app.config['directory_upload']
+    default_removable = app.config['DIRECTORY_REMOVE']
+    default_upload = app.config['DIRECTORY_UPLOAD']
     name = app.config['APPLICATION_NAME']
 
     default_host = os.getenv('BROWSEPY_HOST', '127.0.0.1')
@@ -52,10 +41,6 @@ class ArgParse(SafeArgumentParser):
     defaults = {
         'add_help': True,
         'prog': name,
-        'epilog': 'available plugins:\n%s' % '\n'.join(
-            '  %s, %s' % (short, name) if short else '  %s' % name
-            for name, short in plugin_manager.iter_plugins()
-            ),
         'formatter_class': HelpFormatter,
         'description': 'description: starts a %s web file browser' % name
         }
@@ -170,16 +155,16 @@ def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
     if args.debug:
         os.environ['DEBUG'] = 'true'
     app.config.update(
-        directory_base=args.directory,
-        directory_start=args.initial or args.directory,
-        directory_remove=args.removable,
-        directory_upload=args.upload,
-        plugin_modules=list_union(
-            app.config['plugin_modules'],
+        DIRECTORY_BASE=args.directory,
+        DIRECTORY_START=args.initial or args.directory,
+        DIRECTORY_REMOVE=args.removable,
+        DIRECTORY_UPLOAD=args.upload,
+        PLUGIN_MODULES=list_union(
+            app.config['PLUGIN_MODULES'],
             args.plugin,
             ),
-        exclude_fnc=filter_union(
-            app.config['exclude_fnc'],
+        EXCLUDE_FNC=filter_union(
+            app.config['EXCLUDE_FNC'],
             create_exclude_fnc(patterns, args.directory),
             ),
         )
