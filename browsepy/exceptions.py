@@ -71,3 +71,19 @@ class FilenameTooLongError(InvalidFilenameError):
         self.limit = limit
         super(FilenameTooLongError, self).__init__(
             message, path=path, filename=filename)
+
+
+class PluginNotFoundError(ImportError):
+    pass
+
+
+class WidgetException(Exception):
+    pass
+
+
+class WidgetParameterException(WidgetException):
+    pass
+
+
+class InvalidArgumentError(ValueError):
+    pass

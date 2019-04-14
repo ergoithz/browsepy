@@ -116,6 +116,7 @@ class TestIntegration(unittest.TestCase):
     def setUp(self):
         self.base = tempfile.mkdtemp()
         self.app = self.browsepy_module.app
+        self.original_config = dict(self.app.config)
         self.app.config.update(
             SECRET_KEY='secret',
             DIRECTORY_BASE=self.base,
@@ -132,7 +133,8 @@ class TestIntegration(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base)
-        self.app.config['PLUGIN_MODULES'] = []
+        self.app.config.clear()
+        self.app.config.update(self.original_config)
         self.manager.clear()
         utils.clear_flask_context()
 
@@ -308,10 +310,18 @@ class TestAction(unittest.TestCase):
                     'name': 'asdf',
                     })
             self.assertEqual(response.status_code, 404)
+
             response = client.post(
                 '/file-actions/create/directory',
                 data={
                     'name': '..',
+                    })
+            self.assertEqual(response.status_code, 400)
+
+            response = client.post(
+                '/file-actions/create/directory',
+                data={
+                    'name': '\0',
                     })
             self.assertEqual(response.status_code, 400)
 

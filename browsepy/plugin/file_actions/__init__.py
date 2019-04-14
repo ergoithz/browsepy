@@ -65,7 +65,7 @@ def create_directory(path):
 
     try:
         os.mkdir(os.path.join(directory.path, basename))
-    except OSError as e:
+    except BaseException as e:
         raise DirectoryCreationError.from_exception(
             e,
             path=directory.path,

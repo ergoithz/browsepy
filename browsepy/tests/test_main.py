@@ -3,12 +3,14 @@ import os
 import os.path
 import tempfile
 import shutil
-import contextlib
-import browsepy.__main__
+
+import browsepy
+import browsepy.__main__ as main
+import browsepy.compat as compat
 
 
 class TestMain(unittest.TestCase):
-    module = browsepy.__main__
+    module = main
 
     def setUp(self):
         self.app = browsepy.app
@@ -82,7 +84,7 @@ class TestMain(unittest.TestCase):
         self.assertListEqual(result.plugin, [])
 
         with open(os.devnull, 'w') as f:
-            with contextlib.redirect_stderr(f):
+            with compat.redirect_stderr(f):
                 self.assertRaises(
                     SystemExit,
                     self.parser.parse_args,
@@ -99,7 +101,7 @@ class TestMain(unittest.TestCase):
         result = self.parser.parse_args([
             '--exclude', '/.*',
             '--exclude-from', self.exclude_file,
-        ])
+            ])
         extra = self.module.collect_exclude_patterns(result.exclude_from)
         self.assertListEqual(extra, ['.ignore'])
         match = self.module.create_exclude_fnc(

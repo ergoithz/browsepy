@@ -860,7 +860,7 @@ def generic_filename(path):
     return path
 
 
-def clean_restricted_chars(path, restricted_chars=restricted_chars):
+def clean_restricted_chars(path, restricted_chars=current_restricted_chars):
     '''
     Get path without restricted characters.
 

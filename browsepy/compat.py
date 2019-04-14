@@ -6,6 +6,7 @@ import sys
 import abc
 import itertools
 import functools
+import contextlib
 import warnings
 import posixpath
 import ntpath
@@ -354,16 +355,26 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
         )
 
 
+@contextlib.contextmanager
+def redirect_stderr(f):
+    old = sys.stderr
+    sys.stderr = f
+    yield
+    if sys.stderr is f:
+        sys.stderr = old
+
+
+class Iterator(BaseIterator):
+    def next(self):
+        '''
+        Call :method:`__next__` for compatibility.
+
+        :returns: see :method:`__next__`
+        '''
+        return self.__next__()
+
+
 if PY_LEGACY:
-    class Iterator(BaseIterator):
-        def next(self):
-            '''
-            Call :method:`__next__` for compatibility.
-
-            :returns: see :method:`__next__`
-            '''
-            return self.__next__()
-
     class FileNotFoundError(BaseException):
         __metaclass__ = abc.ABCMeta
 
@@ -378,7 +389,6 @@ if PY_LEGACY:
     chr = unichr  # noqa
     bytes = str  # noqa
 else:
-    Iterator = BaseIterator
     FileNotFoundError = FileNotFoundError
     range = range
     filter = filter

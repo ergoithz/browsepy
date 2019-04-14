@@ -1,9 +1,18 @@
+# -*- coding: UTF-8 -*-
+
+import sys
+import os
+import os.path
+import io
 import unittest
+import tempfile
+
 import flask
 
 import browsepy
 import browsepy.manager
 import browsepy.utils as utils
+import browsepy.exceptions as exceptions
 
 from browsepy.plugin.player.tests import *  # noqa
 from browsepy.plugin.file_actions.tests import *  # noqa
@@ -56,7 +65,15 @@ class TestPlugins(unittest.TestCase):
         self.manager.clear()
         utils.clear_flask_context()
 
-    def test_manager(self):
+    def test_manager_init(self):
+        class App(object):
+            config = {}
+
+        app = App()
+        manager = self.manager_module.PluginManagerBase(app)
+        self.assertDictEqual(app.extensions, {'plugin_manager': manager})
+
+    def test_manager_load(self):
         self.manager.load_plugin(self.plugin_name)
         self.assertTrue(self.manager._plugin_loaded)
 
@@ -92,12 +109,56 @@ class TestPlugins(unittest.TestCase):
         self.assertIn(('browsepy.plugin.player', 'player'), names)
         self.assertIn(('browsepy.plugin.file_actions', 'file-actions'), names)
 
-    def test_namespace_prefix(self):
+    def test_namespace_submodule(self):
         self.assertTrue(self.manager.import_plugin(self.plugin_name))
         self.app.config['PLUGIN_NAMESPACES'] = (
             self.plugin_namespace + '.test_',
             )
         self.assertTrue(self.manager.import_plugin('module'))
+        self.assertIn(
+            (self.plugin_namespace + '.' + self.plugin_name, 'plugins'),
+            self.manager.available_plugins,
+            )
+
+    def test_namespace_module(self):
+        self.app.config['PLUGIN_NAMESPACES'] = (
+            'browsepy_test_',
+            'browsepy_testing_',
+            )
+
+        with tempfile.TemporaryDirectory() as base:
+            names = (
+                'browsepy_test_another_plugin',
+                'browsepy_testing_another_plugin',
+                )
+            for name in names:
+                path = os.path.join(base, name) + '.py'
+                with io.open(path, 'w', encoding='utf8') as f:
+                    f.write(
+                        '\n'
+                        'def register_plugin(manager):\n'
+                        '    pass\n'
+                        )
+            try:
+                sys.path.insert(0, base)
+                self.assertIn(
+                    (names[0], 'another-plugin'),
+                    self.manager.available_plugins,
+                    )
+                self.assertIn(
+                    (names[1], None),
+                    self.manager.available_plugins,
+                    )
+            finally:
+                sys.path.remove(base)
+
+    def test_widget(self):
+        with self.assertRaises(exceptions.WidgetParameterException):
+            self.manager.register_widget(
+                place='header',
+                type='html',
+                bad_attr=True,
+                )
 
 
 def register_plugin(manager):

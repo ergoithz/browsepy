@@ -1,7 +1,6 @@
 # -*- coding: UTF-8 -*-
 
 import re
-import sys
 import pkgutil
 import argparse
 import functools
@@ -16,48 +15,16 @@ from cookieman import CookieMan
 from . import mimetype
 from . import compat
 from .compat import deprecated, usedoc
-from .utils import get_module
-
-
-def defaultsnamedtuple(name, fields, defaults=None):
-    '''
-    Generate namedtuple with default values.
-
-    :param name: name
-    :param fields: iterable with field names
-    :param defaults: iterable or mapping with field defaults
-    :returns: defaultdict with given fields and given defaults
-    :rtype: collections.defaultdict
-    '''
-    nt = collections.namedtuple(name, fields)
-    nt.__new__.__defaults__ = (None,) * len(nt._fields)
-    if isinstance(defaults, collections.Mapping):
-        nt.__new__.__defaults__ = tuple(nt(**defaults))
-    elif defaults:
-        nt.__new__.__defaults__ = tuple(nt(*defaults))
-    return nt
-
-
-class PluginNotFoundError(ImportError):
-    pass
-
-
-class WidgetException(Exception):
-    pass
-
-
-class WidgetParameterException(WidgetException):
-    pass
-
-
-class InvalidArgumentError(ValueError):
-    pass
+from .utils import get_module, defaultsnamedtuple
+from .exceptions import PluginNotFoundError, InvalidArgumentError, \
+                        WidgetParameterException
 
 
 class PluginManagerBase(object):
     '''
     Base plugin manager for plugin module loading and Flask extension logic.
     '''
+    _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
 
     @property
     def namespaces(self):
@@ -117,6 +84,19 @@ class PluginManagerBase(object):
             if info.name.startswith(prefix):
                 yield info.name
 
+    def _content_import_name(self, module, item, prefix):
+        '''
+        Get importable module contnt import name..
+        '''
+        res = compat.res
+        name = '%s.%s' % (module, item)
+        if name.startswith(prefix):
+            for ext in self._pyfile_extensions:
+                if name.endswith(ext):
+                    return name[:-len(ext)]
+            if not res.is_resource(module, item):
+                return name
+
     def _iter_submodules(self, prefix):
         '''
         Iterate thru all modules which full name contains given prefix.
@@ -126,11 +106,9 @@ class PluginManagerBase(object):
         for base in (prefix, parent):
             try:
                 for item in res.contents(base):
-                    name = '%s.%s' % (base, item)
-                    if name.startswith(prefix) and \
-                       not res.is_resource(base, item):
-                        yield name
-                break
+                    content = self._content_import_name(base, item, prefix)
+                    if content:
+                        yield content
             except ImportError:
                 pass
 
@@ -174,21 +152,18 @@ class PluginManagerBase(object):
         '''
         plugin = plugin.replace('-', '_')
         names = [
-            '%s%s%s' % (namespace, '' if namespace[-1] == '_' else '.', plugin)
-            if namespace else
-            plugin
-            for namespace in self.namespaces
+            name
+            for ns in self.namespaces
+            for name in (
+                '%s%s' % (ns, plugin),
+                '%s.%s' % (ns.rstrip('.'), plugin),
+                )
             ]
-
-        for name in names:
-            if name in sys.modules:
-                return sys.modules[name]
-
+        names = sorted(frozenset(names), key=names.index)
         for name in names:
             module = get_module(name)
             if module:
                 return module
-
         raise PluginNotFoundError(
             'No plugin module %r found, tried %r' % (plugin, names),
             plugin, names)
@@ -399,17 +374,18 @@ class WidgetPluginManager(PluginManagerBase):
         '''
         for filter, dynamic, cwidget in self._widgets:
             try:
-                if file and filter and not filter(file):
+                if (
+                  (file and filter and not filter(file)) or
+                  (place and place != cwidget.place)
+                  ):
                     continue
             except BaseException as e:
-                # Exception is handled  as this method execution is deffered,
-                # making hard to debug for plugin developers.
+                # Exception is catch as this execution is deferred,
+                # making debugging harder for plugin developers.
                 warnings.warn(
                     'Plugin action filtering failed with error: %s' % e,
                     RuntimeWarning
                     )
-                continue
-            if place and place != cwidget.place:
                 continue
             if file and dynamic:
                 cwidget = self._resolve_widget(file, cwidget)

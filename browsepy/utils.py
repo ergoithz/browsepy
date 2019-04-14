@@ -6,6 +6,7 @@ import os.path
 import re
 import random
 import functools
+import collections
 
 import flask
 
@@ -42,14 +43,13 @@ def get_module(name):
     try:
         __import__(name)
         return sys.modules[name]
-    except (ImportError, KeyError) as error:
-        if isinstance(error, ImportError):
-            message = error.args[0] if error.args else ''
-            words = frozenset(re_words.findall(message))
-            parts = name.split('.')
-            for i in range(len(parts) - 1, -1, -1):
-                if '.'.join(parts[i:]) in words:
-                    return None
+    except ImportError as error:
+        message = error.args[0] if error.args else ''
+        words = frozenset(re_words.findall(message))
+        parts = name.split('.')
+        for i in range(len(parts) - 1, -1, -1):
+            if '.'.join(parts[i:]) in words:
+                return None
         raise
 
 
@@ -119,3 +119,22 @@ def clear_flask_context():
     '''
     clear_localstack(flask._app_ctx_stack)
     clear_localstack(flask._request_ctx_stack)
+
+
+def defaultsnamedtuple(name, fields, defaults=None):
+    '''
+    Generate namedtuple with default values.
+
+    :param name: name
+    :param fields: iterable with field names
+    :param defaults: iterable or mapping with field defaults
+    :returns: defaultdict with given fields and given defaults
+    :rtype: collections.defaultdict
+    '''
+    nt = collections.namedtuple(name, fields)
+    nt.__new__.__defaults__ = (None, ) * len(nt._fields)
+    if isinstance(defaults, collections.Mapping):
+        nt.__new__.__defaults__ = tuple(nt(**defaults))
+    elif defaults:
+        nt.__new__.__defaults__ = tuple(nt(*defaults))
+    return nt
