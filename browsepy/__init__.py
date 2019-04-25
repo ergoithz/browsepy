@@ -16,7 +16,7 @@ from werkzeug.exceptions import NotFound
 from .appconfig import Flask
 from .manager import PluginManager
 from .file import Node, secure_filename
-from .utils import stream_template
+from .stream import stream_template
 from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
                         InvalidFilenameError, InvalidPathError
 from . import compat
@@ -149,7 +149,7 @@ def sort(property, path):
     return redirect(url_for(".browse", path=directory.urlpath))
 
 
-@app.route("/browse", defaults={"path": ""})
+@app.route('/browse', defaults={'path': ''})
 @app.route('/browse/<path:path>')
 def browse(path):
     sort_property = get_cookie_browse_sorting(path, 'text')

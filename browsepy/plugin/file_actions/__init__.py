@@ -5,7 +5,7 @@ import os.path
 import functools
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
-                  session, current_app
+                  session, current_app, g
 from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
@@ -13,13 +13,15 @@ from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
                           current_restricted_chars, common_path_separators
 from browsepy.compat import re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase
-from browsepy.utils import stream_template, ppath
+from browsepy.utils import ppath
+from browsepy.stream import stream_template
 
 from .exceptions import FileActionsException, \
                         InvalidClipboardItemsError, \
                         InvalidClipboardModeError, \
                         InvalidDirnameError, \
-                        DirectoryCreationError
+                        DirectoryCreationError, \
+                        InvalidClipboardSizeError
 
 from . import utils
 
@@ -140,10 +142,8 @@ def clipboard_paste(path):
     mode = session.get('clipboard:mode')
     clipboard = session.get('clipboard:items', ())
 
-    success, issues, nmode = utils.paste(directory, mode, clipboard)
-    if clipboard and mode != nmode:
-        session['mode'] = nmode
-        mode = nmode
+    g.file_actions_paste = True  # disable exclude function
+    success, issues = utils.paste(directory, mode, clipboard)
 
     if issues:
         raise InvalidClipboardItemsError(
@@ -154,7 +154,8 @@ def clipboard_paste(path):
             )
 
     if mode == 'cut':
-        del session['clipboard:paths']
+        session.pop('clipboard:mode', None)
+        session.pop('clipboard:items', None)
 
     return redirect(url_for('browse', path=directory.urlpath))
 
@@ -162,8 +163,8 @@ def clipboard_paste(path):
 @actions.route('/clipboard/clear', defaults={'path': ''})
 @actions.route('/clipboard/clear/<path:path>')
 def clipboard_clear(path):
-    if 'clipboard:paths' in session:
-        del session['clipboard:paths']
+    session.pop('clipboard:mode', None)
+    session.pop('clipboard:items', None)
     return redirect(url_for('browse', path=path))
 
 
@@ -172,8 +173,8 @@ def clipboard_error(e):
     file = Node(e.path) if hasattr(e, 'path') else None
     issues = getattr(e, 'issues', ())
 
-    if session.get('clipboard:items'):
-        clipboard = session['clipboard:mode']
+    clipboard = session.get('clipboard:items')
+    if clipboard and issues:
         for issue in issues:
             if isinstance(issue.error, FileNotFoundError):
                 path = issue.item.urlpath
@@ -196,9 +197,10 @@ def clipboard_error(e):
 
 def shrink_session(data, last):
     if last:
-        # TODO: add warning message
-        del data['clipboard:items']
-        del data['clipboard:mode']
+        raise InvalidClipboardSizeError(
+            mode=data.pop('clipboard:mode', None),
+            clipboard=data.pop('clipboard:items', None),
+            )
     return data
 
 
@@ -216,7 +218,8 @@ def detect_selection(directory):
 
 
 def excluded_clipboard(manager, path):
-    if session.get('clipboard:mode') == 'cut':
+    if not getattr(g, 'file_actions_paste', False) and \
+       session.get('clipboard:mode') == 'cut':
         base = manager.app.config['DIRECTORY_BASE']
         clipboard = session.get('clipboard:items', ())
         return abspath_to_urlpath(path, base) in clipboard

@@ -6,6 +6,7 @@ import os.path
 import re
 import random
 import functools
+import contextlib
 import collections
 
 import flask
@@ -31,6 +32,15 @@ def ppath(*args, **kwargs):
     return os.path.join(os.path.dirname(path), *args)
 
 
+@contextlib.contextmanager
+def dummy_context():
+    '''
+    Context manager which does nothing besides exposing the context
+    manger interface
+    '''
+    yield
+
+
 def get_module(name):
     '''
     Get module object by name.
@@ -47,7 +57,7 @@ def get_module(name):
         message = error.args[0] if error.args else ''
         words = frozenset(re_words.findall(message))
         parts = name.split('.')
-        for i in range(len(parts) - 1, -1, -1):
+        for i in range(len(parts) - 1):
             if '.'.join(parts[i:]) in words:
                 return None
         raise
@@ -76,23 +86,6 @@ def solve_local(context_local):
     if callable(getattr(context_local, '_get_current_object', None)):
         return context_local._get_current_object()
     return context_local
-
-
-def stream_template(template_name, **context):
-    '''
-    Some templates can be huge, this function returns an streaming response,
-    sending the content in chunks and preventing from timeout.
-
-    :param template_name: template
-    :param **context: parameters for templates.
-    :yields: HTML strings
-    :rtype: Iterator of str
-    '''
-    app = solve_local(context.get('current_app') or flask.current_app)
-    app.update_template_context(context)
-    template = app.jinja_env.get_template(template_name)
-    stream = template.generate(context)
-    return flask.Response(flask.stream_with_context(stream))
 
 
 def clear_localstack(stack):

@@ -9,8 +9,10 @@ import string
 import random
 import datetime
 import logging
+import functools
 
-from flask import current_app, send_from_directory
+import flask
+
 from werkzeug.utils import cached_property
 
 from . import compat
@@ -273,7 +275,7 @@ class Node(object):
         :param **defaults: initial property values
         '''
         self.path = compat.fsdecode(path) if path else None
-        self.app = utils.solve_local(app or current_app)
+        self.app = utils.solve_local(app or flask.current_app)
         self.__dict__.update(defaults)  # only for attr and cached_property
 
     def __repr__(self):
@@ -308,7 +310,7 @@ class Node(object):
         :return: file object pointing to path
         :rtype: File
         '''
-        app = utils.solve_local(app or current_app)
+        app = utils.solve_local(app or flask.current_app)
         base = app.config.get('DIRECTORY_BASE', path)
         path = urlpath_to_abspath(path, base)
         if not cls.generic:
@@ -469,7 +471,7 @@ class File(Node):
         :rtype: flask.Response
         '''
         directory, name = os.path.split(self.path)
-        return send_from_directory(directory, name, as_attachment=True)
+        return flask.send_from_directory(directory, name, as_attachment=True)
 
 
 @Node.register_directory_class
@@ -650,10 +652,13 @@ class Directory(Node):
         stream = self.stream_class(
             self.path,
             self.app.config.get('DIRECTORY_TAR_BUFFSIZE', 10240),
-            self.plugin_manager.check_excluded,
+            functools.partial(
+                self.plugin_manager.check_excluded,
+                request=utils.solve_local(flask.request),
+                )
             )
         return self.app.response_class(
-            stream,
+            flask.stream_with_context(stream),
             direct_passthrough=True,
             headers=Headers(
                 content_type=(

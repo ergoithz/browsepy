@@ -8,20 +8,23 @@ import functools
 from browsepy.file import Node
 from browsepy.compat import map
 
-from .exceptions import InvalidClipboardModeError
+from .exceptions import InvalidClipboardModeError, InvalidEmptyClipboardError
 
 
 def copy(target, node, join_fnc=os.path.join):
     if node.is_excluded:
         raise OSError(2, os.strerror(2))
+
     dest = join_fnc(
         target.path,
         target.choose_filename(node.name)
         )
+
     if node.is_directory:
         shutil.copytree(node.path, dest)
     else:
         shutil.copy2(node.path, dest)
+
     return dest
 
 
@@ -53,12 +56,19 @@ def paste(target, mode, clipboard):
             mode=mode,
             clipboard=clipboard,
             )
+
+    if not clipboard:
+        raise InvalidEmptyClipboardError(
+            path=target.path,
+            mode=mode,
+            clipboard=clipboard,
+            )
+
     success = []
     issues = []
-    mode = 'paste'  # deactivates excluded_clipboard fnc
     for node in map(Node.from_urlpath, clipboard):
         try:
             success.append(paste_fnc(node))
         except BaseException as e:
             issues.append((node, e))
-    return success, issues, mode
+    return success, issues

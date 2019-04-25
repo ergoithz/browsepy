@@ -7,7 +7,7 @@
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "python.formatting.provider": "yapf",
-    "python.unitTest.unittestEnabled": true,
+    "python.testing.unittestEnabled": true,
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
     "python.linting.pep8Enabled": true,

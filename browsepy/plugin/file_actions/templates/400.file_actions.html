@@ -48,9 +48,9 @@
       {%- endset %}
     {% elif error.code == 'clipboard-invalid-size' %}
       {% set description -%}
-        <h2>Clipboard size limit exceeded</h2>
-        <p>Clipboard became too big to be effectively stored in your browser cookies.</p>
-        <p>Please try again with fewer items.</p>
+        <h2>Session size limit exceeded, clipboard lost.</h2>
+        <p>Clipboard became too big to be stored in your browser cookies.</p>
+        <p>Please try again with fewer items and avoid other operations in the process.</p>
       {%- endset %}
     {% else %}
       {% set description %}

@@ -342,6 +342,9 @@ class TestAction(unittest.TestCase):
             response = client.get('/file-actions/selection/nowhere')
             self.assertEqual(response.status_code, 404)
 
+            response = client.post('/file-actions/selection', data={})
+            self.assertEqual(response.status_code, 400)
+
     def test_paste(self):
         files = ['a', 'b', 'c']
         self.touch('a')
@@ -393,27 +396,31 @@ class TestAction(unittest.TestCase):
 
         with self.app.test_client() as client:
             with client.session_transaction() as session:
-                session['clipboard:mode'] = 'wrong-mode'
                 session['clipboard:items'] = ['whatever']
+                session['clipboard:mode'] = 'wrong-mode'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
             with client.session_transaction() as session:
+                session['clipboard:items'] = ['whatever']
                 session['clipboard:mode'] = 'cut'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 302)  # same location
 
             with client.session_transaction() as session:
+                session['clipboard:items'] = ['whatever']
                 session['clipboard:mode'] = 'cut'
             response = client.get('/file-actions/clipboard/paste/target')
             self.assertEqual(response.status_code, 400)
 
             with client.session_transaction() as session:
+                session['clipboard:items'] = ['whatever']
                 session['clipboard:mode'] = 'copy'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
             with client.session_transaction() as session:
+                session['clipboard:items'] = ['whatever']
                 session['clipboard:mode'] = 'copy'
             response = client.get('/file-actions/clipboard/paste/target')
             self.assertEqual(response.status_code, 400)
@@ -421,11 +428,13 @@ class TestAction(unittest.TestCase):
             self.app.config['EXCLUDE_FNC'] = lambda n: n.endswith('whatever')
 
             with client.session_transaction() as session:
+                session['clipboard:items'] = ['whatever']
                 session['clipboard:mode'] = 'cut'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)
 
             with client.session_transaction() as session:
+                session['clipboard:items'] = ['whatever']
                 session['clipboard:mode'] = 'copy'
             response = client.get('/file-actions/clipboard/paste')
             self.assertEqual(response.status_code, 400)

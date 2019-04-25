@@ -7,15 +7,17 @@ import functools
 import warnings
 import collections
 
-from flask import current_app
-from werkzeug.utils import cached_property
+import flask
 
+from werkzeug.utils import cached_property
 from cookieman import CookieMan
 
 from . import mimetype
 from . import compat
+from . import utils
+
 from .compat import deprecated, usedoc
-from .utils import get_module, defaultsnamedtuple
+from .utils import defaultsnamedtuple
 from .exceptions import PluginNotFoundError, InvalidArgumentError, \
                         WidgetParameterException
 
@@ -31,7 +33,7 @@ class PluginManagerBase(object):
         '''
         List of plugin namespaces taken from app config.
         '''
-        return self.app.config['PLUGIN_NAMESPACES'] if self.app else []
+        return self.app.config.get('PLUGIN_NAMESPACES', []) if self.app else []
 
     def __init__(self, app=None):
         '''
@@ -112,7 +114,7 @@ class PluginManagerBase(object):
             except ImportError:
                 pass
 
-    def _iter_plugin_modules(self):
+    def _iter_plugin_modules(self, get_module_fnc=utils.get_module):
         '''
         Iterate plugin modules, yielding both full qualified name and
         short plugin name as tuple.
@@ -120,13 +122,14 @@ class PluginManagerBase(object):
         nameset = set()
         shortset = set()
         filters = self.plugin_filters
-        for prefix in self.namespaces:
-            for name in (self._iter_submodules(prefix)
-                         if '.' in prefix else
-                         self._iter_modules(prefix)
-                         if prefix else
-                         ()):
-                module = get_module(name) if name not in nameset else None
+        for prefix in filter(None, self.namespaces):
+            name_iter_fnc = (
+                self._iter_submodules
+                if '.' in prefix else
+                self._iter_modules
+                )
+            for name in name_iter_fnc(prefix):
+                module = get_module_fnc(name) if name not in nameset else None
                 if module and any(f(module) for f in filters):
                     short = name[len(prefix):].lstrip('.').replace('_', '-')
                     if short in shortset or '.' in short or not short:
@@ -142,7 +145,7 @@ class PluginManagerBase(object):
         '''
         return list(self._iter_plugin_modules())
 
-    def import_plugin(self, plugin):
+    def import_plugin(self, plugin, get_module_fnc=utils.get_module):
         '''
         Import plugin by given name, looking at :attr:`namespaces`.
 
@@ -161,7 +164,7 @@ class PluginManagerBase(object):
             ]
         names = sorted(frozenset(names), key=names.index)
         for name in names:
-            module = get_module(name)
+            module = get_module_fnc(name)
             if module:
                 return module
         raise PluginNotFoundError(
@@ -254,16 +257,19 @@ class ExcludePluginManager(PluginManagerBase):
         '''
         self._exclude_functions.add(exclude_fnc)
 
-    def check_excluded(self, path):
+    def check_excluded(self, path, request=flask.request):
         '''
         Check if given path is excluded.
         '''
-        exclude_fnc = self.app.config.get('EXCLUDE_FNC')
-        if exclude_fnc and exclude_fnc(path):
-            return True
-        for fnc in self._exclude_functions:
-            if fnc(path):
+        if not request:
+            request = utils.dummy_context()
+        with request:
+            exclude_fnc = self.app.config.get('EXCLUDE_FNC')
+            if exclude_fnc and exclude_fnc(path):
                 return True
+            for fnc in self._exclude_functions:
+                if fnc(path):
+                    return True
         return False
 
     def clear(self):
@@ -712,7 +718,7 @@ class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
 
     def _widget_attrgetter(self, widget, name):
         def handler(f):
-            app = f.app or self.app or current_app
+            app = f.app or self.app or flask.current_app
             with app.app_context():
                 return getattr(widget.for_file(f), name)
         return handler

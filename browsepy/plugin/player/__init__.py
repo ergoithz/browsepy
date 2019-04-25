@@ -5,7 +5,8 @@ from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.file import OutsideDirectoryBase
-from browsepy.utils import stream_template, ppath
+from browsepy.utils import ppath
+from browsepy.stream import stream_template
 
 from .playable import PlayableFile, PlayableDirectory, \
                       PlayListFile, detect_playable_mimetype
