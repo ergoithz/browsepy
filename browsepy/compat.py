@@ -22,9 +22,9 @@ except ImportError:
     import importlib_resources as res  # noqa
 
 try:
-    from os import scandir, walk  # python 3.5+
+    from os import scandir as _scandir, walk  # python 3.5+
 except ImportError:
-    from scandir import scandir, walk  # noqa
+    from scandir import scandir as _scandir, walk  # noqa
 
 try:
     from shutil import get_terminal_size  # python 3.3+
@@ -65,6 +65,22 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
                 pass
         super(HelpFormatter, self).__init__(
             prog, indent_increment, max_help_position, width)
+
+
+@contextlib.contextmanager
+def scandir(path):
+    '''
+    Backwards-compatible scandir context manager
+
+    :param path: path to iterate
+    :type path: str
+    '''
+    files = _scandir(path)
+    try:
+        yield files
+    finally:
+        if callable(getattr(files, 'close', None)):
+            files.close()
 
 
 def isexec(path):

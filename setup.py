@@ -60,9 +60,11 @@ setup(
     install_requires=[
         'flask',
         'unicategories',
-        'scandir',
-        'importlib_resources',
-        'backports.shutil_get_terminal_size'
+        'cookieman',
+        'backports.shutil_get_terminal_size ; python_version<\'3.3\'',
+        'scandir ; python_version<\'3.5\'',
+        'pathlib2 ; python_version<\'3.5\'',
+        'importlib_resources ; python_version<\'3.7\'',
         ],
     extras_require={
         'tests': ['beautifulsoup4', 'pycodestyle'],

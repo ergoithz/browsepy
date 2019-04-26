@@ -82,9 +82,9 @@ class PluginManagerBase(object):
         '''
         Iterate thru all root modules containing given prefix.
         '''
-        for info in pkgutil.iter_modules():
-            if info.name.startswith(prefix):
-                yield info.name
+        for finder, name, ispkg in pkgutil.iter_modules():
+            if name.startswith(prefix):
+                yield name
 
     def _content_import_name(self, module, item, prefix):
         '''

@@ -729,8 +729,8 @@ class Directory(Node):
         directory_class = self.directory_class
         file_class = self.file_class
         exclude_fnc = self.plugin_manager.check_excluded
-        files = compat.scandir(self.path)
-        try:
+
+        with compat.scandir(self.path) as files:
             for entry in files:
                 if exclude_fnc(entry.path):
                     continue
@@ -750,9 +750,6 @@ class Directory(Node):
                         )
                 except OSError as e:
                     logger.exception(e)
-        finally:
-            if callable(getattr(files, 'close', None)):
-                files.close()
 
     def listdir(self, sortkey=None, reverse=False):
         '''

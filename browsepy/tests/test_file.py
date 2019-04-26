@@ -23,11 +23,12 @@ class TestFile(unittest.TestCase):
         self.workbench = tempfile.mkdtemp()
 
     def clear_workbench(self):
-        for entry in browsepy.compat.scandir(self.workbench):
-            if entry.is_dir():
-                shutil.rmtree(entry.path)
-            else:
-                os.remove(entry.path)
+        with browsepy.compat.scandir(self.workbench) as files:
+            for entry in files:
+                if entry.is_dir():
+                    shutil.rmtree(entry.path)
+                else:
+                    os.remove(entry.path)
 
     def tearDown(self):
         shutil.rmtree(self.workbench)
