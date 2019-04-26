@@ -25,9 +25,9 @@ browsepy
   :target: https://pypi.python.org/pypi/browsepy/
   :alt: Version: 0.5.6
 
-.. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.3%2B-FFC100.svg?style=flat-square
+.. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.4%2B-FFC100.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
-  :alt: Python 2.7+, 3.3+
+  :alt: Python 2.7+, 3.4+
 
 The simple web file browser.
 
@@ -56,6 +56,15 @@ Features
 * **Optional upload** for directories under given path.
 * **Player** audio player plugin is provided (without transcoding).
 
+New in 0.6
+----------
+
+* Drop Python 3.3.
+* Plugin discovery.
+* Plugin file-actions providing copy/cut/paste and directory creation.
+* Smarter cookie sessions with session shrinking mechanisms available
+  for plugin implementors.
+
 New in 0.5
 ----------
 
@@ -83,9 +92,9 @@ New in 0.5
 Install
 -------
 
-*Note*: with some legacy Python versions shipping outdated libraries, all
-`pip`, `setuptools` and `distutils` libraries should be upgraded with
-`pip install --upgrade pip setuptools distutils`.
+*Note*: with some legacy Python versions shipping outdated libraries, both
+`pip` and `setuptools` libraries should be upgraded with
+`pip install --upgrade pip setuptools`.
 
 It's on `pypi` so...
 
@@ -156,7 +165,7 @@ plugins (loaded with `plugin` argument) could add extra arguments to this list.
   optional arguments:
     -h, --help           show this help message and exit
     --help-all           show help for all available plugins and exit
-    --directory PATH     serving directory (default: /home/work/Desarrollo/browsepy)
+    --directory PATH     serving directory (default: ...)
     --initial PATH       default directory (default: same as --directory)
     --removable PATH     base directory allowing remove (default: None)
     --upload PATH        base directory allowing upload (default: None)
@@ -166,8 +175,8 @@ plugins (loaded with `plugin` argument) could add extra arguments to this list.
     --plugin MODULE      load plugin module (multiple)
 
   available plugins:
-    file-actions, browsepy.plugin.file_actions
     player, browsepy.plugin.player
+    file-actions, browsepy.plugin.file_actions
 
 
 Using as library
