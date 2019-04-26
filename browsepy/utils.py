@@ -12,7 +12,7 @@ import collections
 import flask
 
 
-re_words = re.compile(r'\b((?:[._]+|\w)+)\b')
+re_words = re.compile(r'\b((?:[._]+|\w+)+)\b')
 
 
 def ppath(*args, **kwargs):
@@ -57,10 +57,8 @@ def get_module(name):
         message = error.args[0] if error.args else ''
         words = frozenset(re_words.findall(message))
         parts = name.split('.')
-        for i in range(len(parts) - 1):
-            if '.'.join(parts[i:]) in words:
-                return None
-        raise
+        if not any('.'.join(parts[i:]) in words for i in range(len(parts))):
+            raise
 
 
 def random_string(size, sample=tuple(map(chr, range(256)))):
