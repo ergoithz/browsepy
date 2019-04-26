@@ -23,7 +23,7 @@ matrix:
 install:
   - |
     if [ "$legacy" != "yes" ]; then
-      pip install --upgrade pip setuptools
+      pip install --upgrade pip setuptools distutils
     fi
   - pip install -r requirements/ci.txt
   - pip install .

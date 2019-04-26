@@ -83,9 +83,9 @@ New in 0.5
 Install
 -------
 
-*Note*: with some legacy Python versions shiping outdated libraries, both
-`pip` and `setuptools` library should be upgraded with
-`pip install --upgrade pip setuptools`.
+*Note*: with some legacy Python versions shipping outdated libraries, all
+`pip`, `setuptools` and `distutils` libraries should be upgraded with
+`pip install --upgrade pip setuptools distutils`.
 
 It's on `pypi` so...
 
