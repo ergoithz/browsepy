@@ -83,6 +83,10 @@ New in 0.5
 Install
 -------
 
+*Note*: with some legacy Python versions shiping outdated libraries, both
+`pip` and `setuptools` library should be upgraded with
+`pip install --upgrade pip setuptools`.
+
 It's on `pypi` so...
 
 .. _pypi: https://pypi.python.org/pypi/browsepy/
