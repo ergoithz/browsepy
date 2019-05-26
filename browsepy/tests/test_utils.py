@@ -1,14 +1,13 @@
 # -*- coding: UTF-8 -*-
 
 import sys
-import io
 import os
 import os.path
 import functools
 import unittest
-import tempfile
 
 import browsepy.utils as utils
+import browsepy.compat as compat
 
 
 class TestPPath(unittest.TestCase):
@@ -46,22 +45,19 @@ class TestPPath(unittest.TestCase):
     def test_get_module(self):
         oldpath = sys.path[:]
         try:
-            with tempfile.TemporaryDirectory() as base:
-                ppath = functools.partial(os.path.join, base)
+            with compat.mkdtemp() as base:
+                p = functools.partial(os.path.join, base)
                 sys.path[:] = [base]
 
-                p = ppath('_test_zderr.py')
-                with io.open(p, 'w', encoding='utf8') as f:
+                with open(p('_test_zderr.py'), 'w') as f:
                     f.write('\na = 1 / 0\n')
                 with self.assertRaises(ZeroDivisionError):
                     self.module.get_module('_test_zderr')
 
-                p = ppath('_test_importerr.py')
-                with io.open(p, 'w', encoding='utf8') as f:
+                with open(p('_test_importerr.py'), 'w') as f:
                     f.write(
                         '\n'
-                        'import os\n'
-                        'import _this_module_should_not_exist_ as m\n'
+                        'import browsepy.tests.test_utils.failing\n'
                         'm.something()\n'
                         )
                 with self.assertRaises(ImportError):

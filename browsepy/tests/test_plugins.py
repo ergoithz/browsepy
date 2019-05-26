@@ -3,15 +3,14 @@
 import sys
 import os
 import os.path
-import io
 import unittest
-import tempfile
 
 import flask
 
 import browsepy
 import browsepy.manager
 import browsepy.utils as utils
+import browsepy.compat as compat
 import browsepy.exceptions as exceptions
 
 from browsepy.plugin.player.tests import *  # noqa
@@ -126,14 +125,14 @@ class TestPlugins(unittest.TestCase):
             'browsepy_testing_',
             )
 
-        with tempfile.TemporaryDirectory() as base:
+        with compat.mkdtemp() as base:
             names = (
                 'browsepy_test_another_plugin',
                 'browsepy_testing_another_plugin',
                 )
             for name in names:
                 path = os.path.join(base, name) + '.py'
-                with io.open(path, 'w', encoding='utf8') as f:
+                with open(path, 'w') as f:
                     f.write(
                         '\n'
                         'def register_plugin(manager):\n'

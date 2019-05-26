@@ -3,16 +3,12 @@
 import sys
 import os
 import os.path
-import re
 import random
 import functools
 import contextlib
 import collections
 
 import flask
-
-
-re_words = re.compile(r'\b((?:[._]+|\w+)+)\b')
 
 
 def ppath(*args, **kwargs):
@@ -50,15 +46,8 @@ def get_module(name):
     :return: module or None if not found
     :rtype: module or None
     '''
-    try:
-        __import__(name)
-        return sys.modules[name]
-    except ImportError as error:
-        message = error.args[0] if error.args else ''
-        words = frozenset(re_words.findall(message))
-        parts = name.split('.')
-        if not any('.'.join(parts[i:]) in words for i in range(len(parts))):
-            raise
+    __import__(name)
+    return sys.modules.get(name, None)
 
 
 def random_string(size, sample=tuple(map(chr, range(256)))):

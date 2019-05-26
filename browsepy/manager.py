@@ -129,14 +129,24 @@ class PluginManagerBase(object):
                 self._iter_modules
                 )
             for name in name_iter_fnc(prefix):
-                module = get_module_fnc(name) if name not in nameset else None
-                if module and any(f(module) for f in filters):
-                    short = name[len(prefix):].lstrip('.').replace('_', '-')
-                    if short in shortset or '.' in short or not short:
-                        short = None
-                    yield name, short
-                    nameset.add(name)
-                    shortset.add(short)
+                if name in nameset:
+                    continue
+
+                try:
+                    module = get_module_fnc(name)
+                except ImportError:
+                    continue
+
+                if not any(f(module) for f in filters):
+                    continue
+
+                short = name[len(prefix):].lstrip('.').replace('_', '-')
+                yield (
+                    name,
+                    None if short in shortset or '.' in short else short
+                    )
+                nameset.add(name)
+                shortset.add(short)
 
     @cached_property
     def available_plugins(self):
@@ -164,9 +174,10 @@ class PluginManagerBase(object):
             ]
         names = sorted(frozenset(names), key=names.index)
         for name in names:
-            module = get_module_fnc(name)
-            if module:
-                return module
+            try:
+                return get_module_fnc(name)
+            except ImportError:
+                pass
         raise PluginNotFoundError(
             'No plugin module %r found, tried %r' % (plugin, names),
             plugin, names)

@@ -4,6 +4,8 @@ import os
 import os.path
 import sys
 import abc
+import shutil
+import tempfile
 import itertools
 import functools
 import contextlib
@@ -70,7 +72,7 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
 @contextlib.contextmanager
 def scandir(path):
     '''
-    Backwards-compatible scandir context manager
+    Backwards-compatible :func:`scandir.scandir` context manager
 
     :param path: path to iterate
     :type path: str
@@ -81,6 +83,21 @@ def scandir(path):
     finally:
         if callable(getattr(files, 'close', None)):
             files.close()
+
+
+@contextlib.contextmanager
+def mkdtemp(suffix='', prefix='', dir=None):
+    '''
+    Backwards-compatible :class:`tmpfile.TemporaryDirectory` context manager.
+
+    :param path: path to iterate
+    :type path: str
+    '''
+    path = tempfile.mkdtemp(suffix, prefix, dir)
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path)
 
 
 def isexec(path):

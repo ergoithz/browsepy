@@ -9,10 +9,10 @@ matrix:
   - python: "2.7"
   - python: "pypy"
   - python: "pypy3"
-  - python: "3.4"
   - python: "3.5"
   - python: "3.6"
   - python: "3.7"
+    dist: xenial
     env:
     - eslint=yes
     - sphinx=yes
@@ -36,6 +36,7 @@ install:
     fi
 
 script:
+  - flake8 browsepy
   - coverage run setup.py test
   - coverage report
   - |

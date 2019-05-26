@@ -8,7 +8,6 @@ import functools
 
 import flask
 
-from . import utils
 from . import compat
 
 
@@ -90,22 +89,29 @@ class BlockingPipe(object):
         Closes, so any blocked and future writes or retrieves will raise
         :attr:`abort_exception` instances.
         '''
+
+        def blocked():
+            '''
+            NOOP lock release function for non-owned locks.
+            '''
+            pass
+
         if not self.closed:
             self.closed = True
 
-            # release locks
-            reading = not self._rlock.acquire(False)
-            writing = not self._wlock.acquire(False)
+            releasing = writing, reading = [
+                lock.release if lock.acquire(False) else blocked
+                for lock in (self._wlock, self._rlock)
+                ]
 
-            if not reading:
-                if writing:
-                    self._pipe.get()
-                self._rlock.release()
+            if writing is blocked and reading is not blocked:
+                self._pipe.get()
 
-            if not writing:
-                if reading:
-                    self._pipe.put(None)
-                self._wlock.release()
+            if reading is blocked and writing is not blocked:
+                self._pipe.put(None)
+
+            for release in releasing:
+                release()
 
 
 class TarFileStream(compat.Iterator):
@@ -200,11 +206,11 @@ class TarFileStream(compat.Iterator):
 
         try:
             tarfile.add(self.path, "", filter=infofilter if exclude else None)
-            tarfile.close()  # force stream flush
+            tarfile.close()  # force stream flush (may raise)
         except self.abort_exception:
             # expected exception when pipe is closed prematurely
             tarfile.close()  # free fd
-        else:
+        finally:
             self.close()
 
     def __next__(self):
@@ -248,7 +254,7 @@ def stream_template(template_name, **context):
     :yields: HTML strings
     :rtype: Iterator of str
     '''
-    app = utils.solve_local(context.get('current_app') or flask.current_app)
+    app = context.get('current_app', flask.current_app)
     app.update_template_context(context)
     template = app.jinja_env.get_template(template_name)
     stream = template.generate(context)
