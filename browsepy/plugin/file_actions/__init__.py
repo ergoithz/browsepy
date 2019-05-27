@@ -1,7 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-import os
-import os.path
 import functools
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
@@ -9,8 +7,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, \
 from werkzeug.exceptions import NotFound
 
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
-from browsepy.file import Node, abspath_to_urlpath, secure_filename, \
-                          current_restricted_chars, common_path_separators
+from browsepy.file import Node, abspath_to_urlpath, current_restricted_chars, \
+                          common_path_separators
 from browsepy.compat import re_escape, FileNotFoundError
 from browsepy.exceptions import OutsideDirectoryBase
 from browsepy.utils import ppath
@@ -19,8 +17,6 @@ from browsepy.stream import stream_template
 from .exceptions import FileActionsException, \
                         InvalidClipboardItemsError, \
                         InvalidClipboardModeError, \
-                        InvalidDirnameError, \
-                        DirectoryCreationError, \
                         InvalidClipboardSizeError
 
 from . import utils
@@ -51,30 +47,15 @@ def create_directory(path):
     if not directory.is_directory or not directory.can_upload:
         return NotFound()
 
-    if request.method == 'GET':
-        return render_template(
-            'create_directory.file_actions.html',
-            file=directory,
-            re_basename=re_basename,
-            )
+    if request.method == 'POST':
+        utils.mkdir(directory.path, request.form['name'])
+        return redirect(url_for('browse', path=directory.urlpath))
 
-    basename = request.form['name']
-    if secure_filename(basename) != basename or not basename:
-        raise InvalidDirnameError(
-            path=directory.path,
-            name=basename,
-            )
-
-    try:
-        os.mkdir(os.path.join(directory.path, basename))
-    except BaseException as e:
-        raise DirectoryCreationError.from_exception(
-            e,
-            path=directory.path,
-            name=basename
-            )
-
-    return redirect(url_for('browse', path=directory.urlpath))
+    return render_template(
+        'create_directory.file_actions.html',
+        file=directory,
+        re_basename=re_basename,
+        )
 
 
 @actions.route('/selection', methods=('GET', 'POST'), defaults={'path': ''})
@@ -92,25 +73,23 @@ def selection(path):
         return NotFound()
 
     if request.method == 'POST':
-        action_fmt = 'action-{}'.format
-        mode = None
-        for action in ('cut', 'copy'):
-            if request.form.get(action_fmt(action)):
-                mode = action
-                break
+        mode = (
+            'cut' if request.form.get('action-cut') else
+            'copy' if request.form.get('action-copy') else
+            None
+            )
 
         clipboard = request.form.getlist('path')
 
-        if mode in ('cut', 'copy'):
-            session['clipboard:mode'] = mode
-            session['clipboard:items'] = clipboard
-            return redirect(url_for('browse', path=directory.urlpath))
+        if mode is None:
+            raise InvalidClipboardModeError(
+                path=directory.path,
+                clipboard=clipboard,
+                )
 
-        raise InvalidClipboardModeError(
-            path=directory.path,
-            mode=mode,
-            clipboard=clipboard,
-            )
+        session['clipboard:mode'] = mode
+        session['clipboard:items'] = clipboard
+        return redirect(url_for('browse', path=directory.urlpath))
 
     return stream_template(
         'selection.file_actions.html',

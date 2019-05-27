@@ -138,7 +138,7 @@ class InvalidClipboardModeError(ClipboardException):
     :property clipboard: :class Clipboard: instance
     '''
     code = 'clipboard-invalid-mode'
-    template = 'Clipboard mode {0.path!r} is not valid.'
+    template = 'Clipboard mode {0.mode!r} is not valid.'
 
     def __init__(self, message=None, path=None, mode=None, clipboard=None):
         supa = super(InvalidClipboardModeError, self)

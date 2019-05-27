@@ -5,10 +5,13 @@ import os.path
 import shutil
 import functools
 
-from browsepy.file import Node
+from browsepy.file import Node, secure_filename
 from browsepy.compat import map
 
-from .exceptions import InvalidClipboardModeError, InvalidEmptyClipboardError
+from .exceptions import InvalidClipboardModeError, \
+                        InvalidEmptyClipboardError,\
+                        InvalidDirnameError, \
+                        DirectoryCreationError
 
 
 def copy(target, node, join_fnc=os.path.join):
@@ -72,3 +75,13 @@ def paste(target, mode, clipboard):
         except BaseException as e:
             issues.append((node, e))
     return success, issues
+
+
+def mkdir(path, name):
+    if secure_filename(name) != name or not name:
+        raise InvalidDirnameError(path=path, name=name)
+
+    try:
+        os.mkdir(os.path.join(path, name))
+    except BaseException as e:
+        raise DirectoryCreationError.from_exception(e, path=path, name=name)
