@@ -536,6 +536,23 @@ class Directory(Node):
                 endpoint='browse'
                 )
             ]
+        if self.can_download:
+            widgets.extend((
+                self.plugin_manager.create_widget(
+                    'entry-actions',
+                    'button',
+                    file=self,
+                    css='download',
+                    endpoint='download_directory'
+                    ),
+                self.plugin_manager.create_widget(
+                    'header',
+                    'button',
+                    file=self,
+                    text='Download all',
+                    endpoint='download_directory'
+                    ),
+                ))
         if self.can_upload:
             widgets.extend((
                 self.plugin_manager.create_widget(
@@ -559,23 +576,6 @@ class Directory(Node):
                     text='Upload',
                     endpoint='upload'
                     )
-                ))
-        if self.can_download:
-            widgets.extend((
-                self.plugin_manager.create_widget(
-                    'entry-actions',
-                    'button',
-                    file=self,
-                    css='download',
-                    endpoint='download_directory'
-                    ),
-                self.plugin_manager.create_widget(
-                    'header',
-                    'button',
-                    file=self,
-                    text='Download all',
-                    endpoint='download_directory'
-                    ),
                 ))
         return widgets + super(Directory, self).widgets
 

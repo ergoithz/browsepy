@@ -48,8 +48,9 @@ def create_directory(path):
         return NotFound()
 
     if request.method == 'POST':
-        utils.mkdir(directory.path, request.form['name'])
-        return redirect(url_for('browse', path=directory.urlpath))
+        path = utils.mkdir(directory.path, request.form['name'])
+        base = current_app.config['DIRECTORY_BASE']
+        return redirect(url_for('browse', path=abspath_to_urlpath(path, base)))
 
     return render_template(
         'create_directory.file_actions.html',
@@ -196,10 +197,11 @@ def detect_selection(directory):
             current_app.config.get('DIRECTORY_UPLOAD')
 
 
-def excluded_clipboard(manager, path):
+def excluded_clipboard(app, path):
+    # TODO: get this working outside requests (for tarfile streaming)
     if not getattr(g, 'file_actions_paste', False) and \
        session.get('clipboard:mode') == 'cut':
-        base = manager.app.config['DIRECTORY_BASE']
+        base = app.config['DIRECTORY_BASE']
         clipboard = session.get('clipboard:items', ())
         return abspath_to_urlpath(path, base) in clipboard
     return False
@@ -213,7 +215,7 @@ def register_plugin(manager):
     :type manager: browsepy.manager.PluginManager
     '''
     manager.register_exclude_function(
-        functools.partial(excluded_clipboard, manager)
+        functools.partial(excluded_clipboard, manager.app)
         )
     manager.register_blueprint(actions)
     manager.register_widget(

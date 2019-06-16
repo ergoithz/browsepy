@@ -82,6 +82,8 @@ def mkdir(path, name):
         raise InvalidDirnameError(path=path, name=name)
 
     try:
-        os.mkdir(os.path.join(path, name))
+        path = os.path.join(path, name)
+        os.mkdir(path)
+        return path
     except BaseException as e:
         raise DirectoryCreationError.from_exception(e, path=path, name=name)

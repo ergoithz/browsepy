@@ -271,16 +271,16 @@ class ExcludePluginManager(PluginManagerBase):
     def check_excluded(self, path, request=flask.request):
         '''
         Check if given path is excluded.
+
+        :type path: str
+        :type request: flask.Request
         '''
-        if not request:
-            request = utils.dummy_context()
-        with request:
-            exclude_fnc = self.app.config.get('EXCLUDE_FNC')
-            if exclude_fnc and exclude_fnc(path):
+        exclude_fnc = self.app.config.get('EXCLUDE_FNC')
+        if exclude_fnc and exclude_fnc(path):
+            return True
+        for fnc in self._exclude_functions:
+            if fnc(path):
                 return True
-            for fnc in self._exclude_functions:
-                if fnc(path):
-                    return True
         return False
 
     def clear(self):
