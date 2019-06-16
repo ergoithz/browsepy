@@ -390,15 +390,22 @@ class File(Node):
                 )
             ]
         if self.can_download:
-            widgets.append(
+            widgets.extend((
                 self.plugin_manager.create_widget(
                     'entry-actions',
                     'button',
                     file=self,
                     css='download',
                     endpoint='download_file'
-                    )
-                )
+                    ),
+                self.plugin_manager.create_widget(
+                    'header',
+                    'button',
+                    file=self,
+                    text='Download file',
+                    endpoint='download_file'
+                    ),
+                ))
         return widgets + super(File, self).widgets
 
     @cached_property
@@ -554,15 +561,22 @@ class Directory(Node):
                     )
                 ))
         if self.can_download:
-            widgets.append(
+            widgets.extend((
                 self.plugin_manager.create_widget(
                     'entry-actions',
                     'button',
                     file=self,
                     css='download',
                     endpoint='download_directory'
-                    )
-                )
+                    ),
+                self.plugin_manager.create_widget(
+                    'header',
+                    'button',
+                    file=self,
+                    text='Download all',
+                    endpoint='download_directory'
+                    ),
+                ))
         return widgets + super(Directory, self).widgets
 
     @cached_property

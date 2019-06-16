@@ -71,7 +71,7 @@ class BlockingPipe(object):
         '''
 
         with self._rlock:
-            if self.closed:
+            if self.closed and self._pipe.empty():
                 raise self.abort_exception()
             data = self._pipe.get()
             if data is None:
