@@ -109,7 +109,8 @@ class TarFileStream(compat.Iterator):
         '''
         return self._compress
 
-    def __init__(self, path, buffsize=10240, exclude=None, compress='gzip'):
+    def __init__(self, path, buffsize=10240, exclude=None, compress='gzip',
+                 compresslevel=1):
         '''
         Initialize thread and class (thread is not started until interated.)
         Note that compress parameter will be ignored if buffsize is below 16.
@@ -122,6 +123,8 @@ class TarFileStream(compat.Iterator):
         :type exclude: callable
         :param compress: compression method ('gz', 'bz2', 'xz' or None)
         :type compress: str or None
+        :param compresslevel: compression level [1-9] defaults to 1 (fastest)
+        :type compresslevel: int
         '''
         self.path = path
         self.exclude = exclude

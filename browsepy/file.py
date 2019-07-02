@@ -669,7 +669,9 @@ class Directory(Node):
             functools.partial(
                 self.plugin_manager.check_excluded,
                 request=utils.solve_local(flask.request),
-                )
+                ),
+            self.app.config.get('DIRECTORY_TAR_COMPRESS', 'gzip'),
+            self.app.config.get('DIRECTORY_TAR_COMPRESSLEVEL', 1),
             )
         return self.app.response_class(
             flask.stream_with_context(stream),
