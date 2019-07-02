@@ -105,7 +105,7 @@ It's on `pypi` so...
    pip install browsepy
 
 
-You can get the development version from our `github repository`.
+You can get the same version from our `github repository`.
 
 .. _github repository: https://github.com/ergoithz/browsepy
 
