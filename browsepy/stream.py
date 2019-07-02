@@ -4,7 +4,6 @@ import os
 import os.path
 import tarfile
 import threading
-import functools
 
 import flask
 
@@ -13,105 +12,55 @@ from . import compat
 
 class ByteQueue(compat.Queue):
     '''
-    Small synchronized queue backed with bytearray, with an additional
-    finish method with turns the queue into non-blocking.
+    Small synchronized queue storing bytes, with an additional finish method
+    with turns the queue :method:`get` into non-blocking (returns empty bytes).
 
-    Once bytequeue became finished, all :method:`get` calls return empty bytes,
-    and :method:`put` calls raise an exception.
+    On a finished queue all :method:`put` will raise Full exceptions,
+    regardless of the parameters given.
     '''
     def _init(self, maxsize):
-        self.queue = bytearray()
+        self.queue = []
+        self.bytes = 0
         self.finished = False
+        self.closed = False
 
     def _qsize(self):
-        return -1 if self.finished and not self.queue else len(self.queue)
+        return -1 if self.finished else self.bytes
 
     def _put(self, item):
         if self.finished:
-            raise RuntimeError('PUT operation on finished byte queue')
-        self.queue.extend(item)
+            raise compat.Full
+        self.queue.append(item)
+        self.bytes += len(item)
 
     def _get(self):
-        num = self.maxsize
-        data, self.queue = bytes(self.queue[:num]), bytearray(self.queue[num:])
+        size = self.maxsize
+        data = b''.join(self.queue)
+        data, tail = data[:size], data[size:]
+        self.queue[:] = (tail,)
+        self.bytes = len(tail)
         return data
 
-    def finish(self):
-        if not self.finished:
-            with self.not_full:
-                self.not_full.notify_all()
-
-            with self.not_empty:
-                self.not_empty.notify_all()
-
-            self.finished = True
-
-
-class BlockingPipe(object):
-    '''
-    Minimal pipe class with `write` and `read` blocking methods.
-
-    Due its blocking implementation, this class uses :module:`threading`.
-
-    This class exposes :method:`write` for :class:`tarfile.TarFile`
-    `fileobj` compatibility.
-    '''
-    pipe_class = ByteQueue
-
-    def __init__(self, buffsize=None):
-        self._pipe = self.pipe_class(buffsize)
-        self._raises = None
-
-    def write(self, data):
+    def qsize(self):
         '''
-        Put chunk of data onto pipe.
-        This method blocks if pipe is already full.
-
-        :param data: bytes to write to pipe
-        :type data: bytes
-        :returns: number of bytes written
-        :rtype: int
-        :raises WriteAbort: if already closed or closed while blocking
+        Return the number of bytes in the queue.
         '''
-        if self._raises:
-            raise self._raises
-
-        self._pipe.put(data, timeout=1)
-
-        return len(data)
-
-    def read(self):
-        '''
-        Get chunk of data from pipe.
-        This method blocks if pipe is empty.
-
-        :returns: data chunk
-        :rtype: bytes
-        :raises WriteAbort: if already closed or closed while blocking
-        '''
-        if self._raises:
-            raise self._raises
-        return self._pipe.get()
+        with self.mutex:
+            return self.bytes
 
     def finish(self):
         '''
-        Notify queue that we're finished, so it became non-blocking returning
-        empty bytes.
+        Turn queue into finished mode: :method:`get` becomes non-blocking
+        and returning empty bytes if empty, and :method:`put` raising
+        :class:`queue.Full` exceptions unconditionally.
         '''
-        self._pipe.finish()
+        self.finished = True
 
-    def abort(self, exception):
-        '''
-        Make further writes to raise an exception.
-
-        :param exception: exception to raise on write
-        :type exception: Exception
-        '''
-        self._raises = exception
-        self.finish()
+        with self.not_full:
+            self.not_empty.notify()
 
 
-class StreamError(RuntimeError):
+class WriteAbort(Exception):
     '''
     Exception used internally by :class:`TarFileStream`'s default
     implementation to stop tarfile compression.
@@ -133,8 +82,8 @@ class TarFileStream(compat.Iterator):
     This class uses :module:`threading` for offloading.
     '''
 
-    pipe_class = BlockingPipe
-    abort_exception = StreamError
+    queue_class = ByteQueue
+    abort_exception = WriteAbort
     thread_class = threading.Thread
     tarfile_class = tarfile.open
 
@@ -184,8 +133,9 @@ class TarFileStream(compat.Iterator):
         self._compress = compress if compress and buffsize > 15 else None
         self._mode, self._extension = self.compresion_modes[self._compress]
 
-        self._pipe = self.pipe_class(buffsize)
+        self._queue = self.queue_class(buffsize)
         self._th = self.thread_class(target=self._fill)
+        self._th_exc = None
 
     def _fill(self):
         '''
@@ -205,19 +155,20 @@ class TarFileStream(compat.Iterator):
             return None if exclude(path_join(path, info.name)) else info
 
         tarfile = self.tarfile_class(
-            fileobj=self._pipe,
+            fileobj=self,
             mode='w|{}'.format(self._mode),
             bufsize=self._buffsize,
             encoding='utf-8',
             )
         try:
             tarfile.add(self.path, '', filter=infofilter if exclude else None)
-            tarfile.close()  # force stream flush (may raise)
-            self._pipe.finish()
-        except self.abort_exception:  # probably closed prematurely
-            tarfile.close()  # free fd
+            tarfile.close()
+        except self.abort_exception:
+            tarfile.close()
         except Exception as e:
-            self._pipe.abort(e)
+            self._th_exc = e
+        finally:
+            self._queue.finish()
 
     def __next__(self):
         '''
@@ -228,14 +179,41 @@ class TarFileStream(compat.Iterator):
         :returns: tarfile data as bytes
         :rtype: bytes
         '''
+        if self.closed:
+            raise StopIteration()
+
         if not self._started:
             self._started = True
             self._th.start()
 
-        data = self._pipe.read()
+        data = self._queue.get()
         if not data:
             raise StopIteration()
+
         return data
+
+    def write(self, data):
+        '''
+        Put chunk of data into data queue, used on the tarfile thread.
+
+        This method blocks when pipe is already, applying backpressure to
+        writers.
+
+        :param data: bytes to write to pipe
+        :type data: bytes
+        :returns: number of bytes written
+        :rtype: int
+        :raises WriteAbort: if already closed or closed while blocking
+        '''
+        if self.closed:
+            raise self.abort_exception()
+
+        try:
+            self._queue.put(data)
+        except compat.Full:
+            raise self.abort_exception()
+
+        return len(data)
 
     def close(self):
         '''
@@ -243,9 +221,11 @@ class TarFileStream(compat.Iterator):
         '''
         if not self.closed:
             self.closed = True
-            if self._started:
-                self._pipe.abort(self.abort_exception())
+            self._queue.finish()
+            if self._started and self._th.is_alive():
                 self._th.join()
+            if self._th_exc:
+                raise self._th_exc
 
 
 def stream_template(template_name, **context):
