@@ -79,7 +79,12 @@ class TarFileStream(compat.Iterator):
     Buffsize can be provided, it should be 512 multiple (the tar block size)
     for and will be used as tarfile block size.
 
-    This class uses :module:`threading` for offloading.
+    This class uses :module:`threading` for offloading, so if your exclude
+    function would not have access to any thread-local specific data.
+
+    If your exclude function requires accessing to :data:`flask.app`,
+    :data:`flask.g`, :data:`flask.request` or any other flask contexts,
+    ensure is wrapped with :func:`flask.copy_current_request_context`
     '''
 
     queue_class = ByteQueue
@@ -112,7 +117,8 @@ class TarFileStream(compat.Iterator):
     def __init__(self, path, buffsize=10240, exclude=None, compress='gzip',
                  compresslevel=1):
         '''
-        Initialize thread and class (thread is not started until interated.)
+        Initialize thread and class (thread is not started until interation).
+
         Note that compress parameter will be ignored if buffsize is below 16.
 
         :param path: local path of directory whose content will be compressed.
