@@ -5,6 +5,7 @@ import codecs
 import unittest
 import tempfile
 import shutil
+import time
 
 import browsepy.stream
 
@@ -27,11 +28,36 @@ class StreamTest(unittest.TestCase):
         self.randfile()
         self.randfile()
         stream = self.module.TarFileStream(self.base, buffsize=5)
-        self.assertTrue(next(stream))
+
+        self.assertFalse(stream._queue.qsize())  # not yet compressing
+        self.assertEqual(len(next(stream)), 5)
+
+        while not stream._queue.qsize():
+            time.sleep(0.1)
+
+        self.assertGreater(stream._queue.qsize(), 4)
+        self.assertLess(stream._queue.qsize(), 10)
 
         with self.assertRaises(StopIteration):
             while True:
                 next(stream)
+
+    def test_exception(self):
+        class MyException(Exception):
+            pass
+
+        class BrokenQueue(self.module.ByteQueue):
+            def put(self, data):
+                raise MyException()
+
+        stream = self.module.TarFileStream(self.base, buffsize=5)
+        stream._queue = BrokenQueue()
+
+        with self.assertRaises(StopIteration):
+            next(stream)
+
+        with self.assertRaises(MyException):
+            stream.close()
 
     def test_close(self):
         self.randfile()

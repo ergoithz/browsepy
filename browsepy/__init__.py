@@ -145,9 +145,8 @@ def sort(property, path):
     if not directory.is_directory or directory.is_excluded:
         return NotFound()
 
-    if request:
-        session['browse:sort'] = \
-            [(path, property)] + session.get('browse:sort', [])
+    session['browse:sort'] = \
+        [(path, property)] + session.get('browse:sort', [])
     return redirect(url_for(".browse", path=directory.urlpath))
 
 

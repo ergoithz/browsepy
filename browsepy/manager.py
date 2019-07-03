@@ -268,12 +268,14 @@ class ExcludePluginManager(PluginManagerBase):
         '''
         self._exclude_functions.add(exclude_fnc)
 
-    def check_excluded(self, path, request=flask.request):
+    def check_excluded(self, path):
         '''
         Check if given path is excluded.
 
+        :param path: absolute path to check against config and plugins
         :type path: str
-        :type request: flask.Request
+        :return: wether if path should be excluded or not
+        :rtype: bool
         '''
         exclude_fnc = self.app.config.get('EXCLUDE_FNC')
         if exclude_fnc and exclude_fnc(path):

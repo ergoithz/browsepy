@@ -140,6 +140,28 @@ class TarFileStream(compat.Iterator):
         self._th = self.thread_class(target=self._fill)
         self._th_exc = None
 
+    @property
+    def _infofilter(self):
+        '''
+        TarInfo filtering function based on :attr:`exclude`.
+        '''
+        path = self.path
+        path_join = os.path.join
+        exclude = self.exclude
+
+        def infofilter(info):
+            '''
+            Filter TarInfo objects for TarFile.
+
+            :param info:
+            :type info: tarfile.TarInfo
+            :return: infofile or None if file must be excluded
+            :rtype: tarfile.TarInfo or None
+            '''
+            return None if exclude(path_join(path, info.name)) else info
+
+        return infofilter if exclude else None
+
     def _fill(self):
         '''
         Writes data on internal tarfile instance, which writes to current
@@ -150,24 +172,16 @@ class TarFileStream(compat.Iterator):
         This method is called automatically, on a thread, on initialization,
         so there is little need to call it manually.
         '''
-        exclude = self.exclude
-        path_join = os.path.join
-        path = self.path
-
-        def infofilter(info):
-            return None if exclude(path_join(path, info.name)) else info
-
-        tarfile = self.tarfile_class(
-            fileobj=self,
-            mode='w|{}'.format(self._mode),
-            bufsize=self._buffsize,
-            encoding='utf-8',
-            )
         try:
-            tarfile.add(self.path, '', filter=infofilter if exclude else None)
-            tarfile.close()
+            with self.tarfile_class(
+              fileobj=self,
+              mode='w|{}'.format(self._mode),
+              bufsize=self._buffsize,
+              encoding='utf-8',
+              ) as tarfile:
+                tarfile.add(self.path, '', filter=self._infofilter)
         except self.abort_exception:
-            tarfile.close()
+            pass
         except Exception as e:
             self._th_exc = e
         finally:

@@ -666,9 +666,8 @@ class Directory(Node):
         stream = self.stream_class(
             self.path,
             self.app.config.get('DIRECTORY_TAR_BUFFSIZE', 10240),
-            functools.partial(
-                self.plugin_manager.check_excluded,
-                request=utils.solve_local(flask.request),
+            flask.copy_current_request_context(
+                self.plugin_manager.check_excluded
                 ),
             self.app.config.get('DIRECTORY_TAR_COMPRESS', 'gzip'),
             self.app.config.get('DIRECTORY_TAR_COMPRESSLEVEL', 1),
