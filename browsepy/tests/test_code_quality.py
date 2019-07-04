@@ -7,9 +7,8 @@ from . import meta
 
 
 class TestCodeFormat(six.with_metaclass(meta.TestFileMeta, unittest.TestCase)):
-    '''
-    pycodestyle unit test
-    '''
+    """pycodestyle unit test"""
+
     meta_module = 'browsepy'
     meta_prefix = 'code'
     meta_file_extensions = ('.py',)

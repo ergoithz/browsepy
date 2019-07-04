@@ -46,9 +46,9 @@ def move(target, node, join_fnc=os.path.join):
 
 
 def paste(target, mode, clipboard):
-    '''
+    """
     Get pasting function for given directory and keyboard.
-    '''
+    """
     if mode == 'cut':
         paste_fnc = functools.partial(move, target)
     elif mode == 'copy':

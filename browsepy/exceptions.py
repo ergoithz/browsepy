@@ -2,27 +2,27 @@
 
 
 class OutsideDirectoryBase(Exception):
-    '''
+    """
     Exception raised when trying to access to a file outside path defined on
     `DIRECTORY_BASE` config property.
-    '''
+    """
     pass
 
 
 class OutsideRemovableBase(Exception):
-    '''
+    """
     Exception raised when trying to access to a file outside path defined on
     `directory_remove` config property.
-    '''
+    """
     pass
 
 
 class InvalidPathError(ValueError):
-    '''
+    """
     Exception raised when a path is not valid.
 
     :property path: value whose length raised this Exception
-    '''
+    """
     code = 'invalid-path'
     template = 'Path {0.path!r} is not valid.'
 
@@ -33,11 +33,11 @@ class InvalidPathError(ValueError):
 
 
 class InvalidFilenameError(InvalidPathError):
-    '''
+    """
     Exception raised when a filename is not valid.
 
     :property filename: value whose length raised this Exception
-    '''
+    """
     code = 'invalid-filename'
     template = 'Filename {0.filename!r} is not valid.'
 
@@ -47,11 +47,11 @@ class InvalidFilenameError(InvalidPathError):
 
 
 class PathTooLongError(InvalidPathError):
-    '''
+    """
     Exception raised when maximum filesystem path length is reached.
 
     :property limit: value length limit
-    '''
+    """
     code = 'invalid-path-length'
     template = 'Path {0.path!r} is too long, max length is {0.limit}'
 
@@ -61,9 +61,9 @@ class PathTooLongError(InvalidPathError):
 
 
 class FilenameTooLongError(InvalidFilenameError):
-    '''
+    """
     Exception raised when maximum filesystem filename length is reached.
-    '''
+    """
     code = 'invalid-filename-length'
     template = 'Filename {0.filename!r} is too long, max length is {0.limit}'
 

@@ -1,7 +1,7 @@
 
 
 class StateMachine(object):
-    '''
+    """
     Abstract character-driven finite state machine implementation, used to
     chop down and transform strings.
 
@@ -9,7 +9,7 @@ class StateMachine(object):
 
     Important: when implementing this class, you must set the :attr:`current`
     attribute to a key defined in :attr:`jumps` dict.
-    '''
+    """
     jumps = {}  # finite state machine jumps
     start = ''  # character which started current state
     current = ''  # current state (an initial value must be set)
@@ -18,7 +18,7 @@ class StateMachine(object):
 
     @property
     def nearest(self):
-        '''
+        """
         Get the next state jump.
 
         The next jump is calculated looking at :attr:`current` state
@@ -29,7 +29,7 @@ class StateMachine(object):
 
         :returns: tuple with index, substring and next state label
         :rtype: tuple
-        '''
+        """
         try:
             options = self.jumps[self.current]
         except KeyError:
@@ -55,14 +55,14 @@ class StateMachine(object):
         return result
 
     def __init__(self, data=''):
-        '''
+        """
         :param data: content will be added to pending data
         :type data: str
-        '''
+        """
         self.pending += data
 
     def __iter__(self):
-        '''
+        """
         Yield over result chunks, consuming :attr:`pending` data.
 
         On :attr:`streaming` mode, yield only finished states.
@@ -72,7 +72,7 @@ class StateMachine(object):
 
         :yields: transformation result chunka
         :ytype: str
-        '''
+        """
         index, mark, next = self.nearest
         while next is not None:
             data = self.transform(self.pending[:index], mark, next)
@@ -90,7 +90,7 @@ class StateMachine(object):
                 yield data
 
     def transform(self, data, mark, next):
-        '''
+        """
         Apply the appropriate transformation function on current state data,
         which is supposed to end at this point.
 
@@ -107,31 +107,31 @@ class StateMachine(object):
 
         :returns: transformed data
         :rtype: str
-        '''
+        """
         method = getattr(self, 'transform_%s' % self.current, None)
         return method(data, mark, next) if method else data
 
     def feed(self, data=''):
-        '''
+        """
         Optionally add pending data, switch into streaming mode, and yield
         result chunks.
 
         :yields: result chunks
         :ytype: str
-        '''
+        """
         self.streaming = True
         self.pending += data
         for i in self:
             yield i
 
     def finish(self, data=''):
-        '''
+        """
         Optionally add pending data, turn off streaming mode, and yield
         result chunks, which implies all pending data will be consumed.
 
         :yields: result chunks
         :ytype: str
-        '''
+        """
         self.pending += data
         self.streaming = False
         for i in self:

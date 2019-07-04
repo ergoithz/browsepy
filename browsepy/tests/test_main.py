@@ -1,12 +1,15 @@
-import unittest
+
+import io
 import os
+import sys
 import os.path
+import unittest
 import tempfile
 import shutil
+import contextlib
 
 import browsepy
 import browsepy.__main__ as main
-import browsepy.compat as compat
 
 
 class TestMain(unittest.TestCase):
@@ -22,6 +25,16 @@ class TestMain(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base)
+
+    @staticmethod
+    @contextlib.contextmanager
+    def stderr_ctx():
+        with io.StringIO() as f:
+            sys_sderr = sys.stderr
+            sys.stderr = f
+            yield f
+            if sys.stderr is f:
+                sys.stderr = sys_sderr
 
     def test_defaults(self):
         result = self.parser.parse_args([])
@@ -83,19 +96,18 @@ class TestMain(unittest.TestCase):
         self.assertListEqual(result.exclude_from, [])
         self.assertListEqual(result.plugin, [])
 
-        with open(os.devnull, 'w') as f:
-            with compat.redirect_stderr(f):
-                self.assertRaises(
-                    SystemExit,
-                    self.parser.parse_args,
-                    ['--directory=%s' % __file__]
-                )
+        with self.stderr_ctx():
+            self.assertRaises(
+                SystemExit,
+                self.parser.parse_args,
+                ['--directory=%s' % __file__]
+            )
 
-                self.assertRaises(
-                    SystemExit,
-                    self.parser.parse_args,
-                    ['--exclude-from=non-existing']
-                )
+            self.assertRaises(
+                SystemExit,
+                self.parser.parse_args,
+                ['--exclude-from=non-existing']
+            )
 
     def test_exclude(self):
         result = self.parser.parse_args([

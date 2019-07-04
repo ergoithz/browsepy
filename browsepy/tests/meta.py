@@ -2,7 +2,7 @@ from browsepy.compat import res
 
 
 class TestFileMeta(type):
-    '''
+    """
     This metaclass generates test methods for every file matching given
     rules (as class properties).
 
@@ -17,7 +17,7 @@ class TestFileMeta(type):
     - meta_module: module to inspect for files
     - meta_file_extensions: filename extensions will result on test injection.
     - meta_prefix: prefix added to injected tests (defaults to `file`)
-    '''
+    """
 
     resource_methods = (
         'contents',

@@ -1,0 +1,44 @@
+## [0.6.0] - Upcoming
+### Added
+- Plugin discovery.
+- New plugin `file-actions for copy/cut/paste and directory creation.
+- Smart cookie sessions.
+
+### Changes
+- Faster directory tarball streaming with more options.
+
+### Removed
+- Python 3.3 and 3.4 support have been dropped.
+
+## [0.5.6] - 2017-09-09
+### Added
+- Handle filesystem path size limits.
+
+### Changes
+- Player plugin honoring directory ordering.
+- Windows fixes
+
+## [0.5.3] - 2017-05-12
+### Added
+- New "exclude" option (--exclude and --exclude-from), accepting UNIX globs.
+- Windows support.
+
+### Changed
+- Fixes #12 (Windows compatibility)
+
+## [0.5.0] - 2016-11-24
+### Added
+- Protocol for plugin command line argument handling.
+- Player plugin playlist support (m3u, pls) and directory).
+- Customizable browser file sorting.
+- Multiple-file uploads.
+
+### Changed
+- New plugin and widget API, old one have been deprecated.
+- Use of optimized scandir (faster directory listing).
+- Browsepy HTML responses are now minified.
+- Browsepy command script.
+
+## [0.3.8] - 2015-11-05
+### Added
+- First useable release.

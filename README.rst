@@ -38,7 +38,21 @@ Head to http://ergoithz.github.io/browsepy/ for an online version of current
 *master* documentation,
 
 You can also build yourself from sphinx sources using the documentation
-`Makefile` located at `docs` directory.
+`Makefile` located under `docs` directory.
+
+License
+-------
+
+MIT. See `LICENSE`_.
+
+.. _LICENSE: https://raw.githubusercontent.com/ergoithz/browsepy/master/LICENSE
+
+Changelog
+---------
+
+See `CHANGELOG`_.
+
+.. _CHANGELOG: https://raw.githubusercontent.com/ergoithz/browsepy/master/CHANGELOG
 
 Screenshots
 -----------
@@ -54,40 +68,9 @@ Features
 * **Downloadable directories**, streaming directory tarballs on the fly.
 * **Optional remove** for files under given path.
 * **Optional upload** for directories under given path.
-* **Player** audio player plugin is provided (without transcoding).
-
-New in 0.6
-----------
-
-* Drop Python 3.3.
-* Plugin discovery.
-* Plugin file-actions providing copy/cut/paste and directory creation.
-* Smarter cookie sessions with session shrinking mechanisms available
-  for plugin implementors.
-
-New in 0.5
-----------
-
-* File and plugin APIs have been fully reworked making them more complete and
-  extensible, so they can be considered stable now. As a side-effect backward
-  compatibility on some edge cases could be broken (please fill an issue if
-  your code is affected).
-
-  * Old widget API have been deprecated and warnings will be shown if used.
-  * Widget registration in a single call (passing a widget instances is still
-    available though), no more action-widget duality.
-  * Callable-based widget filtering (no longer limited to mimetypes).
-  * A raw HTML widget for maximum flexibility.
-
-* Plugins can register command-line arguments now.
-* Player plugin is now able to load `m3u` and `pls` playlists, and optionally
-  play everything on a directory (adding a command-line argument).
-* Browsing now takes full advantage of `scandir` (already in Python 3.5 and an
-  external dependency for older versions) providing faster directory listing.
-* Custom file ordering while browsing directories.
-* Easy multi-file uploads.
-* Jinja2 template output minification, saving those precious bytes.
-* Setup script now registers a proper `browsepy` command.
+* **Plugins**
+  * **player**, web audio player.
+  * **file-actions**, cut, copy paste and directory creation.
 
 Install
 -------
@@ -96,7 +79,7 @@ Install
 `pip` and `setuptools` libraries should be upgraded with
 `pip install --upgrade pip setuptools`.
 
-It's on `pypi` so...
+It's on `pypi`_ so...
 
 .. _pypi: https://pypi.python.org/pypi/browsepy/
 
@@ -105,7 +88,7 @@ It's on `pypi` so...
    pip install browsepy
 
 
-You can get the same version from our `github repository`.
+You can get the same version from our `github repository`_.
 
 .. _github repository: https://github.com/ergoithz/browsepy
 
@@ -148,11 +131,13 @@ Command-line arguments
 ----------------------
 
 This is what is printed when you run `browsepy --help`, keep in mind that
-plugins (loaded with `plugin` argument) could add extra arguments to this list.
+plugins (loaded with `plugin` argument) could add extra arguments to this list
+(you can see all them running `browsepy --help-all` instead).
 
 ::
 
-  usage: browsepy [-h] [--help-all] [--directory PATH] [--initial PATH] [--removable PATH] [--upload PATH] [--exclude PATTERN]
+  usage: browsepy [-h] [--help-all] [--directory PATH] [--initial PATH]
+                  [--removable PATH] [--upload PATH] [--exclude PATTERN]
                   [--exclude-from PATH] [--version] [--plugin MODULE]
                   [host] [port]
 
@@ -165,7 +150,7 @@ plugins (loaded with `plugin` argument) could add extra arguments to this list.
   optional arguments:
     -h, --help           show this help message and exit
     --help-all           show help for all available plugins and exit
-    --directory PATH     serving directory (default: ...)
+    --directory PATH     serving directory (default: /my/current/path)
     --initial PATH       default directory (default: same as --directory)
     --removable PATH     base directory allowing remove (default: None)
     --upload PATH        base directory allowing upload (default: None)
@@ -175,9 +160,8 @@ plugins (loaded with `plugin` argument) could add extra arguments to this list.
     --plugin MODULE      load plugin module (multiple)
 
   available plugins:
-    player, browsepy.plugin.player
     file-actions, browsepy.plugin.file_actions
-
+    player, browsepy.plugin.player
 
 Using as library
 ----------------
@@ -193,36 +177,16 @@ url, and mounting **browsepy.app** on the appropriate parent
 
 .. _WSGI: https://www.python.org/dev/peps/pep-0333/
 
-Browsepy app config (available at :attr:`browsepy.app.config`) uses the
-following configuration options.
+Browsepy app config is available at `browsepy.app.config`.
 
-* **DIRECTORY_BASE**: anything under this directory will be served,
-  defaults to current path.
-* **DIRECTORY_START**: directory will be served when accessing root URL
-* **DIRECTORY_REMOVE**: file removing will be available under this path,
-  defaults to **None**.
-* **DIRECTORY_UPLOAD**: file upload will be available under this path,
-  defaults to **None**.
-* **DIRECTORY_TAR_BUFFSIZE**, directory tar streaming buffer size,
-  defaults to **262144** and must be multiple of 512.
-* **DIRECTORY_DOWNLOADABLE** whether enable directory download or not,
-  defaults to **True**.
-* **USE_BINARY_MULTIPLES** whether use binary units (bi-bytes, like KiB)
-  instead of common ones (bytes, like KB), defaults to **True**.
-* **PLUGIN_MODULES** list of module names (absolute or relative to
-  plugin_namespaces) will be loaded.
-* **PLUGIN_NAMESPACES** prefixes for module names listed at PLUGIN_MODULES
-  where relative PLUGIN_MODULES are searched.
-* **EXCLUDE_FNC** function will be used to exclude files from listing and
-  directory tarballs. Can be either None or function receiving an absolute
-  path and returning a boolean.
+**Note**: After editing `PLUGIN_MODULES` value, plugin manager (available at
+module plugin_manager and app.extensions['plugin_manager']) should be reloaded
+using `plugin_manager.reload` method.
 
-After editing `PLUGIN_MODULES` value, plugin manager (available at module
-plugin_manager and app.extensions['plugin_manager']) should be reloaded using
-the `reload` method.
+Alternatively, plugins can be loaded programmatically by calling
+`plugin_manager.load_plugin` method.
 
-The other way of loading a plugin programmatically is calling plugin manager's
-`load_plugin` method.
+More information at http://ergoithz.github.io/browsepy/integrations.html
 
 Extend via plugin API
 ---------------------

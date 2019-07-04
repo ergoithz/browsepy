@@ -197,26 +197,33 @@ def detect_selection(directory):
             current_app.config.get('DIRECTORY_UPLOAD')
 
 
-def excluded_clipboard(app, path):
-    # TODO: get this working outside requests (for tarfile streaming)
-    if not getattr(g, 'file_actions_paste', False) and \
-       session.get('clipboard:mode') == 'cut':
-        base = app.config['DIRECTORY_BASE']
+def excluded_clipboard(path):
+    """
+    Exclusion function for files in clipboard.
+
+    :param path: path to check
+    :type path: str
+    :return: wether path should be excluded or not
+    :rtype: str
+    """
+    if (
+      not getattr(g, 'file_actions_paste', False) and
+      session.get('clipboard:mode') == 'cut'
+      ):
+        base = current_app.config['DIRECTORY_BASE']
         clipboard = session.get('clipboard:items', ())
         return abspath_to_urlpath(path, base) in clipboard
     return False
 
 
 def register_plugin(manager):
-    '''
+    """
     Register blueprints and actions using given plugin manager.
 
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
-    '''
-    manager.register_exclude_function(
-        functools.partial(excluded_clipboard, manager.app)
-        )
+    """
+    manager.register_exclude_function(excluded_clipboard)
     manager.register_blueprint(actions)
     manager.register_widget(
         place='styles',

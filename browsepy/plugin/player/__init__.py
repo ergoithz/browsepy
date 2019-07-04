@@ -69,14 +69,14 @@ def directory(path):
 
 
 def register_arguments(manager):
-    '''
+    """
     Register arguments using given plugin manager.
 
     This method is called before `register_plugin`.
 
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
-    '''
+    """
 
     # Arguments are forwarded to argparse:ArgumentParser.add_argument,
     # https://docs.python.org/3.7/library/argparse.html#the-add-argument-method
@@ -87,12 +87,12 @@ def register_arguments(manager):
 
 
 def register_plugin(manager):
-    '''
+    """
     Register blueprints and actions using given plugin manager.
 
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
-    '''
+    """
     manager.register_blueprint(player)
     manager.register_mimetype_function(detect_playable_mimetype)
 

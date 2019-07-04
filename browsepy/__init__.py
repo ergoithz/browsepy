@@ -69,12 +69,12 @@ def shrink_browse_sort(data, last):
 
 
 def get_cookie_browse_sorting(path, default):
-    '''
+    """
     Get sorting-cookie data for path of current request.
 
     :returns: sorting property
     :rtype: string
-    '''
+    """
     if request:
         for cpath, cprop in session.get('browse:sort', ()):
             if path == cpath:
@@ -83,7 +83,7 @@ def get_cookie_browse_sorting(path, default):
 
 
 def browse_sortkey_reverse(prop):
-    '''
+    """
     Get sorting function for directory listing based on given attribute
     name, with some caveats:
     * Directories will be first.
@@ -94,7 +94,7 @@ def browse_sortkey_reverse(prop):
     :type prop: str
     :returns: tuple with sorting function and reverse bool
     :rtype: tuple of a dict and a bool
-    '''
+    """
     if prop.startswith('-'):
         prop = prop[1:]
         reverse = True

@@ -5,11 +5,11 @@ import errno
 
 
 class FileActionsException(Exception):
-    '''
+    """
     Base class for file-actions exceptions
 
     :property path: item path which raised this Exception
-    '''
+    """
     code = None
     template = 'Unhandled error.'
 
@@ -20,12 +20,12 @@ class FileActionsException(Exception):
 
 
 class InvalidDirnameError(FileActionsException):
-    '''
+    """
     Exception raised when a new directory name is invalid.
 
     :property path: item path which raised this Exception
     :property name: name which raised this Exception
-    '''
+    """
     code = 'directory-invalid-name'
     template = 'Clipboard item {0.name!r} is not valid.'
 
@@ -35,12 +35,12 @@ class InvalidDirnameError(FileActionsException):
 
 
 class DirectoryCreationError(FileActionsException):
-    '''
+    """
     Exception raised when a new directory creation fails.
 
     :property path: item path which raised this Exception
     :property name: name which raised this Exception
-    '''
+    """
     code = 'directory-mkdir-error'
     template = 'Clipboard item {0.name!r} is not valid.'
 
@@ -64,13 +64,13 @@ class DirectoryCreationError(FileActionsException):
 
 
 class ClipboardException(FileActionsException):
-    '''
+    """
     Base class for clipboard exceptions.
 
     :property path: item path which raised this Exception
     :property mode: mode which raised this Exception
     :property clipboard: :class Clipboard: instance
-    '''
+    """
     code = 'clipboard-invalid'
     template = 'Clipboard is invalid.'
 
@@ -81,9 +81,9 @@ class ClipboardException(FileActionsException):
 
 
 class ItemIssue(tuple):
-    '''
+    """
     Item/error issue
-    '''
+    """
     @property
     def item(self):
         return self[0]
@@ -107,14 +107,14 @@ class ItemIssue(tuple):
 
 
 class InvalidClipboardItemsError(ClipboardException):
-    '''
+    """
     Exception raised when a clipboard item is not valid.
 
     :property path: item path which raised this Exception
     :property mode: mode which raised this Exception
     :property clipboard: :class Clipboard: instance
     :property issues: iterable of issues
-    '''
+    """
     pair_class = ItemIssue
     code = 'clipboard-invalid-items'
     template = 'Clipboard has invalid items.'
@@ -130,13 +130,13 @@ class InvalidClipboardItemsError(ClipboardException):
 
 
 class InvalidClipboardModeError(ClipboardException):
-    '''
+    """
     Exception raised when a clipboard mode is not valid.
 
     :property path: item path which raised this Exception
     :property mode: mode which raised this Exception
     :property clipboard: :class Clipboard: instance
-    '''
+    """
     code = 'clipboard-invalid-mode'
     template = 'Clipboard mode {0.mode!r} is not valid.'
 
@@ -146,13 +146,13 @@ class InvalidClipboardModeError(ClipboardException):
 
 
 class InvalidEmptyClipboardError(ClipboardException):
-    '''
+    """
     Exception raised when an invalid action is requested on an empty clipboard.
 
     :property path: item path which raised this Exception
     :property mode: mode which raised this Exception
     :property clipboard: :class Clipboard: instance
-    '''
+    """
     code = 'clipboard-invalid-empty'
     template = 'Clipboard action {0.mode!r} cannot be performed without items.'
 
@@ -162,13 +162,13 @@ class InvalidEmptyClipboardError(ClipboardException):
 
 
 class InvalidClipboardSizeError(ClipboardException):
-    '''
+    """
     Exception raised when session manager evicts clipboard data.
 
     :property path: item path which raised this Exception
     :property mode: mode which raised this Exception
     :property clipboard: :class Clipboard: instance
-    '''
+    """
     code = 'clipboard-invalid-size'
     template = 'Clipboard evicted due session size limit.'
 

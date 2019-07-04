@@ -74,17 +74,17 @@ manager itself (type :class:`PluginManager`) as first parameter.
 Plugin manager exposes several methods to register widgets and mimetype
 detection functions.
 
-A *sregister_plugin*s function looks like this (taken from player plugin):
+A *sregister_plugin* function looks like this (taken from player plugin):
 
 .. code-block:: python
 
   def register_plugin(manager):
-      '''
+      """
       Register blueprints and actions using given plugin manager.
 
       :param manager: plugin manager
       :type manager: browsepy.manager.PluginManager
-      '''
+      """
       manager.register_blueprint(player)
       manager.register_mimetype_function(detect_playable_mimetype)
 
@@ -148,14 +148,14 @@ A simple `register_arguments` example (from player plugin):
 .. code-block:: python
 
   def register_arguments(manager):
-      '''
+      """
       Register arguments using given plugin manager.
 
       This method is called before `register_plugin`.
 
       :param manager: plugin manager
       :type manager: browsepy.manager.PluginManager
-      '''
+      """
 
       # Arguments are forwarded to argparse:ArgumentParser.add_argument,
       # https://docs.python.org/3.7/library/argparse.html#the-add-argument-method
@@ -191,7 +191,7 @@ Here is the "widget_types" for reference.
 .. code-block:: python
 
   class WidgetPluginManager(RegistrablePluginManager):
-      ''' ... '''
+      # ...
       widget_types = {
           'base': defaultsnamedtuple(
               'Widget',
@@ -219,6 +219,7 @@ Here is the "widget_types" for reference.
               'Html',
               ('place', 'type', 'html')),
       }
+      # ...
 
 Function :func:`browsepy.file.defaultsnamedtuple` is a
 :func:`collections.namedtuple` which uses a third argument dictionary
@@ -243,6 +244,50 @@ using with Flask's statics view) and a "path" argument for other use-cases. In t
 former case it is recommended to use
 :meth:`browsepy.file.Node.from_urlpath` static method to create the
 appropriate file/directory object (see :mod:`browsepy.file`).
+
+.. _plugins-exclude:
+
+File exclusions
+---------------
+
+Plugins can define their own file listing exclusion functions, so they can
+effectively control what it hidden when browsing, and excluded from
+directory tarballs.
+
+This is useful as plugins can now define hidden-file behaviors for user
+operations or disk-backed configuration files.
+
+
+.. code-block:: python
+
+    import os.path
+
+
+    def excluded_files(path):
+        """
+        Exclusion function for files in clipboard.
+
+        :param path: path to check
+        :type path: str
+        :return: wether path should be excluded or not
+        :rtype: str
+        """
+        return os.path.basename(path) == '.my-hidden-file':
+
+
+    def register_plugin(manager):
+        """
+        Register blueprints and actions using given plugin manager.
+
+        :param manager: plugin manager
+        :type manager: browsepy.manager.PluginManager
+        """
+        manager.register_exclude_function(excluded_files)
+
+
+Be careful when saving global state from an exclusion function using
+:module:`flask` contexts, as the request context is garanteed to be available
+to the function but not to be processed at this point.
 
 .. _plugins-considerations:
 

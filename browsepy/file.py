@@ -52,7 +52,7 @@ fs_safe_characters = string.ascii_uppercase + string.digits
 
 
 class Node(object):
-    '''
+    """
     Abstract filesystem node class.
 
     This represents an unspecified entity with a filesystem's path suitable for
@@ -65,7 +65,7 @@ class Node(object):
       will be created instead of an instance of this class tself.
     * :attr:`directory_class`, class will be used for directory nodes,
     * :attr:`file_class`, class will be used for file nodes.
-    '''
+    """
     generic = True
     directory_class = None  # set later at import time
     file_class = None  # set later at import time
@@ -76,22 +76,22 @@ class Node(object):
 
     @cached_property
     def is_excluded(self):
-        '''
+        """
         Get if current node shouldn't be shown, using :attt:`app` config's
         exclude_fnc.
 
         :returns: True if excluded, False otherwise
-        '''
+        """
         return self.plugin_manager.check_excluded(self.path)
 
     @cached_property
     def plugin_manager(self):
-        '''
+        """
         Get current app's plugin manager.
 
         :returns: plugin manager instance
         :type: browsepy.manager.PluginManagerBase
-        '''
+        """
         return (
             self.app.extensions.get('plugin_manager') or
             manager.PluginManager(self.app)
@@ -99,14 +99,14 @@ class Node(object):
 
     @cached_property
     def widgets(self):
-        '''
+        """
         List widgets with filter return True for this node (or without filter).
 
         Remove button is prepended if :property:can_remove returns true.
 
         :returns: list of widgets
         :rtype: list of namedtuple instances
-        '''
+        """
         widgets = []
         if self.can_remove:
             widgets.append(
@@ -122,12 +122,12 @@ class Node(object):
 
     @cached_property
     def link(self):
-        '''
+        """
         Get last widget with place `entry-link`.
 
         :returns: widget on entry-link (ideally a link one)
         :rtype: namedtuple instance
-        '''
+        """
         link = None
         for widget in self.widgets:
             if widget.place == 'entry-link':
@@ -136,45 +136,45 @@ class Node(object):
 
     @cached_property
     def can_remove(self):
-        '''
+        """
         Get if current node can be removed based on app config's
         `DIRECTORY_REMOVE`.
 
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
-        '''
+        """
         dirbase = self.app.config.get('DIRECTORY_REMOVE')
         return bool(dirbase and check_under_base(self.path, dirbase))
 
     @cached_property
     def stats(self):
-        '''
+        """
         Get current stats object as returned by `os.stat` function.
 
         :returns: stats object
         :rtype: posix.stat_result or nt.stat_result
-        '''
+        """
         return os.stat(self.path)
 
     @cached_property
     def pathconf(self):
-        '''
+        """
         Get filesystem config for current path.
         See :func:`compat.pathconf`.
 
         :returns: fs config
         :rtype: dict
-        '''
+        """
         return compat.pathconf(self.path)
 
     @cached_property
     def parent(self):
-        '''
+        """
         Get parent node if available based on app config's `DIRECTORY_BASE`.
 
         :returns: parent object if available
         :rtype: Node instance or None
-        '''
+        """
         directory_base = self.app.config.get('DIRECTORY_BASE', self.path)
         if check_path(self.path, directory_base):
             return None
@@ -183,12 +183,12 @@ class Node(object):
 
     @cached_property
     def ancestors(self):
-        '''
+        """
         Get list of ancestors until app config's `DIRECTORY_BASE` is reached.
 
         :returns: list of ancestors starting from nearest.
         :rtype: list of Node objects
-        '''
+        """
         ancestors = []
         parent = self.parent
         while parent:
@@ -198,12 +198,12 @@ class Node(object):
 
     @property
     def modified(self):
-        '''
+        """
         Get human-readable last modification date-time.
 
         :returns: iso9008-like date-time string (without timezone)
         :rtype: str
-        '''
+        """
         try:
             dt = datetime.datetime.fromtimestamp(self.stats.st_mtime)
             return dt.strftime('%Y.%m.%d %H:%M:%S')
@@ -212,13 +212,13 @@ class Node(object):
 
     @property
     def urlpath(self):
-        '''
+        """
         Get the url substring corresponding to this node for those endpoints
         accepting a 'path' parameter, suitable for :meth:`from_urlpath`.
 
         :returns: relative-url-like for node's path
         :rtype: str
-        '''
+        """
         return abspath_to_urlpath(
             self.path,
             self.app.config.get('DIRECTORY_BASE', self.path),
@@ -226,27 +226,27 @@ class Node(object):
 
     @property
     def name(self):
-        '''
+        """
         Get the basename portion of node's path.
 
         :returns: filename
         :rtype: str
-        '''
+        """
         return os.path.basename(self.path)
 
     @property
     def type(self):
-        '''
+        """
         Get the mime portion of node's mimetype (without the encoding part).
 
         :returns: mimetype
         :rtype: str
-        '''
+        """
         return self.mimetype.split(";", 1)[0]
 
     @property
     def category(self):
-        '''
+        """
         Get mimetype category (first portion of mimetype before the slash).
 
         :returns: mimetype category
@@ -263,42 +263,42 @@ class Node(object):
             * multipart
             * text
             * video
-        '''
+        """
         return self.type.split('/', 1)[0]
 
     def __init__(self, path=None, app=None, **defaults):
-        '''
+        """
         :param path: local path
         :type path: str
         :param app: app instance (optional inside application context)
         :type app: flask.Flask
         :param **defaults: initial property values
-        '''
+        """
         self.path = compat.fsdecode(path) if path else None
         self.app = utils.solve_local(app or flask.current_app)
         self.__dict__.update(defaults)  # only for attr and cached_property
 
     def __repr__(self):
-        '''
+        """
         Get str representation of instance.
 
         :returns: instance representation
         :rtype: str
-        '''
+        """
         return '<{0.__class__.__name__}({0.path!r})>'.format(self)
 
     def remove(self):
-        '''
+        """
         Does nothing except raising if can_remove property returns False.
 
         :raises: OutsideRemovableBase if :property:`can_remove` returns false
-        '''
+        """
         if not self.can_remove:
             raise OutsideRemovableBase("File outside removable base")
 
     @classmethod
     def from_urlpath(cls, path, app=None):
-        '''
+        """
         Alternative constructor which accepts a path as taken from URL and uses
         the given app or the current app config to get the real path.
 
@@ -309,7 +309,7 @@ class Node(object):
         :param app: optional, flask application
         :return: file object pointing to path
         :rtype: File
-        '''
+        """
         app = utils.solve_local(app or flask.current_app)
         base = app.config.get('DIRECTORY_BASE', path)
         path = urlpath_to_abspath(path, base)
@@ -323,34 +323,34 @@ class Node(object):
 
     @classmethod
     def register_file_class(cls, kls):
-        '''
+        """
         Convenience method for setting current class file_class property.
 
         :param kls: class to set
         :type kls: type
         :returns: given class (enabling using this as decorator)
         :rtype: type
-        '''
+        """
         cls.file_class = kls
         return kls
 
     @classmethod
     def register_directory_class(cls, kls):
-        '''
+        """
         Convenience method for setting current class directory_class property.
 
         :param kls: class to set
         :type kls: type
         :returns: given class (enabling using this as decorator)
         :rtype: type
-        '''
+        """
         cls.directory_class = kls
         return kls
 
 
 @Node.register_file_class
 class File(Node):
-    '''
+    """
     Filesystem file class.
 
     Some notes:
@@ -363,7 +363,7 @@ class File(Node):
       performed.
     * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
       will always return instances of this class.
-    '''
+    """
     can_download = True
     can_upload = False
     is_directory = False
@@ -371,7 +371,7 @@ class File(Node):
 
     @cached_property
     def widgets(self):
-        '''
+        """
         List widgets with filter return True for this file (or without filter).
 
         Entry link is prepended.
@@ -380,7 +380,7 @@ class File(Node):
 
         :returns: list of widgets
         :rtype: list of namedtuple instances
-        '''
+        """
         widgets = [
             self.plugin_manager.create_widget(
                 'entry-link',
@@ -410,33 +410,33 @@ class File(Node):
 
     @cached_property
     def mimetype(self):
-        '''
+        """
         Get full mimetype, with encoding if available.
 
         :returns: mimetype
         :rtype: str
-        '''
+        """
         return self.plugin_manager.get_mimetype(self.path)
 
     @cached_property
     def is_file(self):
-        '''
+        """
         Get if node is file.
 
         :returns: True if file, False otherwise
         :rtype: bool
-        '''
+        """
         return os.path.isfile(self.path)
 
     @property
     def size(self):
-        '''
+        """
         Get human-readable node size in bytes.
         If directory, this will corresponds with own inode size.
 
         :returns: fuzzy size with unit
         :rtype: str
-        '''
+        """
         try:
             size, unit = fmt_size(
                 self.stats.st_size,
@@ -450,12 +450,12 @@ class File(Node):
 
     @property
     def encoding(self):
-        '''
+        """
         Get encoding part of mimetype, or "default" if not available.
 
         :returns: file conding as returned by mimetype function or "default"
         :rtype: str
-        '''
+        """
         if ";" in self.mimetype:
             match = self.re_charset.search(self.mimetype)
             gdict = match.groupdict() if match else {}
@@ -463,27 +463,27 @@ class File(Node):
         return "default"
 
     def remove(self):
-        '''
+        """
         Remove file.
         :raises OutsideRemovableBase: when not under removable base directory
-        '''
+        """
         super(File, self).remove()
         os.unlink(self.path)
 
     def download(self):
-        '''
+        """
         Get a Flask's send_file Response object pointing to this file.
 
         :returns: Response object as returned by flask's send_file
         :rtype: flask.Response
-        '''
+        """
         directory, name = os.path.split(self.path)
         return flask.send_from_directory(directory, name, as_attachment=True)
 
 
 @Node.register_directory_class
 class Directory(Node):
-    '''
+    """
     Filesystem directory class.
 
     Some notes:
@@ -495,7 +495,7 @@ class Directory(Node):
     * :attr:`encoding` is fixed to 'default'.
     * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
       will always return instances of this class.
-    '''
+    """
     stream_class = stream.TarFileStream
 
     _listdir_cache = None
@@ -507,17 +507,17 @@ class Directory(Node):
 
     @property
     def name(self):
-        '''
+        """
         Get the basename portion of directory's path.
 
         :returns: filename
         :rtype: str
-        '''
+        """
         return super(Directory, self).name or self.path
 
     @cached_property
     def widgets(self):
-        '''
+        """
         List widgets with filter return True for this dir (or without filter).
 
         Entry link is prepended.
@@ -527,7 +527,7 @@ class Directory(Node):
 
         :returns: list of widgets
         :rtype: list of namedtuple instances
-        '''
+        """
         widgets = [
             self.plugin_manager.create_widget(
                 'entry-link',
@@ -581,66 +581,66 @@ class Directory(Node):
 
     @cached_property
     def is_directory(self):
-        '''
+        """
         Get if path points to a real directory.
 
         :returns: True if real directory, False otherwise
         :rtype: bool
-        '''
+        """
         return os.path.isdir(self.path)
 
     @cached_property
     def is_root(self):
-        '''
+        """
         Get if directory is filesystem's root
 
         :returns: True if FS root, False otherwise
         :rtype: bool
-        '''
+        """
         return check_path(os.path.dirname(self.path), self.path)
 
     @cached_property
     def can_download(self):
-        '''
+        """
         Get if path is downloadable (if app's `DIRECTORY_DOWNLOADABLE` config
         property is True).
 
         :returns: True if downloadable, False otherwise
         :rtype: bool
-        '''
+        """
         return self.app.config.get('DIRECTORY_DOWNLOADABLE', False)
 
     @cached_property
     def can_upload(self):
-        '''
+        """
         Get if a file can be uploaded to path (if directory path is under app's
         `DIRECTORY_UPLOAD` config property).
 
         :returns: True if a file can be upload to directory, False otherwise
         :rtype: bool
-        '''
+        """
         dirbase = self.app.config.get('DIRECTORY_UPLOAD', False)
         return dirbase and check_base(self.path, dirbase)
 
     @cached_property
     def can_remove(self):
-        '''
+        """
         Get if current node can be removed based on app config's
         directory_remove.
 
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
-        '''
+        """
         return self.parent and super(Directory, self).can_remove
 
     @cached_property
     def is_empty(self):
-        '''
+        """
         Get if directory is empty (based on :meth:`_listdir`).
 
         :returns: True if this directory has no entries, False otherwise.
         :rtype: bool
-        '''
+        """
         if self._listdir_cache is not None:
             return not bool(self._listdir_cache)
         for entry in self._listdir():
@@ -648,21 +648,21 @@ class Directory(Node):
         return True
 
     def remove(self):
-        '''
+        """
         Remove directory tree.
 
         :raises OutsideRemovableBase: when not under removable base directory
-        '''
+        """
         super(Directory, self).remove()
         shutil.rmtree(self.path)
 
     def download(self):
-        '''
+        """
         Get a Flask Response object streaming a tarball of this directory.
 
         :returns: Response object
         :rtype: flask.Response
-        '''
+        """
         stream = self.stream_class(
             self.path,
             self.app.config.get('DIRECTORY_TAR_BUFFSIZE', 10240),
@@ -688,18 +688,18 @@ class Directory(Node):
             )
 
     def contains(self, filename):
-        '''
+        """
         Check if directory contains an entry with given filename.
 
         :param filename: filename will be check
         :type filename: str
         :returns: True if exists, False otherwise.
         :rtype: bool
-        '''
+        """
         return os.path.exists(os.path.join(self.path, filename))
 
     def choose_filename(self, filename, attempts=999):
-        '''
+        """
         Get a new filename which does not colide with any entry on directory,
         based on given filename.
 
@@ -712,7 +712,7 @@ class Directory(Node):
 
         :raises FilenameTooLong: when filesystem filename size limit is reached
         :raises PathTooLong: when OS or filesystem path size limit is reached
-        '''
+        """
         new_filename = filename
         for attempt in range(2, attempts + 1):
             if not self.contains(new_filename):
@@ -735,12 +735,12 @@ class Directory(Node):
         return new_filename
 
     def _listdir(self, precomputed_stats=(os.name == 'nt')):
-        '''
+        """
         Iter unsorted entries on this directory.
 
         :yields: Directory or File instance for each entry in directory
         :rtype: Iterator of browsepy.file.Node
-        '''
+        """
         directory_class = self.directory_class
         file_class = self.file_class
         exclude_fnc = self.plugin_manager.check_excluded
@@ -767,12 +767,12 @@ class Directory(Node):
                     logger.exception(e)
 
     def listdir(self, sortkey=None, reverse=False):
-        '''
+        """
         Get sorted list (by given sortkey and reverse params) of File objects.
 
         :return: sorted list of File instances
         :rtype: list of File instances
-        '''
+        """
         if self._listdir_cache is None:
             self._listdir_cache = tuple(self._listdir())
         if sortkey:
@@ -784,7 +784,7 @@ class Directory(Node):
 
 
 def fmt_size(size, binary=True):
-    '''
+    """
     Get size and unit.
 
     :param size: size in bytes
@@ -793,7 +793,7 @@ def fmt_size(size, binary=True):
     :type binary: bool
     :return: size and unit
     :rtype: tuple of int and unit as str
-    '''
+    """
     if binary:
         fmt_sizes = binary_units
         fmt_divider = 1024.
@@ -808,7 +808,7 @@ def fmt_size(size, binary=True):
 
 
 def relativize_path(path, base, os_sep=os.sep):
-    '''
+    """
     Make absolute path relative to an absolute base.
 
     :param path: absolute path
@@ -820,7 +820,7 @@ def relativize_path(path, base, os_sep=os.sep):
     :return: relative path
     :rtype: str or unicode
     :raises OutsideDirectoryBase: if path is not below base
-    '''
+    """
     if not check_base(path, base, os_sep):
         raise OutsideDirectoryBase("%r is not under %r" % (path, base))
     prefix_len = len(base)
@@ -830,7 +830,7 @@ def relativize_path(path, base, os_sep=os.sep):
 
 
 def abspath_to_urlpath(path, base, os_sep=os.sep):
-    '''
+    """
     Make filesystem absolute path uri relative using given absolute base path.
 
     :param path: absolute path
@@ -839,12 +839,12 @@ def abspath_to_urlpath(path, base, os_sep=os.sep):
     :return: relative uri
     :rtype: str or unicode
     :raises OutsideDirectoryBase: if resulting path is not below base
-    '''
+    """
     return relativize_path(path, base, os_sep).replace(os_sep, '/')
 
 
 def urlpath_to_abspath(path, base, os_sep=os.sep):
-    '''
+    """
     Make uri relative path fs absolute using a given absolute base path.
 
     :param path: relative path
@@ -853,7 +853,7 @@ def urlpath_to_abspath(path, base, os_sep=os.sep):
     :return: absolute path
     :rtype: str or unicode
     :raises OutsideDirectoryBase: if resulting path is not below base
-    '''
+    """
     prefix = base if base.endswith(os_sep) else base + os_sep
     realpath = os.path.abspath(prefix + path.replace('/', os_sep))
     if check_path(base, realpath) or check_under_base(realpath, base):
@@ -862,14 +862,14 @@ def urlpath_to_abspath(path, base, os_sep=os.sep):
 
 
 def generic_filename(path):
-    '''
+    """
     Extract filename of given path os-indepently, taking care of known path
     separators.
 
     :param path: path
     :return: filename
     :rtype: str or unicode (depending on given path)
-    '''
+    """
 
     for sep in common_path_separators:
         if sep in path:
@@ -878,13 +878,13 @@ def generic_filename(path):
 
 
 def clean_restricted_chars(path, restricted_chars=current_restricted_chars):
-    '''
+    """
     Get path without restricted characters.
 
     :param path: path
     :return: path without restricted characters
     :rtype: str or unicode (depending on given path)
-    '''
+    """
     for character in restricted_chars:
         path = path.replace(character, '_')
     return path
@@ -893,7 +893,7 @@ def clean_restricted_chars(path, restricted_chars=current_restricted_chars):
 def check_forbidden_filename(filename,
                              destiny_os=os.name,
                              restricted_names=restricted_names):
-    '''
+    """
     Get if given filename is forbidden for current OS or filesystem.
 
     :param filename:
@@ -901,7 +901,7 @@ def check_forbidden_filename(filename,
     :param fs_encoding: destination filesystem filename encoding
     :return: wether is forbidden on given OS (or filesystem) or not
     :rtype: bool
-    '''
+    """
     return (
       filename in restricted_names or
       destiny_os == 'nt' and
@@ -910,7 +910,7 @@ def check_forbidden_filename(filename,
 
 
 def check_path(path, base, os_sep=os.sep):
-    '''
+    """
     Check if both given paths are equal.
 
     :param path: absolute path
@@ -921,13 +921,13 @@ def check_path(path, base, os_sep=os.sep):
     :type base: str
     :return: wether two path are equal or not
     :rtype: bool
-    '''
+    """
     base = base[:-len(os_sep)] if base.endswith(os_sep) else base
     return os.path.normcase(path) == os.path.normcase(base)
 
 
 def check_base(path, base, os_sep=os.sep):
-    '''
+    """
     Check if given absolute path is under or given base.
 
     :param path: absolute path
@@ -937,7 +937,7 @@ def check_base(path, base, os_sep=os.sep):
     :param os_sep: path separator, defaults to os.sep
     :return: wether path is under given base or not
     :rtype: bool
-    '''
+    """
     return (
         check_path(path, base, os_sep) or
         check_under_base(path, base, os_sep)
@@ -945,7 +945,7 @@ def check_base(path, base, os_sep=os.sep):
 
 
 def check_under_base(path, base, os_sep=os.sep):
-    '''
+    """
     Check if given absolute path is under given base.
 
     :param path: absolute path
@@ -955,13 +955,13 @@ def check_under_base(path, base, os_sep=os.sep):
     :param os_sep: path separator, defaults to os.sep
     :return: wether file is under given base or not
     :rtype: bool
-    '''
+    """
     prefix = base if base.endswith(os_sep) else base + os_sep
     return os.path.normcase(path).startswith(os.path.normcase(prefix))
 
 
 def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
-    '''
+    """
     Get rid of parent path components and special filenames.
 
     If path is invalid or protected, return empty string.
@@ -974,7 +974,7 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
     :type fs_encoding: str
     :return: filename or empty string
     :rtype: str
-    '''
+    """
     path = generic_filename(path)
     path = clean_restricted_chars(
         path,
@@ -1004,7 +1004,7 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
 
 
 def alternative_filename(filename, attempt=None):
-    '''
+    """
     Generates an alternative version of given filename.
 
     If an number attempt parameter is given, will be used on the alternative
@@ -1014,7 +1014,7 @@ def alternative_filename(filename, attempt=None):
     :param attempt: optional attempt number, defaults to null
     :return: new filename
     :rtype: str or unicode
-    '''
+    """
     filename_parts = filename.rsplit(u'.', 2)
     name = filename_parts[0]
     ext = ''.join(u'.%s' % ext for ext in filename_parts[1:])

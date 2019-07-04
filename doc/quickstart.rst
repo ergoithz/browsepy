@@ -56,10 +56,9 @@ this list.
 
 ::
 
-  usage: browsepy [-h] [--directory PATH] [--initial PATH]
-                  [--removable PATH] [--upload PATH]
-                  [--exclude PATTERN] [--exclude-from PATH]
-                  [--plugin MODULE]
+  usage: browsepy [-h] [--help-all] [--directory PATH] [--initial PATH]
+                  [--removable PATH] [--upload PATH] [--exclude PATTERN]
+                  [--exclude-from PATH] [--version] [--plugin MODULE]
                   [host] [port]
 
   description: starts a browsepy web file browser
@@ -70,13 +69,19 @@ this list.
 
   optional arguments:
     -h, --help           show this help message and exit
-    --directory PATH     serving directory (default: current path)
+    --help-all           show help for all available plugins and exit
+    --directory PATH     serving directory (default: /my/current/path)
     --initial PATH       default directory (default: same as --directory)
-    --removable PATH     base directory allowing remove (default: none)
-    --upload PATH        base directory allowing upload (default: none)
+    --removable PATH     base directory allowing remove (default: None)
+    --upload PATH        base directory allowing upload (default: None)
     --exclude PATTERN    exclude paths by pattern (multiple)
     --exclude-from PATH  exclude paths by pattern file (multiple)
+    --version            show program's version number and exit
     --plugin MODULE      load plugin module (multiple)
+
+  available plugins:
+    file-actions, browsepy.plugin.file_actions
+    player, browsepy.plugin.player
 
 Showing help including player plugin arguments:
 
@@ -89,10 +94,10 @@ Please note the extra parameters below `player arguments`.
 
 ::
 
-  usage: browsepy [-h] [--directory PATH] [--initial PATH]
-                  [--removable PATH] [--upload PATH]
-                  [--exclude PATTERN] [--exclude-from PATH]
-                  [--plugin MODULE] [--player-directory-play]
+  usage: browsepy [-h] [--help-all] [--directory PATH] [--initial PATH]
+                  [--removable PATH] [--upload PATH] [--exclude PATTERN]
+                  [--exclude-from PATH] [--version] [--plugin MODULE]
+                  [--player-directory-play]
                   [host] [port]
 
   description: starts a browsepy web file browser
@@ -103,14 +108,20 @@ Please note the extra parameters below `player arguments`.
 
   optional arguments:
     -h, --help            show this help message and exit
-    --directory PATH      serving directory (default: current path)
+    --help-all            show help for all available plugins and exit
+    --directory PATH     serving directory (default: /my/current/path)
     --initial PATH        default directory (default: same as --directory)
-    --removable PATH      base directory allowing remove (default: none)
-    --upload PATH         base directory allowing upload (default: none)
+    --removable PATH      base directory allowing remove (default: None)
+    --upload PATH         base directory allowing upload (default: None)
     --exclude PATTERN     exclude paths by pattern (multiple)
     --exclude-from PATH   exclude paths by pattern file (multiple)
+    --version             show program's version number and exit
     --plugin MODULE       load plugin module (multiple)
 
   player arguments:
     --player-directory-play
                           enable directories as playlist
+
+  available plugins:
+    file-actions, browsepy.plugin.file_actions
+    player, browsepy.plugin.player

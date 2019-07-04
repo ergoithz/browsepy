@@ -23,23 +23,26 @@ from .exceptions import PluginNotFoundError, InvalidArgumentError, \
 
 
 class PluginManagerBase(object):
-    '''
+    """
     Base plugin manager for plugin module loading and Flask extension logic.
-    '''
+    """
     _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
 
     @property
     def namespaces(self):
-        '''
+        """
         List of plugin namespaces taken from app config.
-        '''
+
+        :returns: list of plugin namespaces
+        :rtype: typing.List[str]
+        """
         return self.app.config.get('PLUGIN_NAMESPACES', []) if self.app else []
 
     def __init__(self, app=None):
-        '''
+        """
         :param app: flask application
         :type app: flask.Flask
-        '''
+        """
         self.plugin_filters = []
 
         if app is None:
@@ -48,12 +51,12 @@ class PluginManagerBase(object):
             self.init_app(app)
 
     def init_app(self, app):
-        '''
+        """
         Initialize this Flask extension for given app.
 
         :param app: flask application
         :type app: flask.Flask
-        '''
+        """
         self.app = app
         if not hasattr(app, 'extensions'):
             app.extensions = {}
@@ -61,35 +64,35 @@ class PluginManagerBase(object):
         self.reload()
 
     def reload(self):
-        '''
+        """
         Clear plugin manager state and reload plugins.
 
         This method will make use of :meth:`clear` and :meth:`load_plugin`,
         so all internal state will be cleared, and all plugins defined in
         :data:`self.app.config['PLUGIN_MODULES']` will be loaded.
-        '''
+        """
         self.clear()
         for plugin in self.app.config.get('PLUGIN_MODULES', ()):
             self.load_plugin(plugin)
 
     def clear(self):
-        '''
+        """
         Clear plugin manager state.
-        '''
+        """
         pass
 
     def _iter_modules(self, prefix):
-        '''
+        """
         Iterate thru all root modules containing given prefix.
-        '''
+        """
         for finder, name, ispkg in pkgutil.iter_modules():
             if name.startswith(prefix):
                 yield name
 
     def _content_import_name(self, module, item, prefix):
-        '''
+        """
         Get importable module contnt import name..
-        '''
+        """
         res = compat.res
         name = '%s.%s' % (module, item)
         if name.startswith(prefix):
@@ -100,9 +103,9 @@ class PluginManagerBase(object):
                 return name
 
     def _iter_submodules(self, prefix):
-        '''
+        """
         Iterate thru all modules which full name contains given prefix.
-        '''
+        """
         res = compat.res
         parent = prefix.rsplit('.', 1)[0]
         for base in (prefix, parent):
@@ -115,10 +118,10 @@ class PluginManagerBase(object):
                 pass
 
     def _iter_plugin_modules(self, get_module_fnc=utils.get_module):
-        '''
+        """
         Iterate plugin modules, yielding both full qualified name and
         short plugin name as tuple.
-        '''
+        """
         nameset = set()
         shortset = set()
         filters = self.plugin_filters
@@ -150,19 +153,19 @@ class PluginManagerBase(object):
 
     @cached_property
     def available_plugins(self):
-        '''
+        """
         Iterate through all loadable plugins on default import locations
-        '''
+        """
         return list(self._iter_plugin_modules())
 
     def import_plugin(self, plugin, get_module_fnc=utils.get_module):
-        '''
+        """
         Import plugin by given name, looking at :attr:`namespaces`.
 
         :param plugin: plugin module name
         :type plugin: str
         :raises PluginNotFoundError: if not found on any namespace
-        '''
+        """
         plugin = plugin.replace('-', '_')
         names = [
             name
@@ -183,21 +186,21 @@ class PluginManagerBase(object):
             plugin, names)
 
     def load_plugin(self, plugin):
-        '''
+        """
         Import plugin (see :meth:`import_plugin`) and load related data.
 
         :param plugin: plugin module name
         :type plugin: str
         :raises PluginNotFoundError: if not found on any namespace
-        '''
+        """
         return self.import_plugin(plugin)
 
 
 class RegistrablePluginManager(PluginManagerBase):
-    '''
+    """
     Base plugin manager for plugin registration via :func:`register_plugin`
     functions at plugin module level.
-    '''
+    """
     def __init__(self, app=None):
         super(RegistrablePluginManager, self).__init__(app)
         self.plugin_filters.append(
@@ -205,7 +208,7 @@ class RegistrablePluginManager(PluginManagerBase):
             )
 
     def load_plugin(self, plugin):
-        '''
+        """
         Import plugin (see :meth:`import_plugin`) and load related data.
 
         If available, plugin's module-level :func:`register_plugin` function
@@ -214,7 +217,7 @@ class RegistrablePluginManager(PluginManagerBase):
         :param plugin: plugin module name
         :type plugin: str
         :raises PluginNotFoundError: if not found on any namespace
-        '''
+        """
         module = super(RegistrablePluginManager, self).load_plugin(plugin)
         if hasattr(module, 'register_plugin'):
             module.register_plugin(self)
@@ -222,18 +225,18 @@ class RegistrablePluginManager(PluginManagerBase):
 
 
 class BlueprintPluginManager(PluginManagerBase):
-    '''
+    """
     Manager for blueprint registration via :meth:`register_plugin` calls.
 
     Note: blueprints are not removed on `clear` nor reloaded on `reload`
     as flask does not allow it.
-    '''
+    """
     def __init__(self, app=None):
         self._blueprint_known = set()
         super(BlueprintPluginManager, self).__init__(app=app)
 
     def register_blueprint(self, blueprint):
-        '''
+        """
         Register given blueprint on curren app.
 
         This method is intended to be used on plugin's module-level
@@ -241,23 +244,23 @@ class BlueprintPluginManager(PluginManagerBase):
 
         :param blueprint: blueprint object with plugin endpoints
         :type blueprint: flask.Blueprint
-        '''
+        """
         if blueprint not in self._blueprint_known:
             self.app.register_blueprint(blueprint)
             self._blueprint_known.add(blueprint)
 
 
 class ExcludePluginManager(PluginManagerBase):
-    '''
+    """
     Manager for exclude-function registration via :meth:`register_exclude_fnc`
     calls.
-    '''
+    """
     def __init__(self, app=None):
         self._exclude_functions = set()
         super(ExcludePluginManager, self).__init__(app=app)
 
     def register_exclude_function(self, exclude_fnc):
-        '''
+        """
         Register given exclude-function on curren app.
 
         This method is intended to be used on plugin's module-level
@@ -265,18 +268,18 @@ class ExcludePluginManager(PluginManagerBase):
 
         :param blueprint: blueprint object with plugin endpoints
         :type blueprint: flask.Blueprint
-        '''
+        """
         self._exclude_functions.add(exclude_fnc)
 
     def check_excluded(self, path):
-        '''
+        """
         Check if given path is excluded.
 
         :param path: absolute path to check against config and plugins
         :type path: str
         :return: wether if path should be excluded or not
         :rtype: bool
-        '''
+        """
         exclude_fnc = self.app.config.get('EXCLUDE_FNC')
         if exclude_fnc and exclude_fnc(path):
             return True
@@ -286,17 +289,17 @@ class ExcludePluginManager(PluginManagerBase):
         return False
 
     def clear(self):
-        '''
+        """
         Clear plugin manager state.
 
         Registered exclude functions will be disposed.
-        '''
+        """
         self._exclude_functions.clear()
         super(ExcludePluginManager, self).clear()
 
 
 class WidgetPluginManager(PluginManagerBase):
-    '''
+    """
     Plugin manager for widget registration.
 
     This class provides a dictionary of widget types at its
@@ -304,7 +307,7 @@ class WidgetPluginManager(PluginManagerBase):
     both :meth:`create_widget` and :meth:`register_widget` methods' `type`
     parameter, or instantiated directly and passed to :meth:`register_widget`
     via `widget` parameter.
-    '''
+    """
     widget_types = {
         'base': defaultsnamedtuple(
             'Widget',
@@ -340,16 +343,16 @@ class WidgetPluginManager(PluginManagerBase):
         }
 
     def clear(self):
-        '''
+        """
         Clear plugin manager state.
 
         Registered widgets will be disposed after calling this method.
-        '''
+        """
         self._widgets = []
         super(WidgetPluginManager, self).clear()
 
     def get_widgets(self, file=None, place=None):
-        '''
+        """
         List registered widgets, optionally matching given criteria.
 
         :param file: optional file object will be passed to widgets' filter
@@ -359,12 +362,12 @@ class WidgetPluginManager(PluginManagerBase):
         :type place: str
         :returns: list of widget instances
         :rtype: list of objects
-        '''
+        """
         return list(self.iter_widgets(file, place))
 
     @classmethod
     def _resolve_widget(cls, file, widget):
-        '''
+        """
         Resolve widget callable properties into static ones.
 
         :param file: file will be used to resolve callable properties.
@@ -373,14 +376,14 @@ class WidgetPluginManager(PluginManagerBase):
         :type widget: object
         :returns: a new widget instance of the same type as widget parameter
         :rtype: object
-        '''
+        """
         return widget.__class__(*[
             value(file) if callable(value) else value
             for value in widget
             ])
 
     def iter_widgets(self, file=None, place=None):
-        '''
+        """
         Iterate registered widgets, optionally matching given criteria.
 
         :param file: optional file object will be passed to widgets' filter
@@ -390,7 +393,7 @@ class WidgetPluginManager(PluginManagerBase):
         :type place: str
         :yields: widget instances
         :ytype: object
-        '''
+        """
         for filter, dynamic, cwidget in self._widgets:
             try:
                 if (
@@ -411,7 +414,7 @@ class WidgetPluginManager(PluginManagerBase):
             yield cwidget
 
     def create_widget(self, place, type, file=None, **kwargs):
-        '''
+        """
         Create a widget object based on given arguments.
 
         If file object is provided, callable arguments will be resolved:
@@ -429,7 +432,7 @@ class WidgetPluginManager(PluginManagerBase):
         :type type: browsepy.files.Node or None
         :returns: widget instance
         :rtype: object
-        '''
+        """
         widget_class = self.widget_types.get(type, self.widget_types['base'])
         kwargs.update(place=place, type=type)
         try:
@@ -451,7 +454,7 @@ class WidgetPluginManager(PluginManagerBase):
 
     def register_widget(self, place=None, type=None, widget=None, filter=None,
                         **kwargs):
-        '''
+        """
         Create (see :meth:`create_widget`) or use provided widget and register
         it.
 
@@ -472,7 +475,7 @@ class WidgetPluginManager(PluginManagerBase):
                            the same time (they're mutually exclusive).
         :returns: created or given widget object
         :rtype: object
-        '''
+        """
         if bool(widget) == bool(place or type):
             raise InvalidArgumentError(
                 'register_widget takes either place and type or widget'
@@ -484,23 +487,23 @@ class WidgetPluginManager(PluginManagerBase):
 
 
 class MimetypePluginManager(RegistrablePluginManager):
-    '''
+    """
     Plugin manager for mimetype-function registration.
-    '''
+    """
     _default_mimetype_functions = mimetype.alternatives
 
     def clear(self):
-        '''
+        """
         Clear plugin manager state.
 
         Registered mimetype functions will be disposed after calling this
         method.
-        '''
+        """
         self._mimetype_functions = list(self._default_mimetype_functions)
         super(MimetypePluginManager, self).clear()
 
     def get_mimetype(self, path):
-        '''
+        """
         Get mimetype of given path calling all registered mime functions (and
         default ones).
 
@@ -508,7 +511,7 @@ class MimetypePluginManager(RegistrablePluginManager):
         :type path: str
         :returns: mimetype
         :rtype: str
-        '''
+        """
         for fnc in self._mimetype_functions:
             mime = fnc(path)
             if mime:
@@ -516,7 +519,7 @@ class MimetypePluginManager(RegistrablePluginManager):
         return mimetype.by_default(path)
 
     def register_mimetype_function(self, fnc):
-        '''
+        """
         Register mimetype function.
 
         Given function must accept a filesystem path as string and return
@@ -524,13 +527,13 @@ class MimetypePluginManager(RegistrablePluginManager):
 
         :param fnc: callable accepting a path string
         :type fnc: callable
-        '''
+        """
         self._mimetype_functions.insert(0, fnc)
 
 
 class SessionPluginManager(PluginManagerBase):
     def register_session(self, key_or_keys, shrink_fnc=None):
-        '''
+        """
         Register session shrink function for specific session key or
         keys. Can be used as decorator.
 
@@ -546,7 +549,7 @@ class SessionPluginManager(PluginManagerBase):
         :type shrink_fnc: cookieman.abc.ShrinkFunction
         :returns: either original given shrink_fnc or decorator
         :rtype: cookieman.abc.ShrinkFunction
-        '''
+        """
         interface = self.app.session_interface
         if isinstance(interface, CookieMan):
             return interface.register(key_or_keys, shrink_fnc)
@@ -554,7 +557,7 @@ class SessionPluginManager(PluginManagerBase):
 
 
 class ArgumentPluginManager(PluginManagerBase):
-    '''
+    """
     Plugin manager for command-line argument registration.
 
     This function is used by browsepy's :mod:`__main__` module in order
@@ -563,7 +566,7 @@ class ArgumentPluginManager(PluginManagerBase):
     This is done by :meth:`load_arguments` which imports all plugin modules
     and calls their respective :func:`register_arguments` module-level
     function.
-    '''
+    """
     _argparse_kwargs = {'add_help': False}
     _argparse_arguments = argparse.Namespace()
 
@@ -574,7 +577,7 @@ class ArgumentPluginManager(PluginManagerBase):
             )
 
     def extract_plugin_arguments(self, plugin):
-        '''
+        """
         Given a plugin name, extracts its registered_arguments as an
         iterable of (args, kwargs) tuples.
 
@@ -582,7 +585,7 @@ class ArgumentPluginManager(PluginManagerBase):
         :type plugin: str
         :returns: iterable if (args, kwargs) tuples.
         :rtype: iterable
-        '''
+        """
         module = self.import_plugin(plugin)
         if hasattr(module, 'register_arguments'):
             manager = ArgumentPluginManager()
@@ -615,7 +618,7 @@ class ArgumentPluginManager(PluginManagerBase):
             )
 
     def load_arguments(self, argv, base=None):
-        '''
+        """
         Process given argument list based on registered arguments and given
         optional base :class:`argparse.ArgumentParser` instance.
 
@@ -632,7 +635,7 @@ class ArgumentPluginManager(PluginManagerBase):
         :returns: argparse.Namespace instance with processed arguments as
                   given by :meth:`argparse.ArgumentParser.parse_args`.
         :rtype: argparse.Namespace
-        '''
+        """
         parser = self._plugin_argument_parser(base)
         options, _ = parser.parse_known_args(argv)
 
@@ -666,17 +669,17 @@ class ArgumentPluginManager(PluginManagerBase):
         return self._argparse_arguments
 
     def clear(self):
-        '''
+        """
         Clear plugin manager state.
 
         Registered command-line arguments will be disposed after calling this
         method.
-        '''
+        """
         self._argparse_argkwargs = []
         super(ArgumentPluginManager, self).clear()
 
     def register_argument(self, *args, **kwargs):
-        '''
+        """
         Register command-line argument.
 
         All given arguments will be passed directly to
@@ -685,11 +688,11 @@ class ArgumentPluginManager(PluginManagerBase):
 
         See :meth:`argparse.ArgumentParser.add_argument` documentation for
         further information.
-        '''
+        """
         self._argparse_argkwargs.append((args, kwargs))
 
     def get_argument(self, name, default=None):
-        '''
+        """
         Get argument value from last :meth:`load_arguments` call.
 
         Keep in mind :meth:`argparse.ArgumentParser.parse_args` generates
@@ -700,14 +703,14 @@ class ArgumentPluginManager(PluginManagerBase):
         :type name: str
         :param default: default value if parameter is not found
         :returns: command-line argument or default value
-        '''
+        """
         return getattr(self._argparse_arguments, name, default)
 
 
 class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
-    '''
+    """
     Deprecated plugin API
-    '''
+    """
 
     _deprecated_places = {
         'javascript': 'scripts',
@@ -856,8 +859,8 @@ class PluginManager(MimetypeActionPluginManager,
                     MimetypePluginManager,
                     SessionPluginManager,
                     ArgumentPluginManager):
-    '''
-    Main plugin manager
+    """
+    Main plugin manager.
 
     Provides:
         * Plugin module loading and Flask extension logic.
@@ -878,9 +881,9 @@ class PluginManager(MimetypeActionPluginManager,
     both :meth:`create_widget` and :meth:`register_widget` methods' `type`
     parameter, or instantiated directly and passed to :meth:`register_widget`
     via `widget` parameter.
-    '''
+    """
     def clear(self):
-        '''
+        """
         Clear plugin manager state.
 
         Registered widgets will be disposed after calling this method.
@@ -890,5 +893,5 @@ class PluginManager(MimetypeActionPluginManager,
 
         Registered command-line arguments will be disposed after calling this
         method.
-        '''
+        """
         super(PluginManager, self).clear()

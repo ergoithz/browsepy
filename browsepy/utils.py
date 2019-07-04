@@ -12,12 +12,12 @@ import flask
 
 
 def ppath(*args, **kwargs):
-    '''
+    """
     Get joined file path relative to module location.
 
     :param module: Module name
     :type module: str
-    '''
+    """
     module = get_module(kwargs.pop('module', __name__))
     if kwargs:
         raise TypeError(
@@ -30,28 +30,28 @@ def ppath(*args, **kwargs):
 
 @contextlib.contextmanager
 def dummy_context():
-    '''
+    """
     Context manager which does nothing besides exposing the context
     manger interface
-    '''
+    """
     yield
 
 
 def get_module(name):
-    '''
+    """
     Get module object by name.
 
     :param name: module name
     :type name: str
     :return: module or None if not found
     :rtype: module or None
-    '''
+    """
     __import__(name)
     return sys.modules.get(name, None)
 
 
 def random_string(size, sample=tuple(map(chr, range(256)))):
-    '''
+    """
     Get random string of given size.
 
     :param size: length of the returned string
@@ -60,34 +60,34 @@ def random_string(size, sample=tuple(map(chr, range(256)))):
     :type sample: tuple of str
     :returns: random string of specified size
     :rtype: str
-    '''
+    """
     randrange = functools.partial(random.randrange, 0, len(sample))
     return ''.join(sample[randrange()] for i in range(size))
 
 
 def solve_local(context_local):
-    '''
+    """
     Resolve given context local to its actual value. If given object
     it's not a context local nothing happens, just returns the same value.
-    '''
+    """
     if callable(getattr(context_local, '_get_current_object', None)):
         return context_local._get_current_object()
     return context_local
 
 
 def clear_localstack(stack):
-    '''
+    """
     Clear given werkzeug LocalStack instance.
 
     :param ctx: local stack instance
     :type ctx: werkzeug.local.LocalStack
-    '''
+    """
     while stack.pop():
         pass
 
 
 def clear_flask_context():
-    '''
+    """
     Clear flask current_app and request globals.
 
     When using :meth:`flask.Flask.test_client`, even as context manager,
@@ -96,13 +96,13 @@ def clear_flask_context():
 
     This function clean said globals, and should be called after testing
     with :meth:`flask.Flask.test_client`.
-    '''
+    """
     clear_localstack(flask._app_ctx_stack)
     clear_localstack(flask._request_ctx_stack)
 
 
 def defaultsnamedtuple(name, fields, defaults=None):
-    '''
+    """
     Generate namedtuple with default values.
 
     :param name: name
@@ -110,7 +110,7 @@ def defaultsnamedtuple(name, fields, defaults=None):
     :param defaults: iterable or mapping with field defaults
     :returns: defaultdict with given fields and given defaults
     :rtype: collections.defaultdict
-    '''
+    """
     nt = collections.namedtuple(name, fields)
     nt.__new__.__defaults__ = (None, ) * len(nt._fields)
     if isinstance(defaults, collections.Mapping):

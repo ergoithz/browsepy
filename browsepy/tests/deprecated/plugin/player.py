@@ -64,12 +64,12 @@ def detect_playable_mimetype(path, os_sep=os.sep):
 
 
 def register_plugin(manager):
-    '''
+    """
     Register blueprints and actions using given plugin manager.
 
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
-    '''
+    """
     manager.register_blueprint(player)
     manager.register_mimetype_function(detect_playable_mimetype)
 

@@ -11,13 +11,13 @@ from . import compat
 
 
 class ByteQueue(compat.Queue):
-    '''
+    """
     Small synchronized queue storing bytes, with an additional finish method
     with turns the queue :method:`get` into non-blocking (returns empty bytes).
 
     On a finished queue all :method:`put` will raise Full exceptions,
     regardless of the parameters given.
-    '''
+    """
     def _init(self, maxsize):
         self.queue = []
         self.bytes = 0
@@ -42,18 +42,18 @@ class ByteQueue(compat.Queue):
         return data
 
     def qsize(self):
-        '''
+        """
         Return the number of bytes in the queue.
-        '''
+        """
         with self.mutex:
             return self.bytes
 
     def finish(self):
-        '''
+        """
         Turn queue into finished mode: :method:`get` becomes non-blocking
         and returning empty bytes if empty, and :method:`put` raising
         :class:`queue.Full` exceptions unconditionally.
-        '''
+        """
         self.finished = True
 
         with self.not_full:
@@ -61,15 +61,15 @@ class ByteQueue(compat.Queue):
 
 
 class WriteAbort(Exception):
-    '''
+    """
     Exception used internally by :class:`TarFileStream`'s default
     implementation to stop tarfile compression.
-    '''
+    """
     pass
 
 
 class TarFileStream(compat.Iterator):
-    '''
+    """
     Iterator class which yields tarfile chunks for streaming.
 
     This class implements :class:`collections.abc.Iterator` interface
@@ -85,7 +85,7 @@ class TarFileStream(compat.Iterator):
     If your exclude function requires accessing to :data:`flask.app`,
     :data:`flask.g`, :data:`flask.request` or any other flask contexts,
     ensure is wrapped with :func:`flask.copy_current_request_context`
-    '''
+    """
 
     queue_class = ByteQueue
     abort_exception = WriteAbort
@@ -102,21 +102,21 @@ class TarFileStream(compat.Iterator):
 
     @property
     def name(self):
-        '''
+        """
         Filename generated from given path and compression method.
-        '''
+        """
         return '%s.%s' % (os.path.basename(self.path), self._extension)
 
     @property
     def encoding(self):
-        '''
+        """
         Mimetype parameters (such as encoding).
-        '''
+        """
         return self._compress
 
     def __init__(self, path, buffsize=10240, exclude=None, compress='gzip',
                  compresslevel=1):
-        '''
+        """
         Initialize thread and class (thread is not started until interation).
 
         Note that compress parameter will be ignored if buffsize is below 16.
@@ -131,7 +131,7 @@ class TarFileStream(compat.Iterator):
         :type compress: str or None
         :param compresslevel: compression level [1-9] defaults to 1 (fastest)
         :type compresslevel: int
-        '''
+        """
         self.path = path
         self.exclude = exclude
         self.closed = False
@@ -148,28 +148,28 @@ class TarFileStream(compat.Iterator):
 
     @property
     def _infofilter(self):
-        '''
+        """
         TarInfo filtering function based on :attr:`exclude`.
-        '''
+        """
         path = self.path
         path_join = os.path.join
         exclude = self.exclude
 
         def infofilter(info):
-            '''
+            """
             Filter TarInfo objects for TarFile.
 
             :param info:
             :type info: tarfile.TarInfo
             :return: infofile or None if file must be excluded
             :rtype: tarfile.TarInfo or None
-            '''
+            """
             return None if exclude(path_join(path, info.name)) else info
 
         return infofilter if exclude else None
 
     def _fill(self):
-        '''
+        """
         Writes data on internal tarfile instance, which writes to current
         object, using :meth:`write`.
 
@@ -177,7 +177,7 @@ class TarFileStream(compat.Iterator):
 
         This method is called automatically, on a thread, on initialization,
         so there is little need to call it manually.
-        '''
+        """
         try:
             with self.tarfile_class(
               fileobj=self,
@@ -194,14 +194,14 @@ class TarFileStream(compat.Iterator):
             self._queue.finish()
 
     def __next__(self):
-        '''
+        """
         Pulls chunk from tarfile (which is processed on its own thread).
 
         :param want: number bytes to read, defaults to 0 (all available)
         :type want: int
         :returns: tarfile data as bytes
         :rtype: bytes
-        '''
+        """
         if self.closed:
             raise StopIteration()
 
@@ -216,7 +216,7 @@ class TarFileStream(compat.Iterator):
         return data
 
     def write(self, data):
-        '''
+        """
         Put chunk of data into data queue, used on the tarfile thread.
 
         This method blocks when pipe is already, applying backpressure to
@@ -227,7 +227,7 @@ class TarFileStream(compat.Iterator):
         :returns: number of bytes written
         :rtype: int
         :raises WriteAbort: if already closed or closed while blocking
-        '''
+        """
         if self.closed:
             raise self.abort_exception()
 
@@ -239,9 +239,9 @@ class TarFileStream(compat.Iterator):
         return len(data)
 
     def close(self):
-        '''
+        """
         Closes tarfile pipe and stops further processing.
-        '''
+        """
         if not self.closed:
             self.closed = True
             self._queue.finish()
@@ -252,7 +252,7 @@ class TarFileStream(compat.Iterator):
 
 
 def stream_template(template_name, **context):
-    '''
+    """
     Some templates can be huge, this function returns an streaming response,
     sending the content in chunks and preventing from timeout.
 
@@ -260,7 +260,7 @@ def stream_template(template_name, **context):
     :param **context: parameters for templates.
     :yields: HTML strings
     :rtype: Iterator of str
-    '''
+    """
     app = context.get('current_app', flask.current_app)
     app.update_template_context(context)
     template = app.jinja_env.get_template(template_name)

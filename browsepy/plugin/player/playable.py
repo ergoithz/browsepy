@@ -16,11 +16,11 @@ from browsepy.file import Node, File, Directory, \
 
 
 class PLSFileParser(object):
-    '''
+    """
     ConfigParser wrapper accepting fallback on get for convenience.
 
     This wraps instead of inheriting due ConfigParse being classobj on python2.
-    '''
+    """
     NOT_SET = type('NotSetType', (object,), {})
     option_exceptions = (
         six.moves.configparser.NoSectionError,
