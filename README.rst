@@ -25,7 +25,7 @@ browsepy
   :target: https://pypi.python.org/pypi/browsepy/
   :alt: Version: 0.5.6
 
-.. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.4%2B-FFC100.svg?style=flat-square
+.. image:: https://img.shields.io/badge/python-2.7%2B%2C%203.5%2B-FFC100.svg?style=flat-square
   :target: https://pypi.python.org/pypi/browsepy/
   :alt: Python 2.7+, 3.5+
 
@@ -43,7 +43,7 @@ You can also build yourself from sphinx sources using the documentation
 License
 -------
 
-MIT. See `LICENSE`_.
+MIT License. See `LICENSE`_.
 
 .. _LICENSE: https://raw.githubusercontent.com/ergoithz/browsepy/master/LICENSE
 
@@ -198,7 +198,7 @@ Starting from version 0.6.0, browsepy a new plugin `file-actions` is included
 providing copy/cut/paste and directory creation operations.
 
 Plugins can add HTML content to browsepy's browsing view, using some
-convenience abstraction for already used elements like external stylesheet and
-javascript tags, links, buttons and file upload.
+convenience abstraction for frequently used elements like external stylesheets,
+javascript, links, buttons and file upload.
 
 More information at http://ergoithz.github.io/browsepy/plugins.html
