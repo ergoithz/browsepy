@@ -11,8 +11,8 @@ Welcome to browsepy's documentation. It's recommended to start reading both
 detailed tutorials about integrating :mod:`browsepy` as module or plugin
 development are also available.
 
-Browsepy has few dependencies: `Flask`_ and `Scandir`_. `Flask`_ is an awesome
-web microframework while `Scandir`_ is a directory listing library which `was
+Browsepy has few dependencies: `Flask`_ and `scandir`_. `Flask`_ is an awesome
+web microframework while `scandir`_ is a directory listing library which `was
 included <https://www.python.org/dev/peps/pep-0471/>`_ in Python 3.5's
 standard library.
 
@@ -26,11 +26,11 @@ If you want to dive into their documentation, check out the following links:
   <https://docs.python.org/3.5/library/os.html#os.scandir>`_
 
 .. _Flask: http://jinja.pocoo.org/
-.. _Scandir: http://werkzeug.pocoo.org/
+.. _scandir: http://werkzeug.pocoo.org/
 
 User's Guide
 ============
-Instructions for users, implementers and developers.
+Instructions for users, implementors and developers.
 
 .. toctree::
    :maxdepth: 2

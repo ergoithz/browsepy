@@ -19,7 +19,7 @@ PY_LEGACY = sys.version_info < (3, )
 TRUE_VALUES = frozenset(('true', 'yes', '1', 'enable', 'enabled', True, 1))
 
 try:
-    import importlib.resources as res  # to support python >= 3.7
+    import importlib.resources as res  # python 3.7+
 except ImportError:
     import importlib_resources as res  # noqa
 
@@ -388,22 +388,21 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
         )
 
 
-class Iterator(BaseIterator):
-    def next(self):
-        """
-        Call :method:`__next__` for compatibility.
-
-        :returns: see :method:`__next__`
-        """
-        return self.__next__()
-
-
 if PY_LEGACY:
     class FileNotFoundError(BaseException):
         __metaclass__ = abc.ABCMeta
 
     FileNotFoundError.register(OSError)
     FileNotFoundError.register(IOError)
+
+    class Iterator(BaseIterator):
+        def next(self):
+            """
+            Call :method:`__next__` for compatibility.
+
+            :returns: see :method:`__next__`
+            """
+            return self.__next__()
 
     range = xrange  # noqa
     filter = itertools.ifilter
@@ -414,6 +413,7 @@ if PY_LEGACY:
     bytes = str  # noqa
 else:
     FileNotFoundError = FileNotFoundError
+    Iterator = BaseIterator
     range = range
     filter = filter
     map = map
