@@ -9,7 +9,6 @@ import string
 import random
 import datetime
 import logging
-import functools
 
 import flask
 

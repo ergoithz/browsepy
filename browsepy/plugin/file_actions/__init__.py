@@ -1,7 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-import functools
-
 from flask import Blueprint, render_template, request, redirect, url_for, \
                   session, current_app, g
 from werkzeug.exceptions import NotFound
