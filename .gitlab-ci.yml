@@ -60,7 +60,7 @@ python37:
   extends: .test-base
   image: python:3.7-alpine
 
-node:
+eslint:
   image: node:alpine
   stage: test
   cache:

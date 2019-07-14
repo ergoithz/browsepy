@@ -336,12 +336,6 @@ class TestBlueprint(TestPlayerBase):
         with self.app.app_context():
             return flask.url_for(endpoint, **kwargs)
 
-    def get(self, endpoint, **kwargs):
-        with self.app.test_client() as client:
-            url = self.url_for(endpoint, **kwargs)
-            response = client.get(url)
-        return response
-
     def file(self, path, data=''):
         apath = p(self.app.config['DIRECTORY_BASE'], path)
         with open(apath, 'w') as f:
@@ -355,31 +349,41 @@ class TestBlueprint(TestPlayerBase):
 
     def test_playable(self):
         name = 'test.mp3'
-        result = self.get('player.audio', path=name)
-        self.assertEqual(result.status_code, 404)
-        self.file(name)
-        result = self.get('player.audio', path=name)
-        self.assertEqual(result.status_code, 200)
+        url = self.url_for('player.audio', path=name)
+        with self.app.test_client() as client:
+            result = client.get(url)
+            self.assertEqual(result.status_code, 404)
+
+            self.file(name)
+            result = client.get(url)
+            self.assertEqual(result.status_code, 200)
 
     def test_playlist(self):
         name = 'test.m3u'
-        result = self.get('player.playlist', path=name)
-        self.assertEqual(result.status_code, 404)
-        self.file(name)
-        result = self.get('player.playlist', path=name)
-        self.assertEqual(result.status_code, 200)
+        url = self.url_for('player.playlist', path=name)
+        with self.app.test_client() as client:
+            result = client.get(url)
+            self.assertEqual(result.status_code, 404)
+
+            self.file(name)
+            result = client.get(url)
+            self.assertEqual(result.status_code, 200)
 
     def test_directory(self):
         name = 'directory'
-        result = self.get('player.directory', path=name)
-        self.assertEqual(result.status_code, 404)
-        self.directory(name)
-        result = self.get('player.directory', path=name)
-        self.assertEqual(result.status_code, 200)
-        self.file('directory/test.mp3')
-        result = self.get('player.directory', path=name)
-        self.assertEqual(result.status_code, 200)
-        self.assertIn(b'test.mp3', result.data)
+        url = self.url_for('player.directory', path=name)
+        with self.app.test_client() as client:
+            result = client.get(url)
+            self.assertEqual(result.status_code, 404)
+
+            self.directory(name)
+            result = client.get(url)
+            self.assertEqual(result.status_code, 200)
+
+            self.file('directory/test.mp3')
+            result = client.get(url)
+            self.assertEqual(result.status_code, 200)
+            self.assertIn(b'test.mp3', result.data)
 
     def test_endpoints(self):
         with self.app.app_context():
