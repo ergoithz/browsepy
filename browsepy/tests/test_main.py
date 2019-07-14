@@ -29,7 +29,7 @@ class TestMain(unittest.TestCase):
     @staticmethod
     @contextlib.contextmanager
     def stderr_ctx():
-        with io.StringIO() as f:
+        with io.BytesIO() as f:
             sys_sderr = sys.stderr
             sys.stderr = f
             yield f
