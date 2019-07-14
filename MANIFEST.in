@@ -1,7 +1,12 @@
 include README.rst
+include LICENSE
+
 graft browsepy/templates
 graft browsepy/static
 graft browsepy/plugin/player/templates
 graft browsepy/plugin/player/static
 graft browsepy/plugin/file_actions/templates
 graft browsepy/plugin/file_actions/static
+
+global-exclude *.py[co]
+global-exclude __pycache__
