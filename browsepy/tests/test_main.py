@@ -10,10 +10,12 @@ import contextlib
 
 import browsepy
 import browsepy.__main__ as main
+import browsepy.compat as compat
 
 
 class TestMain(unittest.TestCase):
     module = main
+    stream_class = io.BytesIO if compat.PY_LEGACY else io.StringIO
 
     def setUp(self):
         self.app = browsepy.app
@@ -26,10 +28,10 @@ class TestMain(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.base)
 
-    @staticmethod
+    @classmethod
     @contextlib.contextmanager
-    def stderr_ctx():
-        with io.BytesIO() as f:
+    def stderr_ctx(cls):
+        with cls.stream_class() as f:
             sys_sderr = sys.stderr
             sys.stderr = f
             yield f
