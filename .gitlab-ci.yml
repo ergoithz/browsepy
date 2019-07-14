@@ -13,7 +13,7 @@
     - .coverage.*
   before_script:
   - apk add --no-cache build-base python3-dev
-  - pip install coverage
+  - pip install coverage flake8
   script:
   - flake8 browsepy
   - coverage run -p setup.py test
