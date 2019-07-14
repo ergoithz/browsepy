@@ -1,6 +1,6 @@
 (function() {
   function every(arr, fnc) {
-    for (let i = 0, l = arr.length; i < l; i++) {
+    for (var i = 0, l = arr.length; i < l; i++) {
       if (!fnc(arr[i], i, arr)) {
         return false;
       }
@@ -53,7 +53,7 @@
           .forEach(function (tr) {
             tr.className += ' clickable';
             event(tr, 'click', checkRow, checkbox, tr);
-            event(tr, 'selectstart', e => e.preventDefault());
+            event(tr, 'selectstart', function(e) {return e.preventDefault();});
           });
         check(checkbox);
       });
