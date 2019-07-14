@@ -46,7 +46,7 @@ python27:
   image: python:2.7-alpine
   before_script:
   - apk add --no-cache build-base python2-dev
-  - pip install coverage
+  - pip install coverage flake8
 
 python35:
   extends: .test-base
