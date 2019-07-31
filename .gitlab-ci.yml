@@ -7,6 +7,12 @@
   cache:
     paths:
     - .cache/pip
+  only:
+    changes:
+    - "**.py"
+    - "**.html"
+    - "**.cfg"
+    - MANIFEST.in
   artifacts:
     when: on_success
     expire_in: 1h
@@ -31,7 +37,7 @@
 .github-base:
   image: alpine/git
   variables:
-    GITHUB_MIRROR: git@github.com:ergoithz/browsepy.git
+    GITHUB_MIRROR: "git@github.com:ergoithz/browsepy.git"
   before_script:
   - mkdir -p ~/.ssh
   - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
@@ -70,6 +76,11 @@ eslint:
   cache:
     paths:
     - node_modules
+  only:
+    changes:
+    - "**.json"
+    - "**.js"
+    - .eslintignore
   before_script:
   - npm install eslint
   script:

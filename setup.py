@@ -61,9 +61,10 @@ setup(
         'setuptools>36.2',
         ],
     install_requires=[
+        'six',
         'flask',
-        'unicategories',
         'cookieman',
+        'unicategories',
         'backports.shutil_get_terminal_size ; python_version<"3.3"',
         'scandir ; python_version<"3.5"',
         'pathlib2 ; python_version<"3.5"',
