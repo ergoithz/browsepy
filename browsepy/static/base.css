@@ -295,7 +295,7 @@ header form.autosubmit,
 footer a.button,
 footer input.button,
 footer form.autosubmit {
-  margin: 0.5em 3px 0.5em 0;
+  margin: 0 0.5em 0.5em 1px;
 }
 
 a.button:last-child,
