@@ -570,6 +570,13 @@ class ArgumentPluginManager(PluginManagerBase):
     _argparse_kwargs = {'add_help': False}
     _argparse_arguments = argparse.Namespace()
 
+    @cached_property
+    def _default_argument_parser(self):
+        parser = compat.SafeArgumentParser()
+        parser.add_argument('--plugin', action='append', default=[])
+        parser.add_argument('--help-all', action='store_true')
+        return parser
+
     def __init__(self, app=None):
         super(ArgumentPluginManager, self).__init__(app)
         self.plugin_filters.append(
@@ -592,12 +599,6 @@ class ArgumentPluginManager(PluginManagerBase):
             module.register_arguments(manager)
             return manager._argparse_argkwargs
         return ()
-
-    def _default_argument_parser(self):
-        parser = compat.SafeArgumentParser()
-        parser.add_argument('--plugin', action='append', default=[])
-        parser.add_argument('--help-all', action='store_true')
-        return parser
 
     def _plugin_argument_parser(self, base=None):
         plugins = self.available_plugins
