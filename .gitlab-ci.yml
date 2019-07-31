@@ -3,6 +3,7 @@
   variables:
     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
     COVERAGE_FILE: "${CI_PROJECT_DIR}/.coverage.${CI_JOB_NAME}"
+    MODULE: browsepy
   cache:
     paths:
     - .cache/pip
@@ -15,19 +16,22 @@
   - apk add --no-cache build-base python3-dev
   - pip install coverage flake8
   script:
-  - flake8 browsepy
+  - flake8 ${MODULE}
   - coverage run -p setup.py test
 
 .after-base:
   image: python:3.7-alpine
   variables:
     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
+    MODULE: browsepy
   cache:
     paths:
     - .cache/pip
 
 .github-base:
   image: alpine/git
+  variables:
+    GITHUB_MIRROR: git@github.com:ergoithz/browsepy.git
   before_script:
   - mkdir -p ~/.ssh
   - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
@@ -69,7 +73,7 @@ eslint:
   before_script:
   - npm install eslint
   script:
-  - node_modules/.bin/eslint browsepy
+  - node_modules/.bin/eslint ${MODULE}
 
 coverage:
   extends: .after-base
@@ -108,7 +112,7 @@ publish-github-mirror:
     - next
     - master
   script:
-  - git remote add github git@github.com:ergoithz/browsepy.git
+  - git remote add github "${GITHUB_MIRROR}"
   - git push github
 
 publish-github-pages:
@@ -120,7 +124,7 @@ publish-github-pages:
     refs:
     - master
   script:
-  - git remote add github git@github.com:ergoithz/browsepy.git
+  - git remote add github "${GITHUB_MIRROR}"
   - git fetch
   - git checkout gh-pages
   - cp -rf doc/.build/* .
@@ -142,7 +146,7 @@ publish-alpha:
   - |
     ALPHA=$(date +%s)
     SED_REGEX="s/^__version__\s*=\s*[\"']([^\"']+)[\"']\$/__version__ = '\\1a${ALPHA}'/g"
-    SED_PATH="unittest_resources/__init__.py"
+    SED_PATH="${MODULE}/__init__.py"
     sed -ri "${SED_REGEX}" "${SED_PATH}"
     python setup.py bdist_wheel sdist
     twine upload --repository-url=https://test.pypi.org/legacy/ dist/*
