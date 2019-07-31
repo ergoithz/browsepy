@@ -16,7 +16,7 @@ class TestApp(unittest.TestCase):
         self.app.config._warned.clear()
 
     def test_config(self):
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.pls') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py') as f:
             f.write('DIRECTORY_DOWNLOADABLE = False\n')
             f.flush()
 
