@@ -24,7 +24,7 @@
           action="{{ widget.action or url_for(widget.endpoint, path=file.urlpath) }}"
           enctype="multipart/form-data">
       <label>
-        <h3>{{ widget.text or 'Upload' }}</h3>
+        <span>{{ widget.text or 'Upload' }}</span>
         <input class="button text suggested" type="file" name="file[]" multiple=""/>
       </label>
       <input class="button text" type="submit" value="{{ widget.text or 'Upload' }}"/>

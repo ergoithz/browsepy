@@ -60,20 +60,18 @@ a:active {
   color: #666;
 }
 
-form.autosubmit h3 {
-  font-size: 1em;
-  font-weight: normal;
-  margin: 0;
-  display: none;
-}
-html.autosubmit-support form.autosubmit h3 {
-  display: inline-block;
-}
-
 form.autosubmit label {
   border-radius: 0.25em;
   display: inline-block;
   vertical-align: middle;
+}
+
+form.autosubmit label span {
+  display: none;
+}
+
+html.autosubmit-support form.autosubmit label span {
+  display: inline-block;
 }
 
 form.autosubmit input{
@@ -99,13 +97,7 @@ form.autosubmit input[type=submit] {
 
 html.autosubmit-support form.autosubmit input{
   position: fixed;
-  top: -500px;
-}
-
-html.autosubmit-support form.autosubmit h2{
-  font-size: 1em;
-  font-weight: normal;
-  padding: 0;
+  top: -10em;
 }
 
 table.browser {
