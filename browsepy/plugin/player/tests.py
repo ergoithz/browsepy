@@ -49,7 +49,7 @@ class TestPLSFileParser(unittest.TestCase):
     exceptions = player_playable.PLSFileParser.option_exceptions
 
     def get_parser(self, content=''):
-        with tempfile.NamedTemporaryFile(mode='w') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.pls') as f:
             f.write(content)
             f.flush()
             return self.module.PLSFileParser(f.name)

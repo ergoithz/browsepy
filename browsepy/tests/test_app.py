@@ -16,8 +16,8 @@ class TestApp(unittest.TestCase):
         self.app.config._warned.clear()
 
     def test_config(self):
-        with tempfile.NamedTemporaryFile() as f:
-            f.write(b'DIRECTORY_DOWNLOADABLE = False\n')
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.pls') as f:
+            f.write('DIRECTORY_DOWNLOADABLE = False\n')
             f.flush()
 
             os.environ['BROWSEPY_TEST_SETTINGS'] = f.name
