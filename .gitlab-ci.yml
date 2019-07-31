@@ -35,7 +35,10 @@
     - .cache/pip
 
 .github-base:
-  image: alpine/git
+  image:
+    name: alpine/git
+    entrypoint:
+    - /bin/sh
   variables:
     GITHUB_MIRROR: "git@github.com:ergoithz/browsepy.git"
   before_script:
