@@ -3,6 +3,7 @@
 import os
 import os.path
 import sys
+import errno
 import abc
 import time
 import shutil
@@ -113,8 +114,22 @@ def rmtree(path):
         try:
             shutil.rmtree(path)
         except OSError as error:
-            if getattr(error, 'winerror', 0) in (5, 145) and attempt < 50:
-                time.sleep(0.01)  # allow dumb filesystems to catch up
+            if attempt < 50 and (
+              getattr(error, 'winerror', 0) in (5, 145) or
+              error.errno in (
+                errno.ENOENT,
+                errno.EIO,
+                errno.ENXIO,
+                errno.EAGAIN,
+                errno.EBUSY,
+                errno.ENOTDIR,
+                errno.EISDIR,
+                errno.ENOTEMPTY,
+                errno.EALREADY,
+                errno.EINPROGRESS,
+                errno.EREMOTEIO,
+              )):
+                time.sleep(0.01)  # allow sluggish filesystems to catch up
                 continue
             raise
 
