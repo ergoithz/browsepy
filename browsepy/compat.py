@@ -146,15 +146,22 @@ def rmtree(path):
     def remove_readonly(action, name, exc_info):
         """Clear the readonly bit and reattempt the removal."""
         exc_type, exc_value, exc_traceback = exc_info
-        if issubclass(
-          exc_type,
-          getattr(builtins, 'PermissionError', OSError),
-          ) and exc_value.errno == errno.EPERM:
+        is_perm = issubclass(
+            exc_type,
+            getattr(
+                builtins,
+                'PermissionError',
+                EnvironmentError,
+                ),
+            ) and (
+            exc_value == errno.EPERM or
+            getattr(exc_value, 'winerror', None) == 5
+            )
+        if is_perm:
             os.chmod(name, stat.S_IWRITE)
             action(name)
         else:
-            raise exc_info
-
+            raise exc_type, exc_value, exc_traceback
     retries = 10
     while os.path.exists(path):
         try:
