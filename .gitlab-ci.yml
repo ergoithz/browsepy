@@ -38,7 +38,7 @@
     GITHUB_MIRROR: "git@github.com:ergoithz/browsepy.git"
   before_script:
   - mkdir -p ~/.ssh
-  - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+  - echo -e "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
   - ssh-keyscan -H $ssh_port "$ssh_host" >> ~/.ssh/known_hosts
   - git config user.name "${GITLAB_USER_LOGIN}"

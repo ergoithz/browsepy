@@ -41,6 +41,7 @@ install:
   - ps: |
       echo "Available Python versions:"
       ls "C:/" | Select-String -Pattern "Python*"
+      echo ""
       echo "Installed SDKs:"
       ls "C:/Program Files/Microsoft SDKs/Windows"
       if (-not(Test-Path($env:PYTHON))) {
