@@ -1,62 +1,36 @@
 branches:
   except:
-    - gh-pages
-    - /gh-pages-.*/
+  - gh-pages
+  - /gh-pages-.*/
 
 environment:
   matrix:
-    - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.16"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.16"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python35"
-      PYTHON_VERSION: "3.5.7"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python35-x64"
-      PYTHON_VERSION: "3.5.7"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python36"
-      PYTHON_VERSION: "3.6.9"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python36-x64"
-      PYTHON_VERSION: "3.6.9"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python37"
-      PYTHON_VERSION: "3.7.4"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python37-x64"
-      PYTHON_VERSION: "3.7.4"
-      PYTHON_ARCH: "64"
+  - PYTHON: "C:\\Python27"
+  - PYTHON: "C:\\Python27-x64"
+  - PYTHON: "C:\\Python35"
+  - PYTHON: "C:\\Python35-x64"
+  - PYTHON: "C:\\Python36"
+  - PYTHON: "C:\\Python36-x64"
+  - PYTHON: "C:\\Python37"
+  - PYTHON: "C:\\Python37-x64"
 
 build: off
 
-init:
-  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
-
 install:
-  - ps: |
-      echo "Available Python versions:"
-      ls "C:/" | Select-String -Pattern "Python*"
-      echo ""
-      echo "Installed SDKs:"
-      ls "C:/Program Files/Microsoft SDKs/Windows"
-      if (-not(Test-Path($env:PYTHON))) {
-        & appveyor\install.ps1
-      }
-  - |
-    SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
-    python --version
-    python -c "import struct; print(struct.calcsize('P') * 8)"
-    pip install --disable-pip-version-check --user --upgrade pip setuptools
+- ps: |
+    echo "Available Python versions:"
+    ls "C:/" | Select-String -Pattern "Python*"
+    echo ""
+    echo "Installed SDKs:"
+    ls "C:/Program Files/Microsoft SDKs/Windows"
+    if (-not(Test-Path($env:PYTHON))) {
+      & appveyor\install.ps1
+    }
+- |
+  SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+  python --version
+  python -c "import struct; print(struct.calcsize('P') * 8)"
+  pip install --disable-pip-version-check --user --upgrade pip setuptools
 
 test_script:
-  - "python setup.py test"
+- "python setup.py test"

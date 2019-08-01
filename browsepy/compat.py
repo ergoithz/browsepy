@@ -2,6 +2,7 @@
 
 import os
 import os.path
+import stat
 import sys
 import errno
 import abc
@@ -15,11 +16,6 @@ import warnings
 import posixpath
 import ntpath
 import argparse
-
-try:
-    import builtins  # python 3+
-except ImportError:
-    import __builtin__ as builtins  # noqa
 
 try:
     import importlib.resources as res  # python 3.7+
@@ -53,40 +49,31 @@ TRUE_VALUES = frozenset(
     # Truthy values
     ('true', 'yes', '1', 'enable', 'enabled', True, 1)
     )
-RETRYABLE_FS_EXCEPTIONS = tuple(
-    # Handle non PEP 3151 python versions
-    getattr(builtins, prop)
-    for prop in (
-        'PermissionError' if os.name == 'nt' else None,
-        'WindowsError',
-        'EnvironmentError',
-        'OSError',
-        )
-    if prop and hasattr(builtins, prop)
-    )
-RETRYABLE_FS_ERRNO_VALUES = frozenset(
-    # Error codes which could imply a busy filesystem
-    getattr(errno, prop)
-    for prop in (
-        'EPERM' if os.name == 'nt' else None,
-        'ENOENT',
-        'EIO',
-        'ENXIO',
-        'EAGAIN',
-        'EBUSY',
-        'ENOTDIR',
-        'EISDIR',
-        'ENOTEMPTY',
-        'EALREADY',
-        'EINPROGRESS',
-        'EREMOTEIO',
-        )
-    if prop and hasattr(errno, prop)
-    )
-RETRYABLE_FS_WINERROR_VALUES = frozenset(
-    # Handle WindowsError instances without errno
-    (5, 145)
-    )
+RETRYABLE_OSERROR_PROPERTIES = {
+    'errno': frozenset(
+        # Error codes which could imply a busy filesystem
+        getattr(errno, prop)
+        for prop in (
+            'EPERM',
+            'ENOENT',
+            'EIO',
+            'ENXIO',
+            'EAGAIN',
+            'EBUSY',
+            'ENOTDIR',
+            'EISDIR',
+            'ENOTEMPTY',
+            'EALREADY',
+            'EINPROGRESS',
+            'EREMOTEIO',
+            )
+        if prop and hasattr(errno, prop)
+        ),
+    'winerror': frozenset(
+        # Handle WindowsError instances without errno
+        (5, 145)
+        ),
+    }
 
 
 class SafeArgumentParser(argparse.ArgumentParser):
@@ -151,18 +138,41 @@ def rmtree(path):
     :param path: path to remove
     :type path: str
     """
-    attempt = -1
+    known = set()
+    retries = 5
     while os.path.exists(path):
-        attempt += 1
         try:
             shutil.rmtree(path)
-        except RETRYABLE_FS_EXCEPTIONS as error:
-            if attempt < 5 and (
-              getattr(error, 'errno', None) in RETRYABLE_FS_ERRNO_VALUES or
-              getattr(error, 'winerror', None) in RETRYABLE_FS_WINERROR_VALUES
+        except EnvironmentError as error:
+            if retries and any(
+              getattr(error, prop, None) in values
+              for prop, values in RETRYABLE_OSERROR_PROPERTIES.items()
               ):
-                time.sleep(0.1)  # allow sluggish filesystems to catch up
-                continue
+                # files with permission issues (common on some platforms)
+                unreachable = [
+                    filename
+                    for filename in (
+                        getattr(error, 'filename', None),
+                        getattr(error, 'filename2', None)
+                        )
+                    if (
+                        filename and
+                        filename not in known and
+                        not os.access(filename, os.W_OK)
+                        )
+                    ]
+
+                # allow sluggish filesystems to catch up
+                if not unreachable:
+                    retries -= 1
+                    time.sleep(0.1)
+                    continue
+
+                # try to fix permissions
+                known.update(unreachable)
+                for filename in unreachable:
+                    os.chmod(path, stat.S_IWUSR)
+
             raise
 
 
