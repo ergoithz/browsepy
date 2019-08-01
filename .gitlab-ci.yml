@@ -125,7 +125,7 @@ publish-gh-pages:
     fi
     git init .gh_pages
     cd .gh_pages
-    git remote add origin "${CI_REPOSITORY_URL}"
+    git remote add origin "git@gitlab.com:$CI_PROJECT_PATH.git"
     git fetch
     git checkout "${TARGET_BRANCH}" || git checkout --orphan "${TARGET_BRANCH}"
     cp ${CI_PROJECT_DIR}/.gitignore .
