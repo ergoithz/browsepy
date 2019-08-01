@@ -5,7 +5,6 @@ import sys
 import os.path
 import unittest
 import tempfile
-import shutil
 import contextlib
 
 import browsepy
@@ -26,7 +25,7 @@ class TestMain(unittest.TestCase):
             f.write('.ignore\n')
 
     def tearDown(self):
-        shutil.rmtree(self.base)
+        compat.rmtree(self.base)
 
     @classmethod
     @contextlib.contextmanager

@@ -3,16 +3,15 @@ import os
 import os.path
 import unittest
 import tempfile
-import shutil
 import stat
 
 import browsepy
 import browsepy.file
-import browsepy.compat
+import browsepy.compat as compat
 import browsepy.utils as utils
 
 
-PY_LEGACY = browsepy.compat.PY_LEGACY
+PY_LEGACY = compat.PY_LEGACY
 
 
 class TestFile(unittest.TestCase):
@@ -23,15 +22,15 @@ class TestFile(unittest.TestCase):
         self.workbench = tempfile.mkdtemp()
 
     def clear_workbench(self):
-        with browsepy.compat.scandir(self.workbench) as files:
+        with compat.scandir(self.workbench) as files:
             for entry in files:
                 if entry.is_dir():
-                    shutil.rmtree(entry.path)
+                    compat.rmtree(entry.path)
                 else:
                     os.remove(entry.path)
 
     def tearDown(self):
-        shutil.rmtree(self.workbench)
+        compat.rmtree(self.workbench)
         utils.clear_flask_context()
 
     def textfile(self, name, text):
@@ -43,7 +42,7 @@ class TestFile(unittest.TestCase):
     def test_repr(self):
         self.assertIsInstance(
             repr(self.module.Node('a', app=self.app)),
-            browsepy.compat.basestring
+            compat.basestring
             )
 
     def test_iter_listdir(self):
@@ -96,7 +95,7 @@ class TestFile(unittest.TestCase):
         tmp_err = os.path.join(self.workbench, 'nonexisting_file')
 
         # test file command
-        if browsepy.compat.which('file'):
+        if compat.which('file'):
             f = self.module.File(tmp_txt, app=self.app)
             self.assertEqual(f.mimetype, 'text/plain; charset=us-ascii')
             self.assertEqual(f.type, 'text/plain')
@@ -146,7 +145,7 @@ class TestFile(unittest.TestCase):
         f = self.module.File(virtual_file, app=self.app)
 
         self.assertRaises(
-            browsepy.compat.FileNotFoundError,
+            compat.FileNotFoundError,
             lambda: f.stats
             )
         self.assertEqual(f.modified, None)

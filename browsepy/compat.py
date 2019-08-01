@@ -4,6 +4,7 @@ import os
 import os.path
 import sys
 import abc
+import time
 import shutil
 import tempfile
 import itertools
@@ -45,12 +46,15 @@ except ImportError:
 
 
 class SafeArgumentParser(argparse.ArgumentParser):
+    """ArgumentParser based class which safer default behavior."""
+
     allow_abbrev_support = sys.version_info >= (3, 5, 0)
 
     def _get_option_tuples(self, option_string):
         return []
 
     def __init__(self, **kwargs):
+        """Initialize object."""
         if self.allow_abbrev_support:
             kwargs.setdefault('allow_abbrev', False)
         kwargs.setdefault('add_help', False)
@@ -58,8 +62,11 @@ class SafeArgumentParser(argparse.ArgumentParser):
 
 
 class HelpFormatter(argparse.RawTextHelpFormatter):
+    """HelpFormatter for argument parsers honoring terminal width."""
+
     def __init__(self, prog, indent_increment=2, max_help_position=24,
                  width=None):
+        """Initialize object."""
         if width is None:
             try:
                 width = get_terminal_size().columns - 2
@@ -72,7 +79,11 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
 @contextlib.contextmanager
 def scandir(path):
     """
-    Backwards-compatible :func:`scandir.scandir` context manager
+    Get iterable of :class:`os.DirEntry` as context manager.
+
+    This is just backwards-compatible :func:`scandir.scandir` context
+    manager wrapper, as since `3.6` calling `close` method became
+    mandatory, but it's not available on previous versions.
 
     :param path: path to iterate
     :type path: str
@@ -85,10 +96,34 @@ def scandir(path):
             files.close()
 
 
+def rmtree(path):
+    """
+    Remove directory tree, with platform-specific fixes.
+
+    A simple :func:`shutil.rmtree` wrapper, with some error handling and
+    retry logic, as some filesystems on some platforms does not always
+    behave as they should.
+
+    :param path: path to remove
+    :type path: str
+    """
+    while os.path.exists(path):
+        try:
+            shutil.rmtree(path)
+        except OSError as e:
+            if getattr(e, 'winerror', 145):
+                time.sleep(0.001)  # allow dumb filesystems to catch up
+                continue
+            raise
+
+
 @contextlib.contextmanager
 def mkdtemp(suffix='', prefix='', dir=None):
     """
-    Backwards-compatible :class:`tmpfile.TemporaryDirectory` context manager.
+    Create a temporary directory context manager.
+
+    Backwards-compatible :class:`tmpfile.TemporaryDirectory` context
+    manager, as it was added on `3.2`.
 
     :param path: path to iterate
     :type path: str
@@ -97,7 +132,7 @@ def mkdtemp(suffix='', prefix='', dir=None):
     try:
         yield path
     finally:
-        shutil.rmtree(path)
+        rmtree(path)
 
 
 def isexec(path):
@@ -114,7 +149,10 @@ def isexec(path):
 
 def fsdecode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
     """
-    Decode given path.
+    Decode given path using filesystem encoding.
+
+    This is necessary as python has pretty bad filesystem support on
+    some platforms.
 
     :param path: path will be decoded if using bytes
     :type path: bytes or str
@@ -135,7 +173,10 @@ def fsdecode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
 
 def fsencode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
     """
-    Encode given path.
+    Encode given path using filesystem encoding.
+
+    This is necessary as python has pretty bad filesystem support on
+    some platforms.
 
     :param path: path will be encoded if not using bytes
     :type path: bytes or str
@@ -157,6 +198,7 @@ def fsencode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
 def getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd):
     """
     Get current work directory's absolute path.
+
     Like os.getcwd but garanteed to return an unicode-str object.
 
     :param fs_encoding: filesystem encoding, defaults to autodetected
@@ -172,8 +214,9 @@ def getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd):
 
 def getdebug(environ=os.environ, true_values=TRUE_VALUES):
     """
-    Get if app is expected to be ran in debug mode looking at environment
-    variables.
+    Get if app is running in debug mode.
+
+    This is detected looking at environment variables.
 
     :param environ: environment dict-like object
     :type environ: collections.abc.Mapping
@@ -185,8 +228,16 @@ def getdebug(environ=os.environ, true_values=TRUE_VALUES):
 
 def deprecated(func_or_text, environ=os.environ):
     """
-    Decorator used to mark functions as deprecated. It will result in a
-    warning being emmitted hen the function is called.
+    Decorate function and mark it as deprecated.
+
+    Calling a deprected function will result in a warning message.
+
+    :param func_or_text: message or callable to decorate
+    :type func_or_text: callable
+    :param environ: optional environment mapping
+    :type environ: collections.abc.Mapping
+    :returns: nested decorator or new decorated function (depending on params)
+    :rtype: callable
 
     Usage:
 
@@ -200,12 +251,6 @@ def deprecated(func_or_text, environ=os.environ):
     ... def fnc():
     ...     pass
 
-    :param func_or_text: message or callable to decorate
-    :type func_or_text: callable
-    :param environ: optional environment mapping
-    :type environ: collections.abc.Mapping
-    :returns: nested decorator or new decorated function (depending on params)
-    :rtype: callable
     """
     def inner(func):
         message = (
@@ -229,6 +274,11 @@ def usedoc(other):
     """
     Decorator which copies __doc__ of given object into decorated one.
 
+    :param other: anything with a __doc__ attribute
+    :type other: any
+    :returns: decorator function
+    :rtype: callable
+
     Usage:
 
     >>> def fnc1():
@@ -240,10 +290,6 @@ def usedoc(other):
     >>> fnc2.__doc__
     'docstring'collections.abc.D
 
-    :param other: anything with a __doc__ attribute
-    :type other: any
-    :returns: decorator function
-    :rtype: callable
     """
     def inner(fnc):
         fnc.__doc__ = fnc.__doc__ or getattr(other, '__doc__')
@@ -368,8 +414,10 @@ def which(name,
 
 def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
     """
-    Escape all special regex characters in pattern and converts non-ascii
-    characters into unicode escape sequences.
+    Escape pattern to include it safely into another regex.
+
+    This function escapes all special regex characters while translating
+    non-ascii characters into unicode escape sequences.
 
     Logic taken from regex module.
 

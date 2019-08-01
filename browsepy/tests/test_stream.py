@@ -4,9 +4,9 @@ import os.path
 import codecs
 import unittest
 import tempfile
-import shutil
 import time
 
+import browsepy.compat as compat
 import browsepy.stream
 
 
@@ -17,7 +17,7 @@ class StreamTest(unittest.TestCase):
         self.base = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.base)
+        compat.rmtree(self.base)
 
     def randfile(self, size=1024):
         name = codecs.encode(os.urandom(5), 'hex_codec').decode()

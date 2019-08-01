@@ -2,7 +2,6 @@
 
 import unittest
 import tempfile
-import shutil
 import os
 import os.path
 import functools
@@ -12,6 +11,7 @@ import flask
 
 from werkzeug.utils import cached_property
 
+import browsepy.compat as compat
 import browsepy.utils as utils
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
@@ -132,7 +132,7 @@ class TestIntegration(unittest.TestCase):
         self.manager.reload()
 
     def tearDown(self):
-        shutil.rmtree(self.base)
+        compat.rmtree(self.base)
         self.app.config.clear()
         self.app.config.update(self.original_config)
         self.manager.clear()
@@ -252,7 +252,7 @@ class TestAction(unittest.TestCase):
             return '', 400
 
     def tearDown(self):
-        shutil.rmtree(self.base)
+        compat.rmtree(self.base)
         utils.clear_flask_context()
 
     def mkdir(self, *path):

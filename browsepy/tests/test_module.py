@@ -4,7 +4,6 @@
 import unittest
 import os
 import os.path
-import shutil
 import tempfile
 import tarfile
 import io
@@ -21,11 +20,11 @@ import browsepy
 import browsepy.file
 import browsepy.manager
 import browsepy.__main__
-import browsepy.compat
+import browsepy.compat as compat
 import browsepy.utils as utils
 
-PY_LEGACY = browsepy.compat.PY_LEGACY
-range = browsepy.compat.range  # noqa
+PY_LEGACY = compat.PY_LEGACY
+range = compat.range  # noqa
 
 
 class AppMock(object):
@@ -219,12 +218,12 @@ class TestApp(unittest.TestCase):
         for sub in os.listdir(path):
             sub = os.path.join(path, sub)
             if os.path.isdir(sub):
-                shutil.rmtree(sub)
+                compat.rmtree(sub)
             else:
                 os.remove(sub)
 
     def tearDown(self):
-        shutil.rmtree(self.base)
+        compat.rmtree(self.base)
         utils.clear_flask_context()
 
     def get(self, endpoint, **kwargs):
@@ -535,7 +534,7 @@ class TestApp(unittest.TestCase):
         self.clear(self.upload)
 
     def test_upload_restrictions(self):
-        pathconf = browsepy.compat.pathconf(self.upload)
+        pathconf = compat.pathconf(self.upload)
         maxname = pathconf['PC_NAME_MAX']
         maxpath = pathconf['PC_PATH_MAX']
 

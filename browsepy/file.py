@@ -3,7 +3,6 @@
 import os
 import os.path
 import re
-import shutil
 import codecs
 import string
 import random
@@ -653,7 +652,7 @@ class Directory(Node):
         :raises OutsideRemovableBase: when not under removable base directory
         """
         super(Directory, self).remove()
-        shutil.rmtree(self.path)
+        compat.rmtree(self.path)
 
     def download(self):
         """
