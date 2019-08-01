@@ -113,7 +113,7 @@ def rmtree(path):
         try:
             shutil.rmtree(path)
         except OSError as error:
-            if getattr(error, 'winerror', 145) and attempt < 50:
+            if getattr(error, 'winerror', 0) in (5, 145) and attempt < 50:
                 time.sleep(0.01)  # allow dumb filesystems to catch up
                 continue
             raise
