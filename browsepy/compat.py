@@ -53,28 +53,34 @@ TRUE_VALUES = frozenset(
     # Truthy values
     ('true', 'yes', '1', 'enable', 'enabled', True, 1)
     )
-RETRYABLE_FS_EXCEPTIONS = (
+RETRYABLE_FS_EXCEPTIONS = tuple(
     # Handle non PEP 3151 python versions
-    ((builtins.WindowsError,) if hasattr(builtins, 'WindowsError') else ()) + (
-        EnvironmentError,
+    getattr(builtins, prop)
+    for prop in (
+        'WindowsError',
+        'EnvironmentError',
         )
+    if hasattr(builtins, prop)
     )
 RETRYABLE_FS_ERRNO_VALUES = frozenset(
     # Error codes which could imply a busy filesystem
-    ((errno.EPERM,) if os.name == 'nt' else ()) + (
-        errno.ENOENT,
-        errno.EIO,
-        errno.ENXIO,
-        errno.EAGAIN,
-        errno.EBUSY,
-        errno.ENOTDIR,
-        errno.EISDIR,
-        errno.ENOTEMPTY,
-        errno.EALREADY,
-        errno.EINPROGRESS,
-        errno.EREMOTEIO,
+    getattr(errno, prop)
+    for prop in (
+        'ENOENT',
+        'EIO',
+        'ENXIO',
+        'EAGAIN',
+        'EBUSY',
+        'ENOTDIR',
+        'EISDIR',
+        'ENOTEMPTY',
+        'EALREADY',
+        'EINPROGRESS',
+        'EREMOTEIO',
+        'EPERM' if os.name == 'nt' else None,
         )
-    )
+    if prop and hasattr(errno, prop)
+)
 RETRYABLE_FS_WINERROR_VALUES = frozenset(
     # Handle WindowsError instances without errno
     (5, 145)
