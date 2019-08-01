@@ -123,20 +123,13 @@ publish-gh-pages:
     else
       TARGET_BRANCH="gh-pages-${CI_COMMIT_REF_NAME}"
     fi
+    git init .gh_pages
+    cd .gh_pages
+    git remote add origin "${CI_REPOSITORY_URL}"
+    git fetch
     git checkout "${TARGET_BRANCH}" || git checkout --orphan "${TARGET_BRANCH}"
-    git pull || true
-    find . \
-      -not -path 'doc' \
-      -not -path 'doc/**' \
-      -not -path '.git' \
-      -not -path '.git/**' \
-      -not -path '.gitignore' \
-      -not -path 'README*' \
-      -not -path 'CHANGELOG' \
-      -not -path 'LICENSE' \
-      -delete
-    cp -rf doc/.build/html/** .
-    rm -rf doc
+    cp ${CI_PROJECT_DIR}/.gitignore .
+    cp -rf ${CI_PROJECT_DIR}/doc/.build/html/** .
     git add **
     git commit -am "update ${TARGET_BRANCH}"
     git push -u origin "${TARGET_BRANCH}"
