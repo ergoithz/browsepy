@@ -18,6 +18,11 @@ import ntpath
 import argparse
 
 try:
+    import builtins  # python 3+
+except ImportError:
+    import __builtin__ as builtins  # noqa
+
+try:
     import importlib.resources as res  # python 3.7+
 except ImportError:
     import importlib_resources as res  # noqa
@@ -141,7 +146,10 @@ def rmtree(path):
     def remove_readonly(action, name, exc_info):
         """Clear the readonly bit and reattempt the removal."""
         exc_type, exc_value, exc_traceback = exc_info
-        if issubclass(exc_type, PermissionError):
+        if issubclass(
+          exc_type,
+          getattr(builtins, 'PermissionError', OSError),
+          ) and exc_value.errno == errno.EPERM:
             os.chmod(name, stat.S_IWRITE)
             action(name)
         else:
