@@ -126,7 +126,7 @@ publish-gh-pages:
     git checkout "${TARGET_BRANCH}" || git checkout --orphan "${TARGET_BRANCH}"
     git pull || echo "No remote history."
     find . -not -path './doc' -not -path './doc/**' -delete
-    cp doc/.build/html/** .
+    cp -rf doc/.build/html/** .
     rm -rf doc
     git add **
     git commit -am "update ${TARGET_BRANCH}"
