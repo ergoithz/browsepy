@@ -124,8 +124,17 @@ publish-gh-pages:
       TARGET_BRANCH="gh-pages-${CI_COMMIT_REF_NAME}"
     fi
     git checkout "${TARGET_BRANCH}" || git checkout --orphan "${TARGET_BRANCH}"
-    git pull || echo "No remote history."
-    find . -not -path './doc' -not -path './doc/**' -delete
+    git pull || true
+    find . \
+      -not -path 'doc' \
+      -not -path 'doc/**' \
+      -not -path '.git' \
+      -not -path '.git/**' \
+      -not -path '.gitignore' \
+      -not -path 'README*' \
+      -not -path 'CHANGELOG' \
+      -not -path 'LICENSE' \
+      -delete
     cp -rf doc/.build/html/** .
     rm -rf doc
     git add **
