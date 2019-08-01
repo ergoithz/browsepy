@@ -33,6 +33,7 @@
     name: alpine/git
     entrypoint:
     - /bin/sh
+    - -c
   variables:
     GITHUB_MIRROR: "git@github.com:ergoithz/browsepy.git"
   before_script:
