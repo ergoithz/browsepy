@@ -138,12 +138,14 @@ def rmtree(path):
     :param path: path to remove
     :type path: str
     """
-    def remove_readonly(operation, name, exc_info):
+    def remove_readonly(action, name, exc_info):
         """Clear the readonly bit and reattempt the removal."""
         exc_type, exc_value, exc_traceback = exc_info
         if issubclass(exc_type, PermissionError):
-            os.chmod(path, stat.S_IWRITE)
-        raise exc_info
+            os.chmod(name, stat.S_IWRITE)
+            action(name)
+        else:
+            raise exc_info
 
     retries = 10
     while os.path.exists(path):
