@@ -2,6 +2,7 @@
 .c9
 .idea
 .coverage
+.vscode
 
 htmlcov
 dist

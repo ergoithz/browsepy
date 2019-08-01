@@ -16,11 +16,12 @@ class TestApp(unittest.TestCase):
         self.app.config._warned.clear()
 
     def test_config(self):
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py') as f:
-            f.write('DIRECTORY_DOWNLOADABLE = False\n')
-            f.flush()
+        with tempfile.TemporaryDirectory() as path:
+            name = os.path.join(path, 'file.py')
+            with open(name, 'w') as f:
+                f.write('DIRECTORY_DOWNLOADABLE = False\n')
 
-            os.environ['BROWSEPY_TEST_SETTINGS'] = f.name
+            os.environ['BROWSEPY_TEST_SETTINGS'] = name
             with warnings.catch_warnings(record=True) as warns:
                 warnings.simplefilter('always')
                 self.app.config['directory_downloadable'] = True
