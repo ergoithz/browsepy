@@ -128,7 +128,7 @@ publish-gh-pages:
     git remote add origin "git@gitlab.com:$CI_PROJECT_PATH.git"
     git fetch
     git checkout "${TARGET_BRANCH}" || git checkout --orphan "${TARGET_BRANCH}"
-    cp ${CI_PROJECT_DIR}/.gitignore .
+    cp ../.gitignore ../.appveyor.yml .
     cp -rf ${CI_PROJECT_DIR}/doc/.build/html/** .
     git add **
     git commit -am "update ${TARGET_BRANCH}"
