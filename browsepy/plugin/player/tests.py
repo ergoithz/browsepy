@@ -3,7 +3,6 @@
 import os
 import os.path
 import unittest
-import shutil
 import tempfile
 
 import six
@@ -13,6 +12,7 @@ import flask
 from werkzeug.exceptions import NotFound
 
 import browsepy
+import browsepy.compat as compat
 import browsepy.utils as utils
 import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
@@ -49,7 +49,7 @@ class TestPLSFileParser(unittest.TestCase):
     exceptions = player_playable.PLSFileParser.option_exceptions
 
     def get_parser(self, content=''):
-        with tempfile.TemporaryDirectory() as path:
+        with compat.mkdtemp() as path:
             name = os.path.join(path, 'file.pls')
             with open(name, 'w') as f:
                 f.write(content)
@@ -229,8 +229,7 @@ class TestPlayable(TestIntegrationBase):
             self.assertEqual(pf.title, 'asdf.%s' % ext)
 
     def test_playabledirectory(self):
-        tmpdir = tempfile.mkdtemp()
-        try:
+        with compat.mkdtemp() as tmpdir:
             file = p(tmpdir, 'playable.mp3')
             open(file, 'w').close()
             node = browsepy_file.Directory(tmpdir, app=self.app)
@@ -247,9 +246,6 @@ class TestPlayable(TestIntegrationBase):
             os.remove(file)
             self.assertFalse(self.module.PlayableDirectory.detect(node))
 
-        finally:
-            shutil.rmtree(tmpdir)
-
     def test_playlistfile(self):
         pf = self.module.PlayListFile.from_urlpath(
             path='filename.m3u', app=self.app)
@@ -263,8 +259,7 @@ class TestPlayable(TestIntegrationBase):
 
     def test_m3ufile(self):
         data = '/base/valid.mp3\n/outside.ogg\n/base/invalid.bin\nrelative.ogg'
-        tmpdir = tempfile.mkdtemp()
-        try:
+        with compat.mkdtemp() as tmpdir:
             file = p(tmpdir, 'playable.m3u')
             with open(file, 'w') as f:
                 f.write(data)
@@ -273,8 +268,6 @@ class TestPlayable(TestIntegrationBase):
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
-        finally:
-            shutil.rmtree(tmpdir)
 
     def test_plsfile(self):
         data = (
@@ -284,8 +277,7 @@ class TestPlayable(TestIntegrationBase):
             'File3=/base/invalid.bin\n'
             'File4=relative.ogg'
             )
-        tmpdir = tempfile.mkdtemp()
-        try:
+        with compat.mkdtemp() as tmpdir:
             file = p(tmpdir, 'playable.pls')
             with open(file, 'w') as f:
                 f.write(data)
@@ -294,8 +286,6 @@ class TestPlayable(TestIntegrationBase):
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
-        finally:
-            shutil.rmtree(tmpdir)
 
     def test_plsfile_with_holes(self):
         data = (
@@ -305,8 +295,7 @@ class TestPlayable(TestIntegrationBase):
             'File4=relative.ogg\n'
             'NumberOfEntries=4'
             )
-        tmpdir = tempfile.mkdtemp()
-        try:
+        with compat.mkdtemp() as tmpdir:
             file = p(tmpdir, 'playable.pls')
             with open(file, 'w') as f:
                 f.write(data)
@@ -315,8 +304,6 @@ class TestPlayable(TestIntegrationBase):
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
                 )
-        finally:
-            shutil.rmtree(tmpdir)
 
 
 class TestBlueprint(TestPlayerBase):

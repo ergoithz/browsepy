@@ -30,8 +30,6 @@ jedi
 sphinx
 pycodestyle
 pydocstyle
-importlib_resources  # pycodestyle unittest with python < 3.7
-six  # compatible metaclass with python 2-3
 pyyaml
 beautifulsoup4
 
