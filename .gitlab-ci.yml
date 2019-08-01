@@ -114,8 +114,8 @@ publish-gh-pages:
   - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
   - ssh-keyscan -H 'gitlab.com' >> ~/.ssh/known_hosts
-  - git config user.name "${GITLAB_USER_LOGIN}"
-  - git config user.email "${GITLAB_USER_EMAIL}"
+  - git config --global user.name "${GITLAB_USER_LOGIN}"
+  - git config --global user.email "${GITLAB_USER_EMAIL}"
   script:
   - |
     if [ "${CI_COMMIT_REF_NAME}" == "master" ]; then
