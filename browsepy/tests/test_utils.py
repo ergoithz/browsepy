@@ -34,12 +34,12 @@ class TestPPath(unittest.TestCase):
         self.assertTrue(
             self.module
             .ppath('a', 'b', module=__name__)
-            .endswith('browsepy/tests/a/b')
+            .endswith(os.path.join('browsepy', 'tests', 'a', 'b'))
             )
         self.assertTrue(
             self.module
             .ppath('a', 'b')
-            .endswith('browsepy/a/b')
+            .endswith(os.path.join('browsepy', 'a', 'b'))
             )
 
     def test_get_module(self):
