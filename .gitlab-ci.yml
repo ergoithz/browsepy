@@ -28,22 +28,6 @@
     paths:
     - .cache/pip
 
-.github-base:
-  image:
-    name: alpine/git
-    entrypoint:
-    - /bin/sh
-    - -c
-  variables:
-    GITHUB_MIRROR: "git@github.com:ergoithz/browsepy.git"
-  before_script:
-  - mkdir -p ~/.ssh
-  - echo -e "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-keyscan -H $ssh_port "$ssh_host" >> ~/.ssh/known_hosts
-  - git config user.name "${GITLAB_USER_LOGIN}"
-  - git config user.email "${GITLAB_USER_EMAIL}"
-
 stages:
 - test
 - report
@@ -69,8 +53,8 @@ python37:
   image: python:3.7-alpine
 
 eslint:
-  image: node:alpine
   stage: test
+  image: node:alpine
   cache:
     paths:
     - node_modules
@@ -105,42 +89,47 @@ doc:
   dependencies: []
   artifacts:
     paths:
-    - doc/.build
+    - doc/.build/html
   before_script:
   - apk add --no-cache make
   - pip install -r requirements/doc.txt
   script:
   - make -C doc html
 
-publish-github-mirror:
-  extends: .github-base
+publish-gh-pages:
   stage: publish
-  dependencies: []
-  only:
-    refs:
-    - next
-    - master
-  script:
-  - git remote add github "${GITHUB_MIRROR}"
-  - git push github "HEAD:${CI_COMMIT_REF_NAME}"
-
-publish-github-pages:
-  extends: .github-base
-  stage: publish
+  image:
+    name: alpine/git
+    entrypoint:
+    - /bin/sh
+    - -c
   dependencies:
   - doc
   only:
     refs:
     - master
+    - next
+  before_script:
+  - mkdir -p ~/.ssh
+  - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-keyscan -H 'gitlab.com' >> ~/.ssh/known_hosts
+  - git config user.name "${GITLAB_USER_LOGIN}"
+  - git config user.email "${GITLAB_USER_EMAIL}"
   script:
-  - git remote add github "${GITHUB_MIRROR}"
-  - git fetch
-  - git checkout gh-pages
-  - cp -rf doc/.build/* .
-  - rm -rf doc
-  - git add **
-  - git commit -am "doc from ${CI_COMMIT_SHA} ${CI_COMMIT_MESSAGE}"
-  - git push github
+  - |
+    if [ "${CI_COMMIT_REF_NAME}" == "master" ]; then
+      TARGET_BRANCH="gh-pages"
+    else
+      TARGET_BRANCH="gh-pages-${CI_COMMIT_REF_NAME}"
+    fi
+    git checkout "${TARGET_BRANCH}" || git checkout --orphan "${TARGET_BRANCH}"
+    git pull || echo "No remote history."
+    find . -not -path './doc' -delete
+    cp doc/.build/html/** .
+    git add **
+    git commit -am "update ${TARGET_BRANCH}"
+    git push -u origin "${TARGET_BRANCH}"
 
 publish-alpha:
   extends: .after-base
