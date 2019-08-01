@@ -1,7 +1,6 @@
 branches:
   except:
-  - gh-pages
-  - /gh-pages-.*/
+  - /^gh-pages(-.*)?$/
 
 environment:
   matrix:

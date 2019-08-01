@@ -138,40 +138,25 @@ def rmtree(path):
     :param path: path to remove
     :type path: str
     """
-    known = set()
-    retries = 5
+    def remove_readonly(operation, name, exc_info):
+        """Clear the readonly bit and reattempt the removal."""
+        exc_type, exc_value, exc_traceback = exc_info
+        if issubclass(exc_type, PermissionError):
+            os.chmod(path, stat.S_IWRITE)
+        raise exc_info
+
+    retries = 10
     while os.path.exists(path):
         try:
-            shutil.rmtree(path)
+            shutil.rmtree(path, onerror=remove_readonly)
         except EnvironmentError as error:
             if retries and any(
               getattr(error, prop, None) in values
               for prop, values in RETRYABLE_OSERROR_PROPERTIES.items()
               ):
-                # files with permission issues (common on some platforms)
-                unreachable = [
-                    filename
-                    for filename in (
-                        getattr(error, 'filename', None),
-                        getattr(error, 'filename2', None)
-                        )
-                    if (
-                        filename and
-                        filename not in known and
-                        not os.access(filename, os.W_OK)
-                        )
-                    ]
-
-                # allow sluggish filesystems to catch up
-                if not unreachable:
-                    retries -= 1
-                    time.sleep(0.1)
-                    continue
-
-                # try to fix permissions
-                known.update(unreachable)
-                for filename in unreachable:
-                    os.chmod(path, stat.S_IWUSR)
+                retries -= 1
+                time.sleep(0.1)  # allow sluggish filesystems to catch up
+                continue
 
             raise
 
