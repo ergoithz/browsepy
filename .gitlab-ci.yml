@@ -122,7 +122,7 @@ publish-github-mirror:
     - master
   script:
   - git remote add github "${GITHUB_MIRROR}"
-  - git push -u github "${CI_COMMIT_REF_NAME}"
+  - git push github "HEAD:${CI_COMMIT_REF_NAME}"
 
 publish-github-pages:
   extends: .github-base
