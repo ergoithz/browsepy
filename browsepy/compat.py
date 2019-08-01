@@ -107,12 +107,14 @@ def rmtree(path):
     :param path: path to remove
     :type path: str
     """
+    attempt = -1
     while os.path.exists(path):
+        attempt += 1
         try:
             shutil.rmtree(path)
-        except OSError as e:
-            if getattr(e, 'winerror', 145):
-                time.sleep(0.001)  # allow dumb filesystems to catch up
+        except OSError as error:
+            if getattr(error, 'winerror', 145) and attempt < 50:
+                time.sleep(0.01)  # allow dumb filesystems to catch up
                 continue
             raise
 
