@@ -16,24 +16,10 @@ import posixpath
 import ntpath
 import argparse
 
-FS_ENCODING = sys.getfilesystemencoding()
-PY_LEGACY = sys.version_info < (3, )
-TRUE_VALUES = frozenset(('true', 'yes', '1', 'enable', 'enabled', True, 1))
-RETRYABLE_FS_ERRNO_VALUES = frozenset(
-    ((errno.EPERM,) if os.name == 'nt' else ()) + (
-        errno.ENOENT,
-        errno.EIO,
-        errno.ENXIO,
-        errno.EAGAIN,
-        errno.EBUSY,
-        errno.ENOTDIR,
-        errno.EISDIR,
-        errno.ENOTEMPTY,
-        errno.EALREADY,
-        errno.EINPROGRESS,
-        errno.EREMOTEIO,
-        )
-    )
+try:
+    import builtins  # python 3+
+except ImportError:
+    import __builtin__ as builtins  # noqa
 
 try:
     import importlib.resources as res  # python 3.7+
@@ -59,6 +45,40 @@ try:
     from collections.abc import Iterator as BaseIterator  # python 3.3+
 except ImportError:
     from collections import Iterator as BaseIterator  # noqa
+
+
+FS_ENCODING = sys.getfilesystemencoding()
+PY_LEGACY = sys.version_info < (3, )
+TRUE_VALUES = frozenset(
+    # Truthy values
+    ('true', 'yes', '1', 'enable', 'enabled', True, 1)
+    )
+RETRYABLE_FS_EXCEPTIONS = (
+    # Handle non PEP 3151 python versions
+    ((builtins.WindowsError,) if hasattr(builtins, 'WindowsError') else ()) + (
+        EnvironmentError,
+        )
+    )
+RETRYABLE_FS_ERRNO_VALUES = frozenset(
+    # Error codes which could imply a busy filesystem
+    ((errno.EPERM,) if os.name == 'nt' else ()) + (
+        errno.ENOENT,
+        errno.EIO,
+        errno.ENXIO,
+        errno.EAGAIN,
+        errno.EBUSY,
+        errno.ENOTDIR,
+        errno.EISDIR,
+        errno.ENOTEMPTY,
+        errno.EALREADY,
+        errno.EINPROGRESS,
+        errno.EREMOTEIO,
+        )
+    )
+RETRYABLE_FS_WINERROR_VALUES = frozenset(
+    # Handle WindowsError instances without errno
+    (5, 145)
+    )
 
 
 class SafeArgumentParser(argparse.ArgumentParser):
@@ -128,10 +148,10 @@ def rmtree(path):
         attempt += 1
         try:
             shutil.rmtree(path)
-        except EnvironmentError as error:
-            if (
-              attempt < 5 and
-              getattr(error, 'errno', None) in RETRYABLE_FS_ERRNO_VALUES
+        except RETRYABLE_FS_EXCEPTIONS as error:
+            if attempt < 5 and (
+              getattr(error, 'errno', None) in RETRYABLE_FS_ERRNO_VALUES or
+              getattr(error, 'winerror', None) in RETRYABLE_FS_WINERROR_VALUES
               ):
                 time.sleep(0.1)  # allow sluggish filesystems to catch up
                 continue
