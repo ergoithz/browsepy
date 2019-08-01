@@ -127,6 +127,7 @@ publish-gh-pages:
     git pull || echo "No remote history."
     find . -not -path './doc' -not -path './doc/**' -delete
     cp doc/.build/html/** .
+    rm -rf doc
     git add **
     git commit -am "update ${TARGET_BRANCH}"
     git push -u origin "${TARGET_BRANCH}"
