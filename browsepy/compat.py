@@ -8,7 +8,6 @@ import six
 import errno
 import abc
 import time
-import shutil
 import tempfile
 import itertools
 import functools
@@ -137,40 +136,34 @@ def rmtree(path):
     """
     Remove directory tree, with platform-specific fixes.
 
-    A simple :func:`shutil.rmtree` wrapper, with some error handling and
-    retry logic, as some filesystems on some platforms does not always
-    behave as they should.
+    Implemented from scratch as :func:`shutil.rmtree` is broken on some
+    platforms and python version combinations.
 
     :param path: path to remove
     :type path: str
     """
-    def remove_readonly(action, name, exc_info):
-        """Clear the readonly bit and reattempt the removal."""
-        exc_type, exc_value, exc_traceback = exc_info
-        is_perm = issubclass(exc_type, EnvironmentError) and (
-            exc_value.errno == errno.EPERM or
-            getattr(exc_value, 'winerror', None) == 5
-            )
-        if is_perm:
-            os.chmod(name, stat.S_IWRITE)
-            action(name)
-        else:
-            six.reraise(exc_type, exc_value, exc_traceback)
-
-    retries = 10
-    while os.path.exists(path):
+    exc_type, exc_value, exc_traceback = None, None, None
+    for retry in range(10):
         try:
-            shutil.rmtree(path, onerror=remove_readonly)
-        except EnvironmentError as error:
-            if retries and any(
-              getattr(error, prop, None) in values
+            if os.path.exists(path):
+                for base, dirs, files in os.walk(path, topdown=False):
+                    os.chmod(base, stat.S_IRWXU)
+                    for filename in files:
+                        filename = os.path.join(base, filename)
+                        os.chmod(filename, stat.S_IWUSR)
+                        os.unlink(filename)
+                    os.rmdir(base)
+            return
+        except EnvironmentError:
+            if any(
+              getattr(exc_value, prop, None) in values
               for prop, values in RETRYABLE_OSERROR_PROPERTIES.items()
               ):
-                retries -= 1
+                exc_type, exc_value, exc_traceback = sys.exc_info()
                 time.sleep(0.1)  # allow sluggish filesystems to catch up
                 continue
-
             raise
+    six.reraise(exc_type, exc_value, exc_traceback)
 
 
 @contextlib.contextmanager
