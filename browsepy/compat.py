@@ -132,19 +132,6 @@ def scandir(path):
             files.close()
 
 
-def _is_oserror_retryable(error):
-    """
-    Check if given OSError is retryable for filesystem operations.
-
-    :param error: error to check
-    :type error: OSError
-    """
-    for prop, values in RETRYABLE_OSERROR_PROPERTIES.items():
-        if getattr(error, prop, None) in values:
-            return True
-    return False
-
-
 def _unsafe_rmtree(path):
     """
     Remove directory tree, without error handling.
@@ -152,7 +139,7 @@ def _unsafe_rmtree(path):
     :param path: directory path
     :type path: str
     """
-    for base, dirs, files in os.walk(path, topdown=False):
+    for base, dirs, files in walk(path, topdown=False):
         os.chmod(base, stat.S_IRWXU)
 
         for filename in files:
@@ -160,7 +147,10 @@ def _unsafe_rmtree(path):
             os.chmod(filename, stat.S_IWUSR)
             os.remove(filename)
 
-        if os.listdir(base):
+        with scandir(base) as remaining:
+            retry = any(remaining)
+
+        if retry:
             time.sleep(0.5)  # wait for emptyness
             _unsafe_rmtree(base)
         else:
@@ -183,7 +173,10 @@ def rmtree(path):
         try:
             return _unsafe_rmtree(path)
         except EnvironmentError as error:
-            if not _is_oserror_retryable(error):
+            if not any(
+              getattr(error, prop, None) in values
+              for prop, values in RETRYABLE_OSERROR_PROPERTIES.items()
+              ):
                 raise
             exc_info = sys.exc_info()
         time.sleep(0.1)  # allow sluggish filesystems to catch up
