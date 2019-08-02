@@ -160,10 +160,11 @@ def _unsafe_rmtree(path):
             os.chmod(filename, stat.S_IWUSR)
             os.remove(filename)
 
-        while os.listdir(base):
-            time.sleep(0.1)  # wait for emptyness
-
-        os.rmdir(base)
+        if os.listdir(base):
+            time.sleep(0.5)  # wait for emptyness
+            _unsafe_rmtree(base)
+        else:
+            os.rmdir(base)
 
 
 def rmtree(path):
