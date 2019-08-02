@@ -2,7 +2,6 @@
 
 import os
 import os.path
-import stat
 import sys
 import six
 import errno
@@ -59,7 +58,6 @@ RETRYABLE_OSERROR_PROPERTIES = {
         # Error codes which could imply a busy filesystem
         getattr(errno, prop)
         for prop in (
-            'EPERM',
             'ENOENT',
             'EIO',
             'ENXIO',
@@ -140,18 +138,14 @@ def _unsafe_rmtree(path):
     :type path: str
     """
     for base, dirs, files in walk(path, topdown=False):
-        os.chmod(base, stat.S_IRWXU)
-
         for filename in files:
-            filename = os.path.join(base, filename)
-            os.chmod(filename, stat.S_IWUSR)
-            os.remove(filename)
+            os.remove(os.path.join(base, filename))
 
         with scandir(base) as remaining:
             retry = any(remaining)
 
         if retry:
-            time.sleep(0.5)  # wait for emptyness
+            time.sleep(0.1)  # wait for sluggish filesystems
             _unsafe_rmtree(base)
         else:
             os.rmdir(base)
@@ -179,7 +173,7 @@ def rmtree(path):
               ):
                 raise
             exc_info = sys.exc_info()
-        time.sleep(0.1)  # allow sluggish filesystems to catch up
+        time.sleep(0.1)
     six.reraise(*exc_info)
 
 
