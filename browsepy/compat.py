@@ -132,6 +132,19 @@ def scandir(path):
             files.close()
 
 
+def is_oserror_retryable(error):
+    """
+    Check if given OSError is retryable for filesystem operations.
+
+    :param error: error to check
+    :type error: OSError
+    """
+    for prop, values in RETRYABLE_OSERROR_PROPERTIES.items():
+        if getattr(error, prop, None) in values:
+            return True
+    return False
+
+
 def rmtree(path):
     """
     Remove directory tree, with platform-specific fixes.
@@ -142,28 +155,23 @@ def rmtree(path):
     :param path: path to remove
     :type path: str
     """
-    exc_type, exc_value, exc_traceback = None, None, None
+    exc_info = ()
     for retry in range(10):
         try:
-            if os.path.exists(path):
-                for base, dirs, files in os.walk(path, topdown=False):
-                    os.chmod(base, stat.S_IRWXU)
-                    for filename in files:
-                        filename = os.path.join(base, filename)
-                        os.chmod(filename, stat.S_IWUSR)
-                        os.unlink(filename)
-                    os.rmdir(base)
+            for base, dirs, files in os.walk(path, topdown=False):
+                os.chmod(base, stat.S_IRWXU)
+                for filename in files:
+                    filename = os.path.join(base, filename)
+                    os.chmod(filename, stat.S_IWUSR)
+                    os.unlink(filename)
+                os.rmdir(base)
             return
-        except EnvironmentError:
-            if any(
-              getattr(exc_value, prop, None) in values
-              for prop, values in RETRYABLE_OSERROR_PROPERTIES.items()
-              ):
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                time.sleep(0.1)  # allow sluggish filesystems to catch up
-                continue
-            raise
-    six.reraise(exc_type, exc_value, exc_traceback)
+        except EnvironmentError as error:
+            if not is_oserror_retryable(error):
+                raise
+            exc_info = sys.exc_info()
+        time.sleep(0.1)  # allow sluggish filesystems to catch up
+    six.reraise(*exc_info)
 
 
 @contextlib.contextmanager
