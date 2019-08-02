@@ -4,6 +4,7 @@ import os
 import os.path
 import stat
 import sys
+import six
 import errno
 import abc
 import time
@@ -146,22 +147,16 @@ def rmtree(path):
     def remove_readonly(action, name, exc_info):
         """Clear the readonly bit and reattempt the removal."""
         exc_type, exc_value, exc_traceback = exc_info
-        is_perm = issubclass(
-            exc_type,
-            getattr(
-                builtins,
-                'PermissionError',
-                EnvironmentError,
-                ),
-            ) and (
-            exc_value == errno.EPERM or
+        is_perm = issubclass(exc_type, EnvironmentError) and (
+            exc_value.errno == errno.EPERM or
             getattr(exc_value, 'winerror', None) == 5
             )
         if is_perm:
             os.chmod(name, stat.S_IWRITE)
             action(name)
         else:
-            raise exc_type, exc_value, exc_traceback
+            six.reraise(exc_type, exc_value, exc_traceback)
+
     retries = 10
     while os.path.exists(path):
         try:
