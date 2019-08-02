@@ -3,6 +3,7 @@
 import os
 import os.path
 import stat
+import shutil
 import sys
 import six
 import errno
@@ -149,22 +150,18 @@ def rmtree(path):
     """
     Remove directory tree, with platform-specific fixes.
 
-    Implemented from scratch as :func:`shutil.rmtree` is broken on some
-    platforms and python version combinations.
-
     :param path: path to remove
     :type path: str
     """
     exc_info = ()
+    path_join = os.path.join
     for retry in range(10):
         try:
             for base, dirs, files in os.walk(path, topdown=False):
                 os.chmod(base, stat.S_IRWXU)
                 for filename in files:
-                    filename = os.path.join(base, filename)
-                    os.chmod(filename, stat.S_IWUSR)
-                    os.unlink(filename)
-                os.rmdir(base)
+                    os.chmod(path_join(base, filename), stat.S_IWUSR)
+            shutil.rmtree(path)
             return
         except EnvironmentError as error:
             if not is_oserror_retryable(error):
