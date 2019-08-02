@@ -147,7 +147,7 @@ publish-gh-pages:
     git checkout "${TARGET_BRANCH}" || git checkout --orphan "${TARGET_BRANCH}"
     cp ../.gitignore ../.appveyor.yml .
     cp -rf ${CI_PROJECT_DIR}/doc/.build/html/** .
-    git add **
+    git add .
     git commit -am "update ${TARGET_BRANCH}"
     git push -u origin "${TARGET_BRANCH}"
 

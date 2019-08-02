@@ -3,7 +3,6 @@
 import os
 import os.path
 import stat
-import shutil
 import sys
 import six
 import errno
@@ -133,7 +132,7 @@ def scandir(path):
             files.close()
 
 
-def is_oserror_retryable(error):
+def _is_oserror_retryable(error):
     """
     Check if given OSError is retryable for filesystem operations.
 
@@ -146,25 +145,44 @@ def is_oserror_retryable(error):
     return False
 
 
+def _unsafe_rmtree(path):
+    """
+    Remove directory tree, without error handling.
+
+    :param path: directory path
+    :type path: str
+    """
+    for base, dirs, files in os.walk(path, topdown=False):
+        os.chmod(base, stat.S_IRWXU)
+
+        for filename in files:
+            filename = os.path.join(base, filename)
+            os.chmod(filename, stat.S_IWUSR)
+            os.remove(filename)
+
+        while os.listdir(base):
+            time.sleep(0.1)  # wait for emptyness
+
+        os.rmdir(base)
+
+
 def rmtree(path):
     """
     Remove directory tree, with platform-specific fixes.
 
+    Implemented from scratch as :func:`shutil.rmtree` is broken on some
+    platforms and python version combinations.
+
     :param path: path to remove
     :type path: str
     """
+
     exc_info = ()
-    path_join = os.path.join
     for retry in range(10):
         try:
-            for base, dirs, files in os.walk(path, topdown=False):
-                os.chmod(base, stat.S_IRWXU)
-                for filename in files:
-                    os.chmod(path_join(base, filename), stat.S_IWUSR)
-            shutil.rmtree(path)
-            return
+            return _unsafe_rmtree(path)
         except EnvironmentError as error:
-            if not is_oserror_retryable(error):
+            if not _is_oserror_retryable(error):
                 raise
             exc_info = sys.exc_info()
         time.sleep(0.1)  # allow sluggish filesystems to catch up
