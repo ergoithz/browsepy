@@ -6,6 +6,10 @@
   width: auto;
 }
 
+.jp-controls button {
+  box-sizing: border-box;
+}
+
 .jp-current-time, .jp-duration {
   width: 4.5em;
 }
