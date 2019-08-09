@@ -59,10 +59,10 @@
 </th>
 {%- endmacro %}
 
-{% block title -%}
-  {{ super() }}
+{% block title %}
+  {{- super() -}}
   {%- if file and file.urlpath %} - {{ file.urlpath }}{% endif -%}
-{%- endblock %}
+{% endblock %}
 
 {% block styles %}
   {{ super() }}
