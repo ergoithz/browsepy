@@ -515,6 +515,7 @@ if PY_LEGACY:
     range = xrange  # noqa
     filter = itertools.ifilter
     map = itertools.imap
+    zip = itertools.izip
     basestring = basestring  # noqa
     unicode = unicode  # noqa
     chr = unichr  # noqa
@@ -525,6 +526,7 @@ else:
     range = range
     filter = filter
     map = map
+    zip = zip
     basestring = str
     unicode = str
     chr = chr

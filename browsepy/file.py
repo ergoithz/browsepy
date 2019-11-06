@@ -511,12 +511,9 @@ class Directory(Node):
         :returns: modification id
         :rtype: str
         """
-        nodes = self.listdir(sortkey=lambda n: n.stats.st_mtime, reverse=True)
-        for node in nodes:
-            if node.stats.st_mtime > self.stats.st_mtime:
-                return node.stats.st_mtime
-            break
-        return self.stats.st_mtime
+        mtimes = [node.stats.st_mtime for node in self.listdir()]
+        mtimes.append(self.stats.st_mtime)
+        return max(mtimes)
 
     @property
     def name(self):
@@ -680,7 +677,7 @@ class Directory(Node):
             self.path,
             self.app.config.get('DIRECTORY_TAR_BUFFSIZE', 10240),
             flask.copy_current_request_context(
-                self.plugin_manager.check_excluded
+                self.plugin_manager.check_excluded,
                 ),
             self.app.config.get('DIRECTORY_TAR_COMPRESS', 'gzip'),
             self.app.config.get('DIRECTORY_TAR_COMPRESSLEVEL', 1),
@@ -696,8 +693,8 @@ class Directory(Node):
                 content_disposition=(
                     'attachment',
                     {'filename': stream.name} if stream.name else {},
-                    )
-                )
+                    ),
+                ),
             )
 
     def contains(self, filename):
@@ -790,7 +787,9 @@ class Directory(Node):
         """
         cache = self._listdir_cache
         if cache is None:
-            self._listdir_cache = cache = list(self._listdir())
+            cache = self._listdir_cache = (
+                list(self._listdir(precomputed_stats=True))
+                )
         if sortkey is None:
             return cache[::-1 if reverse else 1]
         return sorted(cache, key=sortkey, reverse=reverse)
