@@ -504,6 +504,21 @@ class Directory(Node):
     generic = False
 
     @property
+    def content_mtime(self):
+        """
+        Get computed modification file based on its content.
+
+        :returns: modification id
+        :rtype: str
+        """
+        nodes = self.listdir(sortkey=lambda n: n.stats.st_mtime, reverse=True)
+        for node in nodes:
+            if node.stats.st_mtime > self.stats.st_mtime:
+                return node.stats.st_mtime
+            break
+        return self.stats.st_mtime
+
+    @property
     def name(self):
         """
         Get the basename portion of directory's path.
@@ -639,11 +654,11 @@ class Directory(Node):
         :returns: True if this directory has no entries, False otherwise.
         :rtype: bool
         """
-        if self._listdir_cache is not None:
-            return not bool(self._listdir_cache)
-        for entry in self._listdir():
-            return False
-        return True
+        if self._listdir_cache is None:
+            for entry in self._listdir():
+                return False
+            return True
+        return not self._listdir_cache
 
     def remove(self):
         """
@@ -688,6 +703,8 @@ class Directory(Node):
     def contains(self, filename):
         """
         Check if directory contains an entry with given filename.
+
+        This method purposely hits the filesystem to support platform quirks.
 
         :param filename: filename will be check
         :type filename: str
@@ -771,14 +788,12 @@ class Directory(Node):
         :return: sorted list of File instances
         :rtype: list of File instances
         """
-        if self._listdir_cache is None:
-            self._listdir_cache = tuple(self._listdir())
-        if sortkey:
-            return sorted(self._listdir_cache, key=sortkey, reverse=reverse)
-        data = list(self._listdir_cache)
-        if reverse:
-            data.reverse()
-        return data
+        cache = self._listdir_cache
+        if cache is None:
+            self._listdir_cache = cache = list(self._listdir())
+        if sortkey is None:
+            return cache[::-1 if reverse else 1]
+        return sorted(cache, key=sortkey, reverse=reverse)
 
 
 def fmt_size(size, binary=True):

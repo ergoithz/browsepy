@@ -17,6 +17,7 @@ from .appconfig import Flask
 from .manager import PluginManager
 from .file import Node, secure_filename
 from .stream import stream_template
+from .http import etag
 from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
                         InvalidFilenameError, InvalidPathError
 from . import compat
@@ -159,13 +160,21 @@ def browse(path):
     try:
         directory = Node.from_urlpath(path)
         if directory.is_directory and not directory.is_excluded:
-            return stream_template(
+            response = stream_template(
                 'browse.html',
                 file=directory,
                 sort_property=sort_property,
                 sort_fnc=sort_fnc,
                 sort_reverse=sort_reverse
                 )
+            response.set_etag(
+                etag(
+                    content_mtime=directory.content_mtime,
+                    sort_property=sort_property,
+                    ),
+                )
+            response.make_conditional(request)
+            return response
     except OutsideDirectoryBase:
         pass
     return NotFound()
