@@ -10,7 +10,7 @@ import cookieman
 
 from flask import request, render_template, redirect, \
                   url_for, send_from_directory, \
-                  make_response, session
+                  session
 from werkzeug.exceptions import NotFound
 
 from .appconfig import Flask
@@ -62,6 +62,7 @@ plugin_manager = PluginManager(app)
 
 @app.session_interface.register('browse:sort')
 def shrink_browse_sort(data, last):
+    """Session `browse:short` size reduction logic."""
     if data['browse:sort'] and not last:
         data['browse:sort'].pop()
     else:
@@ -148,7 +149,7 @@ def sort(property, path):
 
     session['browse:sort'] = \
         [(path, property)] + session.get('browse:sort', [])
-    return redirect(url_for(".browse", path=directory.urlpath))
+    return redirect(url_for('.browse', path=directory.urlpath))
 
 
 @app.route('/browse', defaults={'path': ''})
@@ -167,6 +168,7 @@ def browse(path):
                 sort_fnc=sort_fnc,
                 sort_reverse=sort_reverse
                 )
+            response.last_modified = directory.content_mtime
             response.set_etag(
                 etag(
                     content_mtime=directory.content_mtime,
@@ -180,7 +182,7 @@ def browse(path):
     return NotFound()
 
 
-@app.route('/open/<path:path>', endpoint="open")
+@app.route('/open/<path:path>', endpoint='open')
 def open_file(path):
     try:
         file = Node.from_urlpath(path)
@@ -191,7 +193,7 @@ def open_file(path):
     return NotFound()
 
 
-@app.route("/download/file/<path:path>")
+@app.route('/download/file/<path:path>')
 def download_file(path):
     try:
         file = Node.from_urlpath(path)
@@ -202,7 +204,7 @@ def download_file(path):
     return NotFound()
 
 
-@app.route("/download/directory/<path:path>.tgz")
+@app.route('/download/directory/<path:path>.tgz')
 def download_directory(path):
     try:
         directory = Node.from_urlpath(path)
@@ -213,7 +215,7 @@ def download_directory(path):
     return NotFound()
 
 
-@app.route("/remove/<path:path>", methods=("GET", "POST"))
+@app.route('/remove/<path:path>', methods=('GET', 'POST'))
 def remove(path):
     try:
         file = Node.from_urlpath(path)
@@ -230,8 +232,8 @@ def remove(path):
     return redirect(url_for(".browse", path=file.parent.urlpath))
 
 
-@app.route("/upload", defaults={'path': ''}, methods=("POST",))
-@app.route("/upload/<path:path>", methods=("POST",))
+@app.route('/upload', defaults={'path': ''}, methods=('POST',))
+@app.route('/upload/<path:path>', methods=('POST',))
 def upload(path):
     try:
         directory = Node.from_urlpath(path)
@@ -268,13 +270,6 @@ def index():
     except OutsideDirectoryBase:
         return NotFound()
     return browse(urlpath)
-
-
-@app.after_request
-def page_not_found(response):
-    if response.status_code == 404:
-        return make_response((render_template('404.html'), 404))
-    return response
 
 
 @app.errorhandler(InvalidPathError)

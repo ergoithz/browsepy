@@ -1,12 +1,11 @@
 # -*- coding: UTF-8 -*-
 
 import re
-import binascii
 import logging
 
 import msgpack
 
-from werkzeug.http import dump_header, dump_options_header
+from werkzeug.http import dump_header, dump_options_header, generate_etag
 from werkzeug.datastructures import Headers as BaseHeaders
 
 
@@ -61,4 +60,4 @@ class Headers(BaseHeaders):
 
 def etag(*args, **kwargs):
     """Generate etag identifier from given parameters."""
-    return '{:x}'.format(binascii.crc32(msgpack.dumps((args, kwargs))))
+    return generate_etag(msgpack.dumps((args, kwargs)))

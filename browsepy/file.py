@@ -504,18 +504,6 @@ class Directory(Node):
     generic = False
 
     @property
-    def content_mtime(self):
-        """
-        Get computed modification file based on its content.
-
-        :returns: modification id
-        :rtype: str
-        """
-        mtimes = [node.stats.st_mtime for node in self.listdir()]
-        mtimes.append(self.stats.st_mtime)
-        return max(mtimes)
-
-    @property
     def name(self):
         """
         Get the basename portion of directory's path.
@@ -656,6 +644,18 @@ class Directory(Node):
                 return False
             return True
         return not self._listdir_cache
+
+    @cached_property
+    def content_mtime(self):
+        """
+        Get computed modification file based on its content.
+
+        :returns: modification id
+        :rtype: str
+        """
+        mtimes = [node.stats.st_mtime for node in self.listdir()]
+        mtimes.append(self.stats.st_mtime)
+        return max(mtimes)
 
     def remove(self):
         """

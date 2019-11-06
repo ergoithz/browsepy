@@ -114,6 +114,7 @@ table.browser tr:nth-child(2n) {
 
 table.browser th,
 table.browser td {
+  padding: 0;
   margin: 0;
   text-align: center;
   vertical-align: middle;
@@ -122,7 +123,6 @@ table.browser td {
 }
 
 table.browser th {
-  padding-bottom: 0.75em;
   border-bottom: 1px solid black;
 }
 
@@ -230,13 +230,19 @@ ol.path li *.root:after {
 
 a.sorting {
   display: block;
-  padding: 0 1.4em 0 0;
+}
+
+table.browser th a.sorting {
+  margin: -0.5em;
+  padding: 0.5em 0.5em 0.75em;
 }
 
 a.sorting:after,
 a.sorting:before {
   float: right;
-  margin: 0.2em -1.3em -0.2em;
+  line-height: 1.25em;
+  vertical-align: middle;
+  margin-left: -1em;
 }
 
 a.sorting:hover:after,
