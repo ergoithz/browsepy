@@ -2,6 +2,10 @@
   except:
     refs:
     - /^gh-pages(-.*)?$/
+
+.python:
+  extends: .base
+  image: python:3.8-alpine
   cache:
     paths:
     - .cache/pip
@@ -10,7 +14,7 @@
     MODULE: browsepy
 
 .test:
-  extends: .base
+  extends: .python
   stage: test
   variables:
     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
@@ -31,12 +35,11 @@
     coverage run -p setup.py test
 
 .report:
-  extends: .base
+  extends: .python
   stage: report
-  image: python:3.7-alpine
 
 .publish:
-  extends: .base
+  extends: .python
   stage: publish
   dependencies: []
   before_script:
