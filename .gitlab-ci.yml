@@ -63,6 +63,10 @@ python37:
   extends: .test-base
   image: python:3.7-alpine
 
+python38:
+  extends: .test-base
+  image: python:3.8-alpine
+
 eslint:
   extends: .base
   stage: test
@@ -133,6 +137,8 @@ publish-gh-pages:
     ssh-keyscan -H 'gitlab.com' >> ~/.ssh/known_hosts
     git config --global user.name "${GITLAB_USER_LOGIN}"
     git config --global user.email "${GITLAB_USER_EMAIL}"
+  after_script:
+  - rm ~/.ssh/id_rsa
   script:
   - |
     if [ "${CI_COMMIT_REF_NAME}" == "master" ]; then
