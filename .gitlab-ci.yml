@@ -1,3 +1,12 @@
+
+# config
+
+stages:
+- test
+- report
+- external
+- publish
+
 .base:
   except:
     refs:
@@ -47,12 +56,7 @@
     apk add --no-cache build-base python3-dev
     pip install twine
 
-
-stages:
-- test
-- report
-- external
-- publish
+# stage: tests
 
 python27:
   extends: .test
@@ -96,6 +100,8 @@ eslint:
   script:
   - node_modules/.bin/eslint ${MODULE}
 
+# stage: report
+
 coverage:
   extends: .report
   artifacts:
@@ -123,6 +129,8 @@ doc:
     pip install -r requirements/doc.txt
   script:
   - make -C doc html
+
+# stage: publish
 
 publish-gh-pages:
   extends: .base
@@ -166,7 +174,7 @@ publish-gh-pages:
     git commit -am "update ${TARGET_BRANCH}"
     git push -u origin "${TARGET_BRANCH}"
 
-publish-alpha:
+publish-next:
   extends: .publish
   dependencies: []
   only:
@@ -181,7 +189,7 @@ publish-alpha:
     python setup.py bdist_wheel sdist
     twine upload --repository-url=https://test.pypi.org/legacy/ dist/*
 
-publish:
+publish-master:
   extends: .publish
   dependencies: []
   only:
