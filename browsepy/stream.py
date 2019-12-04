@@ -90,7 +90,8 @@ class TarFileStream(compat.Iterator):
     queue_class = ByteQueue
     abort_exception = WriteAbort
     thread_class = threading.Thread
-    tarfile_class = tarfile.open
+    tarfile_open = tarfile.open
+    tarfile_format = tarfile.PAX_FORMAT
 
     mimetype = 'application/x-tar'
     compresion_modes = {
@@ -102,17 +103,18 @@ class TarFileStream(compat.Iterator):
 
     @property
     def name(self):
-        """
-        Filename generated from given path and compression method.
-        """
+        """Get filename generated from given path and compression method."""
         return '%s.%s' % (os.path.basename(self.path), self._extension)
 
     @property
     def encoding(self):
-        """
-        Mimetype parameters (such as encoding).
-        """
+        """Mimetype parameters (such as encoding)."""
         return self._compress
+
+    @property
+    def closed(self):
+        """Get if input stream have been closed with no further writes."""
+        return self._closed
 
     def __init__(self, path, buffsize=10240, exclude=None, compress='gzip',
                  compresslevel=1):
@@ -134,22 +136,23 @@ class TarFileStream(compat.Iterator):
         """
         self.path = path
         self.exclude = exclude
-        self.closed = False
 
         self._started = False
+        self._closed = False
         self._buffsize = buffsize
 
         self._compress = compress if compress and buffsize > 15 else None
         self._mode, self._extension = self.compresion_modes[self._compress]
 
         self._queue = self.queue_class(buffsize)
-        self._th = self.thread_class(target=self._fill)
-        self._th_exc = None
+        self._thread = self.thread_class(target=self._fill)
+        self._thread_exception = None
 
-    @property
-    def _infofilter(self):
+    def _fill(self):
         """
-        TarInfo filtering function based on :attr:`exclude`.
+        Perform compression pushing compressed data to internal queue.
+
+        Used as compression thread target, started on first iteration.
         """
         path = self.path
         path_join = os.path.join
@@ -164,32 +167,28 @@ class TarFileStream(compat.Iterator):
             :return: infofile or None if file must be excluded
             :rtype: tarfile.TarInfo or None
             """
-            return None if exclude(path_join(path, info.name)) else info
+            return (
+                None
+                if exclude(
+                    path_join(path, info.name),
+                    follow_symlinks=info.issym(),
+                    ) else
+                info
+                )
 
-        return infofilter if exclude else None
-
-    def _fill(self):
-        """
-        Writes data on internal tarfile instance, which writes to current
-        object, using :meth:`write`.
-
-        As this method is blocking, it is used inside a thread.
-
-        This method is called automatically, on a thread, on initialization,
-        so there is little need to call it manually.
-        """
         try:
-            with self.tarfile_class(
+            with self.tarfile_open(
               fileobj=self,
               mode='w|{}'.format(self._mode),
               bufsize=self._buffsize,
+              format=self.tarfile_format,
               encoding='utf-8',
               ) as tarfile:
-                tarfile.add(self.path, '', filter=self._infofilter)
+                tarfile.add(path, filter=infofilter if exclude else None)
         except self.abort_exception:
             pass
         except Exception as e:
-            self._th_exc = e
+            self._thread_exception = e
         finally:
             self._queue.finish()
 
@@ -202,16 +201,16 @@ class TarFileStream(compat.Iterator):
         :returns: tarfile data as bytes
         :rtype: bytes
         """
-        if self.closed:
-            raise StopIteration()
+        if self._closed:
+            raise StopIteration
 
         if not self._started:
             self._started = True
-            self._th.start()
+            self._thread.start()
 
         data = self._queue.get()
         if not data:
-            raise StopIteration()
+            raise StopIteration
 
         return data
 
@@ -228,7 +227,7 @@ class TarFileStream(compat.Iterator):
         :rtype: int
         :raises WriteAbort: if already closed or closed while blocking
         """
-        if self.closed:
+        if self._closed:
             raise self.abort_exception()
 
         try:
@@ -242,13 +241,13 @@ class TarFileStream(compat.Iterator):
         """
         Closes tarfile pipe and stops further processing.
         """
-        if not self.closed:
-            self.closed = True
+        if not self._closed:
+            self._closed = True
             self._queue.finish()
-            if self._started and self._th.is_alive():
-                self._th.join()
-            if self._th_exc:
-                raise self._th_exc
+            if self._started and self._thread.is_alive():
+                self._thread.join()
+            if self._thread_exception:
+                raise self._thread_exception
 
 
 def stream_template(template_name, **context):

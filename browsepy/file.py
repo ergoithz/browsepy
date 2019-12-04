@@ -26,11 +26,11 @@ from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
 
 
 logger = logging.getLogger(__name__)
-unicode_underscore = '_'.decode('utf-8') if compat.PY_LEGACY else '_'
+unicode_underscore = compat.unicode('_')
 underscore_replace = '%s:underscore' % __name__
 codecs.register_error(
     underscore_replace,
-    lambda error: (unicode_underscore, error.start + 1)
+    lambda error: (unicode_underscore, getattr(error, 'start', 0) + 1),
     )
 binary_units = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
 standard_units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
@@ -80,7 +80,19 @@ class Node(object):
 
         :returns: True if excluded, False otherwise
         """
-        return self.plugin_manager.check_excluded(self.path)
+        return self.plugin_manager.check_excluded(
+            self.path,
+            follow_symlinks=self.is_symlink,
+            )
+
+    @cached_property
+    def is_symlink(self):
+        """
+        Get if current node is a symlink.
+
+        :returns: True if symlink, False otherwise
+        """
+        return os.path.islink(self.path)
 
     @cached_property
     def plugin_manager(self):
@@ -152,7 +164,12 @@ class Node(object):
         :returns: stats object
         :rtype: posix.stat_result or nt.stat_result
         """
-        return os.stat(self.path)
+        try:
+            return os.stat(self.path)
+        except compat.FileNotFoundError:
+            if self.is_symlink:
+                return os.lstat(self.path)
+            raise
 
     @cached_property
     def pathconf(self):
@@ -617,7 +634,7 @@ class Directory(Node):
         :returns: True if a file can be upload to directory, False otherwise
         :rtype: bool
         """
-        dirbase = self.app.config.get('DIRECTORY_UPLOAD', False)
+        dirbase = self.app.config.get('DIRECTORY_UPLOAD')
         return dirbase and check_base(self.path, dirbase)
 
     @cached_property
@@ -748,7 +765,9 @@ class Directory(Node):
 
     def _listdir(self, precomputed_stats=(os.name == 'nt')):
         """
-        Iter unsorted entries on this directory.
+        Iterate unsorted entries on this directory.
+
+        Symlinks are skipped when pointing outside to base directory.
 
         :yields: Directory or File instance for each entry in directory
         :rtype: Iterator of browsepy.file.Node
@@ -756,31 +775,38 @@ class Directory(Node):
         directory_class = self.directory_class
         file_class = self.file_class
         exclude_fnc = self.plugin_manager.check_excluded
-
         with compat.scandir(self.path) as files:
             for entry in files:
-                if exclude_fnc(entry.path):
+                is_symlink = entry.is_symlink()
+                if exclude_fnc(entry.path, follow_symlinks=is_symlink):
                     continue
                 kwargs = {
                     'path': entry.path,
                     'app': self.app,
                     'parent': self,
                     'is_excluded': False,
+                    'is_symlink': is_symlink,
                     }
                 try:
-                    if precomputed_stats and not entry.is_symlink():
-                        kwargs['stats'] = entry.stat()
+                    if precomputed_stats:
+                        kwargs['stats'] = entry.stat(
+                            follow_symlinks=is_symlink,
+                            )
                     yield (
                         directory_class(**kwargs)
-                        if entry.is_dir(follow_symlinks=True) else
+                        if entry.is_dir(follow_symlinks=is_symlink) else
                         file_class(**kwargs)
                         )
+                except compat.FileNotFoundError:
+                    pass
                 except OSError as e:
                     logger.exception(e)
 
     def listdir(self, sortkey=None, reverse=False):
         """
         Get sorted list (by given sortkey and reverse params) of File objects.
+
+        Symlinks are skipped when pointing outside to base directory.
 
         :return: sorted list of File instances
         :rtype: list of File instances

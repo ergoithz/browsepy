@@ -497,7 +497,7 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
 
 
 if PY_LEGACY:
-    class FileNotFoundError(BaseException):
+    class FileNotFoundError(Exception):
         __metaclass__ = abc.ABCMeta
 
     FileNotFoundError.register(OSError)

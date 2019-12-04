@@ -1,22 +1,19 @@
 # -*- coding: UTF-8 -*-
 
-import re
+import os.path
 import pkgutil
 import argparse
 import functools
 import warnings
-import collections
-
-import flask
 
 from werkzeug.utils import cached_property
 from cookieman import CookieMan
 
 from . import mimetype
 from . import compat
+from . import file
 from . import utils
 
-from .compat import deprecated, usedoc
 from .utils import defaultsnamedtuple
 from .exceptions import PluginNotFoundError, InvalidArgumentError, \
                         WidgetParameterException
@@ -271,12 +268,16 @@ class ExcludePluginManager(PluginManagerBase):
         """
         self._exclude_functions.add(exclude_fnc)
 
-    def check_excluded(self, path):
+    def check_excluded(self, path, follow_symlinks=True):
         """
         Check if given path is excluded.
 
+        Followed symlinks are checked against directory base for safety.
+
         :param path: absolute path to check against config and plugins
         :type path: str
+        :param follow_symlinks: wether or not follow_symlinks
+        :type follow_symlinks: bool
         :return: wether if path should be excluded or not
         :rtype: bool
         """
@@ -286,6 +287,13 @@ class ExcludePluginManager(PluginManagerBase):
         for fnc in self._exclude_functions:
             if fnc(path):
                 return True
+        if follow_symlinks:
+            realpath = os.path.realpath(path)
+            dirbase = self.app.config.get('DIRECTORY_BASE')
+            return realpath != path and (
+                dirbase and not file.check_base(path, dirbase) or
+                self.check_excluded(realpath, follow_symlinks=False)
+                )
         return False
 
     def clear(self):
@@ -708,153 +716,7 @@ class ArgumentPluginManager(PluginManagerBase):
         return getattr(self._argparse_arguments, name, default)
 
 
-class MimetypeActionPluginManager(WidgetPluginManager, MimetypePluginManager):
-    """
-    Deprecated plugin API
-    """
-
-    _deprecated_places = {
-        'javascript': 'scripts',
-        'style': 'styles',
-        'button': 'entry-actions',
-        'link': 'entry-link',
-        }
-
-    @classmethod
-    def _mimetype_filter(cls, mimetypes):
-        widget_mimetype_re = re.compile(
-            '^%s$' % '$|^'.join(
-                map(re.escape, mimetypes)
-                ).replace('\\*', '[^/]+')
-            )
-
-        def handler(f):
-            return widget_mimetype_re.match(f.type) is not None
-
-        return handler
-
-    def _widget_attrgetter(self, widget, name):
-        def handler(f):
-            app = f.app or self.app or flask.current_app
-            with app.app_context():
-                return getattr(widget.for_file(f), name)
-        return handler
-
-    def _widget_props(self, widget, endpoint=None, mimetypes=(),
-                      dynamic=False):
-        type = getattr(widget, '_type', 'base')
-        fields = self.widget_types[type]._fields
-        with self.app.app_context():
-            props = {
-                name: self._widget_attrgetter(widget, name)
-                for name in fields
-                if hasattr(widget, name)
-                }
-        props.update(
-            type=type,
-            place=self._deprecated_places.get(widget.place),
-            )
-        if dynamic:
-            props['filter'] = self._mimetype_filter(mimetypes)
-        if 'endpoint' in fields:
-            props['endpoint'] = endpoint
-        return props
-
-    @usedoc(WidgetPluginManager.__init__)
-    def __init__(self, app=None):
-        self._action_widgets = []
-        super(MimetypeActionPluginManager, self).__init__(app=app)
-
-    @usedoc(WidgetPluginManager.clear)
-    def clear(self):
-        self._action_widgets[:] = ()
-        super(MimetypeActionPluginManager, self).clear()
-
-    @cached_property
-    def _widget(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=DeprecationWarning)
-            from . import widget
-        return widget
-
-    @cached_property
-    @deprecated('Deprecated attribute action_class')
-    def action_class(self):
-        return collections.namedtuple(
-            'MimetypeAction',
-            ('endpoint', 'widget')
-            )
-
-    @cached_property
-    @deprecated('Deprecated attribute style_class')
-    def style_class(self):
-        return self._widget.StyleWidget
-
-    @cached_property
-    @deprecated('Deprecated attribute button_class')
-    def button_class(self):
-        return self._widget.ButtonWidget
-
-    @cached_property
-    @deprecated('Deprecated attribute javascript_class')
-    def javascript_class(self):
-        return self._widget.JavascriptWidget
-
-    @cached_property
-    @deprecated('Deprecated attribute link_class')
-    def link_class(self):
-        return self._widget.LinkWidget
-
-    @deprecated('Deprecated method register_action')
-    def register_action(self, endpoint, widget, mimetypes=(), **kwargs):
-        props = self._widget_props(widget, endpoint, mimetypes, True)
-        self.register_widget(**props)
-        self._action_widgets.append((widget, props['filter'], endpoint))
-
-    @deprecated('Deprecated method get_actions')
-    def get_actions(self, file):
-        return [
-            self.action_class(endpoint, deprecated.for_file(file))
-            for deprecated, filter, endpoint in self._action_widgets
-            if endpoint and filter(file)
-            ]
-
-    @usedoc(WidgetPluginManager.register_widget)
-    def register_widget(self, place=None, type=None, widget=None, filter=None,
-                        **kwargs):
-        if isinstance(place or widget, self._widget.WidgetBase):
-            warnings.warn(
-                'Deprecated use of register_widget',
-                DeprecationWarning
-                )
-            widget = place or widget
-            props = self._widget_props(widget)
-            self.register_widget(**props)
-            self._action_widgets.append((widget, None, None))
-            return
-        return super(MimetypeActionPluginManager, self).register_widget(
-            place=place, type=type, widget=widget, filter=filter, **kwargs)
-
-    @usedoc(WidgetPluginManager.get_widgets)
-    def get_widgets(self, file=None, place=None):
-        if isinstance(file, compat.basestring) or \
-          place in self._deprecated_places:
-            warnings.warn(
-                'Deprecated use of get_widgets',
-                DeprecationWarning
-                )
-            place = file or place
-            return [
-                widget
-                for widget, filter, endpoint in self._action_widgets
-                if not (filter or endpoint) and place == widget.place
-                ]
-        return super(MimetypeActionPluginManager, self).get_widgets(
-            file=file, place=place)
-
-
-class PluginManager(MimetypeActionPluginManager,
-                    BlueprintPluginManager,
+class PluginManager(BlueprintPluginManager,
                     ExcludePluginManager,
                     WidgetPluginManager,
                     MimetypePluginManager,
