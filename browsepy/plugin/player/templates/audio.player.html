@@ -25,14 +25,14 @@
     data-player-urls="
       {%- for entry in file.entries(sortkey=sort_fnc, reverse=sort_reverse) -%}
         {%- if not loop.first -%}|{%- endif -%}
-        {{- entry.media_format -}}|
+        {{- entry.mimetype -}}|
         {{- entry.name -}}|
         {{- url_for('open', path=entry.urlpath) -}}
       {%- endfor -%}
     "
   {% else %}
     data-player-title="{{ file.name }}"
-    data-player-format="{{ file.media_format }}"
+    data-player-format="{{ file.mimetype }}"
     data-player-url="{{ url_for('open', path=file.urlpath) }}"
   {% endif %}
   ></div>

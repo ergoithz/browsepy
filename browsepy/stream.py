@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""Streaming functionality with generators and response constructors."""
 
 import os
 import os.path
@@ -12,12 +12,12 @@ from . import compat
 
 class ByteQueue(compat.Queue):
     """
-    Small synchronized queue storing bytes, with an additional finish method
-    with turns the queue :method:`get` into non-blocking (returns empty bytes).
+    Synchronized byte queue, with an additional finish method.
 
-    On a finished queue all :method:`put` will raise Full exceptions,
-    regardless of the parameters given.
+    On a finished, :method:`put` will raise queue.Full exceptions and
+    :method:`get` will return empty bytes without blockng.
     """
+
     def _init(self, maxsize):
         self.queue = []
         self.bytes = 0
@@ -42,17 +42,17 @@ class ByteQueue(compat.Queue):
         return data
 
     def qsize(self):
-        """
-        Return the number of bytes in the queue.
-        """
+        """Return the number of bytes in the queue."""
         with self.mutex:
             return self.bytes
 
     def finish(self):
         """
-        Turn queue into finished mode: :method:`get` becomes non-blocking
-        and returning empty bytes if empty, and :method:`put` raising
-        :class:`queue.Full` exceptions unconditionally.
+        Put queue into finished mode.
+
+        On finished mode, :method:`get` becomes non-blocking once empty
+        by returning empty and :method:`put` raises :class:`queue.Full`
+        exceptions unconditionally.
         """
         self.finished = True
 
@@ -61,10 +61,8 @@ class ByteQueue(compat.Queue):
 
 
 class WriteAbort(Exception):
-    """
-    Exception used internally by :class:`TarFileStream`'s default
-    implementation to stop tarfile compression.
-    """
+    """Exception to stop tarfile compression process."""
+
     pass
 
 
@@ -119,7 +117,7 @@ class TarFileStream(compat.Iterator):
     def __init__(self, path, buffsize=10240, exclude=None, compress='gzip',
                  compresslevel=1):
         """
-        Initialize thread and class (thread is not started until interation).
+        Initialize thread and class (thread is not started until iteration).
 
         Note that compress parameter will be ignored if buffsize is below 16.
 
@@ -150,7 +148,7 @@ class TarFileStream(compat.Iterator):
 
     def _fill(self):
         """
-        Perform compression pushing compressed data to internal queue.
+        Compress files in path, pushing compressed data into internal queue.
 
         Used as compression thread target, started on first iteration.
         """
@@ -160,7 +158,7 @@ class TarFileStream(compat.Iterator):
 
         def infofilter(info):
             """
-            Filter TarInfo objects for TarFile.
+            Filter TarInfo objects from TarFile.
 
             :param info:
             :type info: tarfile.TarInfo
@@ -184,7 +182,12 @@ class TarFileStream(compat.Iterator):
               format=self.tarfile_format,
               encoding='utf-8',
               ) as tarfile:
-                tarfile.add(path, filter=infofilter if exclude else None)
+                tarfile.add(
+                    path,
+                    arcname='',  # as archive root
+                    recursive=True,
+                    filter=infofilter if exclude else None,
+                    )
         except self.abort_exception:
             pass
         except Exception as e:
@@ -194,7 +197,9 @@ class TarFileStream(compat.Iterator):
 
     def __next__(self):
         """
-        Pulls chunk from tarfile (which is processed on its own thread).
+        Get chunk from internal queue.
+
+        Starts compression thread on first call.
 
         :param want: number bytes to read, defaults to 0 (all available)
         :type want: int
@@ -216,10 +221,11 @@ class TarFileStream(compat.Iterator):
 
     def write(self, data):
         """
-        Put chunk of data into data queue, used on the tarfile thread.
+        Add chunk of data into data queue.
 
-        This method blocks when pipe is already, applying backpressure to
-        writers.
+        This method is used inside the compression thread, blocking when
+        the internal queue is already full, propagating backpressure to
+        writer.
 
         :param data: bytes to write to pipe
         :type data: bytes
@@ -238,9 +244,7 @@ class TarFileStream(compat.Iterator):
         return len(data)
 
     def close(self):
-        """
-        Closes tarfile pipe and stops further processing.
-        """
+        """Close tarfile pipe and stops further processing."""
         if not self._closed:
             self._closed = True
             self._queue.finish()
@@ -252,6 +256,8 @@ class TarFileStream(compat.Iterator):
 
 def stream_template(template_name, **context):
     """
+    Get streaming response rendering a jinja template.
+
     Some templates can be huge, this function returns an streaming response,
     sending the content in chunks and preventing from timeout.
 

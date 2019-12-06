@@ -1,15 +1,17 @@
+"""Generic string transform module."""
 
 
 class StateMachine(object):
     """
-    Abstract character-driven finite state machine implementation, used to
-    chop down and transform strings.
+    Character-driven finite state machine.
 
-    Useful for implementig simple transpilators, compressors and so on.
+    Useful for implementig simple string transforms, transpilators,
+    compressors and so on.
 
     Important: when implementing this class, you must set the :attr:`current`
     attribute to a key defined in :attr:`jumps` dict.
     """
+
     jumps = {}  # finite state machine jumps
     start = ''  # character which started current state
     current = ''  # current state (an initial value must be set)
@@ -56,6 +58,8 @@ class StateMachine(object):
 
     def __init__(self, data=''):
         """
+        Initialize.
+
         :param data: content will be added to pending data
         :type data: str
         """
@@ -91,8 +95,7 @@ class StateMachine(object):
 
     def transform(self, data, mark, next):
         """
-        Apply the appropriate transformation function on current state data,
-        which is supposed to end at this point.
+        Apply the appropriate transformation method.
 
         It is expected transformation logic makes use of :attr:`start`,
         :attr:`current` and :attr:`streaming` instance attributes to
@@ -113,8 +116,7 @@ class StateMachine(object):
 
     def feed(self, data=''):
         """
-        Optionally add pending data, switch into streaming mode, and yield
-        result chunks.
+        Add input data and yield partial output results.
 
         :yields: result chunks
         :ytype: str
@@ -126,8 +128,7 @@ class StateMachine(object):
 
     def finish(self, data=''):
         """
-        Optionally add pending data, turn off streaming mode, and yield
-        result chunks, which implies all pending data will be consumed.
+        Add input data, end procesing and yield all remaining output.
 
         :yields: result chunks
         :ytype: str

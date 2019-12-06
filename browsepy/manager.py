@@ -463,8 +463,7 @@ class WidgetPluginManager(PluginManagerBase):
     def register_widget(self, place=None, type=None, widget=None, filter=None,
                         **kwargs):
         """
-        Create (see :meth:`create_widget`) or use provided widget and register
-        it.
+        Register a widget, optionally creating it with :meth:`create_widget`.
 
         This method provides this dual behavior in order to simplify widget
         creation-registration on an functional single step without sacrifycing
@@ -670,7 +669,7 @@ class ArgumentPluginManager(PluginManagerBase):
                 for argargs, argkwargs in arguments:
                     group.add_argument(*argargs, **argkwargs)
 
-        if options.help_all:
+        if options.help or options.help_all:
             parser.print_help()
             parser.exit()
 
@@ -716,6 +715,7 @@ class ArgumentPluginManager(PluginManagerBase):
         return getattr(self._argparse_arguments, name, default)
 
 
+@file.Node.register_manager_class
 class PluginManager(BlueprintPluginManager,
                     ExcludePluginManager,
                     WidgetPluginManager,

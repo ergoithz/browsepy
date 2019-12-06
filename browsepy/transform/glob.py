@@ -1,3 +1,4 @@
+"""Module providing transpilation from glob to regexp."""
 
 import os
 import warnings
@@ -9,6 +10,8 @@ from . import StateMachine
 
 
 class GlobTransform(StateMachine):
+    """Glob to regexp string transpiler."""
+
     jumps = {
         'start': {
             '': 'text',
@@ -127,6 +130,7 @@ class GlobTransform(StateMachine):
     deferred = False
 
     def __init__(self, data, sep=os.sep, base=None):
+        """Initialize."""
         self.sep = sep
         self.base = base or ''
         self.deferred_data = []
@@ -134,6 +138,7 @@ class GlobTransform(StateMachine):
         super(GlobTransform, self).__init__(data)
 
     def transform(self, data, mark, next):
+        """Translate data chunk."""
         data = super(GlobTransform, self).transform(data, mark, next)
         if self.deferred:
             self.deferred_data.append(data)
@@ -144,6 +149,7 @@ class GlobTransform(StateMachine):
         return data
 
     def transform_posix_collating_symbol(self, data, mark, next):
+        """Translate POSIX collating symbol (stub)."""
         warnings.warn(
             'Posix collating symbols (like %s%s) are not supported.'
             % (data, mark),
@@ -152,6 +158,7 @@ class GlobTransform(StateMachine):
         return None
 
     def transform_posix_character_class(self, data, mark, next):
+        """Translate POSIX character class into REGEX ranges."""
         name = data[len(self.start):]
         if name not in self.character_classes:
             warnings.warn(
@@ -167,6 +174,7 @@ class GlobTransform(StateMachine):
             )
 
     def transform_posix_equivalence_class(self, data, mark, next):
+        """Translate POSIX equivalence expression (stub)."""
         warnings.warn(
             'Posix equivalence class expresions (like %s%s) are not supported.'
             % (data, mark),
@@ -175,6 +183,7 @@ class GlobTransform(StateMachine):
         return None
 
     def transform_wildcard(self, data, mark, next):
+        """Translate glob wildcard into non-path-separator REGEX."""
         if self.start == '**':
             return '.*'
         if self.start == '*':
@@ -182,17 +191,21 @@ class GlobTransform(StateMachine):
         return '[^%s]' % re_escape(self.sep)
 
     def transform_text(self, data, mark, next):
+        """Translate glob text into text, filename or directory REGEX."""
         if next is None:
             return '%s(%s|$)' % (re_escape(data), re_escape(self.sep))
         return re_escape(data)
 
     def transform_sep(self, data, mark, next):
+        """Transform path separator into REGEX."""
         return re_escape(self.sep)
 
     def transform_literal(self, data, mark, next):
+        """Transform glob escape into REGEX."""
         return data[len(self.start):]
 
     def transform_range(self, data, mark, next):
+        """Transform glob character range into REGEX."""
         self.deferred = True
         if self.start == '[!':
             return '[^%s' % data[2:]
@@ -201,9 +214,11 @@ class GlobTransform(StateMachine):
         return data
 
     def transform_range_sep(self, data, mark, next):
+        """Translate range path separator into REGEX."""
         return re_escape(self.sep)
 
     def transform_range_close(self, data, mark, next):
+        """Translate range end into REGEX."""
         self.deferred = False
         if None in self.deferred_data:
             self.deferred_data[:] = ()
@@ -211,9 +226,11 @@ class GlobTransform(StateMachine):
         return data
 
     def transform_range_ignore(self, data, mark, next):
+        """Translate character to be ignored on REGEX."""
         return ''
 
     def transform_group(self, data, mark, next):
+        """Transform glob group into REGEX."""
         if self.start == '{':
             self.deep += 1
             return '('
@@ -225,11 +242,13 @@ class GlobTransform(StateMachine):
         return data
 
     def transform_start(self, data, mark, next):
+        """Transform glob start into REGEX."""
         if mark == '/':
             return '^%s' % re_escape(self.base)
         return re_escape(self.sep)
 
 
 def translate(data, sep=os.sep, base=None):
+    """Transform glob string into REGEX."""
     self = GlobTransform(data, sep, base)
     return ''.join(self)

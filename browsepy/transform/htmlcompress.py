@@ -1,3 +1,5 @@
+"""Module providing HTML compression extension jinja2."""
+
 import re
 
 import jinja2
@@ -8,6 +10,8 @@ from . import StateMachine
 
 
 class CompressContext(StateMachine):
+    """Base jinja2 template token finite state machine."""
+
     token_class = jinja2.lexer.Token
     block_tokens = {
         'variable_begin': 'variable_end',
@@ -17,6 +21,7 @@ class CompressContext(StateMachine):
     lineno = 0
 
     def feed(self, token):
+        """Process a single token, yielding processed ones."""
         if self.skip_until_token:
             yield token
             if token.type == self.skip_until_token:
@@ -35,11 +40,14 @@ class CompressContext(StateMachine):
                 self.lineno = token.lineno
 
     def finish(self):
+        """Set state machine as finished, yielding remaining tokens."""
         for data in super(CompressContext, self).finish():
             yield self.token_class(self.lineno, 'data', data)
 
 
 class SGMLCompressContext(CompressContext):
+    """Compression context for jinja2 SGML templates."""
+
     re_whitespace = re.compile('[ \\t\\r\\n]+')
     block_tags = {}  # block content will be treated as literal text
     jumps = {  # state machine jumps
@@ -63,6 +71,7 @@ class SGMLCompressContext(CompressContext):
 
     @property
     def nearest(self):
+        """Get next data chunk to be processed."""
         if self.skip_until_text and self.current == 'text':
             mark = self.skip_until_text
             index = self.pending.find(mark, len(self.start))
@@ -72,6 +81,7 @@ class SGMLCompressContext(CompressContext):
         return super(SGMLCompressContext, self).nearest
 
     def transform_tag(self, data, mark, next):
+        """Compress SML tag node."""
         tagstart = self.start == '<'
         data = self.re_whitespace.sub(' ', data[1:] if tagstart else data)
         if tagstart:
@@ -84,6 +94,7 @@ class SGMLCompressContext(CompressContext):
         return self.start if data.strip() == self.start else data
 
     def transform_text(self, data, mark, next):
+        """Compress SGML text node."""
         if not self.skip_until_text:
             return self.start if data.strip() == self.start else data
         elif next is not None:
@@ -92,6 +103,8 @@ class SGMLCompressContext(CompressContext):
 
 
 class HTMLCompressContext(SGMLCompressContext):
+    """Compression context for jinja2 HTML templates."""
+
     block_tags = {
         'textarea': '</textarea>',
         'pre': '</pre>',
@@ -101,9 +114,12 @@ class HTMLCompressContext(SGMLCompressContext):
 
 
 class HTMLCompress(jinja2.ext.Extension):
+    """Jinja2 HTML template compression extension."""
+
     context_class = HTMLCompressContext
 
     def filter_stream(self, stream):
+        """Yield compressed tokens from :class:`~jinja2.lexer.TokenStream`."""
         transform = self.context_class()
 
         for token in stream:

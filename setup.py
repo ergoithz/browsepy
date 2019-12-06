@@ -73,9 +73,13 @@ setup(
     tests_require=[
         'beautifulsoup4',
         'unittest-resources',
+        'pycodestyle',
+        'pydocstyle',
+        'mypy',
+        'radon',
+        'unittest-resources[testing]',
         ],
     test_suite='browsepy.tests',
-    test_runner='browsepy.tests.runner:DebuggerTextTestRunner',
     zip_safe=False,
     platforms='any',
     )

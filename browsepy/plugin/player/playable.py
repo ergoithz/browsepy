@@ -34,6 +34,7 @@ class PLSFileParser(object):
         )
 
     def __init__(self, path):
+        """Initialize."""
         with warnings.catch_warnings():
             # We already know about SafeConfigParser deprecation!
             warnings.simplefilter('ignore', category=DeprecationWarning)
@@ -41,6 +42,7 @@ class PLSFileParser(object):
         self._parser.read(path)
 
     def getint(self, section, key, fallback=NOT_SET):
+        """Get int from pls file, returning fallback if unable."""
         try:
             return self._parser.getint(section, key)
         except self.option_exceptions:
@@ -49,6 +51,7 @@ class PLSFileParser(object):
             return fallback
 
     def get(self, section, key, fallback=NOT_SET):
+        """Get value from pls file, returning fallback if unable."""
         try:
             return self._parser.get(section, key)
         except self.option_exceptions:
@@ -57,74 +60,31 @@ class PLSFileParser(object):
             return fallback
 
 
-class PlayableBase(File):
-    extensions = {
-        'mp3': 'audio/mpeg',
-        'ogg': 'audio/ogg',
-        'wav': 'audio/wav',
-        'm3u': 'audio/x-mpegurl',
-        'm3u8': 'audio/x-mpegurl',
-        'pls': 'audio/x-scpls',
-        }
+class Playable(Node):
+    """Base class for playable nodes."""
 
-    @classmethod
-    def extensions_from_mimetypes(cls, mimetypes):
-        mimetypes = frozenset(mimetypes)
-        return {
-            ext: mimetype
-            for ext, mimetype in cls.extensions.items()
-            if mimetype in mimetypes
-        }
+    playable_list = False
 
-    @classmethod
-    def detect(cls, node, os_sep=os.sep):
-        basename = node.path.rsplit(os_sep)[-1]
-        if '.' in basename:
-            ext = basename.rsplit('.')[-1]
-            return cls.extensions.get(ext, None)
-        return None
+    @cached_property
+    def is_playable(self):
+        """
+        Get if node is playable.
 
-
-class PlayableFile(PlayableBase):
-    mimetypes = ['audio/mpeg', 'audio/ogg', 'audio/wav']
-    extensions = PlayableBase.extensions_from_mimetypes(mimetypes)
-    media_map = {mime: ext for ext, mime in extensions.items()}
-
-    def __init__(self, **kwargs):
-        self.duration = kwargs.pop('duration', None)
-        self.title = kwargs.pop('title', None)
-        super(PlayableFile, self).__init__(**kwargs)
-
-    @property
-    def title(self):
-        return self._title or self.name
-
-    @title.setter
-    def title(self, title):
-        self._title = title
-
-    @property
-    def media_format(self):
-        return self.media_map[self.type]
-
-
-class PlayListFile(PlayableBase):
-    playable_class = PlayableFile
-    mimetypes = ['audio/x-mpegurl', 'audio/x-mpegurl', 'audio/x-scpls']
-    extensions = PlayableBase.extensions_from_mimetypes(mimetypes)
-
-    @classmethod
-    def from_urlpath(cls, path, app=None):
-        original = Node.from_urlpath(path, app)
-        if original.mimetype == PlayableDirectory.mimetype:
-            return PlayableDirectory(original.path, original.app)
-        elif original.mimetype == M3UFile.mimetype:
-            return M3UFile(original.path, original.app)
-        if original.mimetype == PLSFile.mimetype:
-            return PLSFile(original.path, original.app)
-        return original
+        :returns: True if node is playable, False otherwise
+        :rtype: bool
+        """
+        print(self)
+        return self.playable_check(self)
 
     def normalize_playable_path(self, path):
+        """
+        Fixes the path of playable file from a playlist.
+
+        :param path: absolute or relative path or uri
+        :type path: str
+        :returns: absolute path or uri
+        :rtype: str or None
+        """
         if '://' in path:
             return path
         path = os.path.normpath(path)
@@ -141,16 +101,103 @@ class PlayListFile(PlayableBase):
         return ()
 
     def entries(self, sortkey=None, reverse=None):
-        for file in self._entries():
-            if self.playable_class.detect(file):
-                yield file
+        """Get playlist file entries."""
+        for node in self._entries():
+            if node.is_playable and not node.is_excluded:
+                yield node
+
+    @classmethod
+    def playable_check(cls, node):
+        """Check if class supports node."""
+        kls = cls.directory_class if node.is_directory else cls.file_class
+        return kls.playable_check(node)
 
 
-class PLSFile(PlayListFile):
+@Playable.register_file_class
+class PlayableExtension(Playable):
+    """=Generic node for filenames with extension."""
+
+    title = None
+    duration = None
+
+    playable_extensions = {}
+    playable_extension_classes = []  # deferred
+
+    @cached_property
+    def mimetype(self):
+        """Get mimetype."""
+        print(self)
+        return self.detect_mimetype(self.path)
+
+    @classmethod
+    def detect_extension(cls, path):
+        for extension in cls.playable_extensions:
+            if path.endswith('.%s' % extension):
+                return extension
+        return None
+
+    @classmethod
+    def detect_mimetype(cls, path):
+        return cls.playable_extensions.get(cls.detect_extension(path))
+
+    @classmethod
+    def playable_check(cls, node):
+        """Get if file is playable."""
+        if cls.generic:
+            return any(
+                kls.playable_check(node)
+                for kls in cls.playable_extension_classes
+                )
+        return cls.detect_extension(node.path) in cls.playable_extensions
+
+    @classmethod
+    def from_node(cls, node, app=None):
+        """Get playable node from given node."""
+        if cls.generic:
+            for kls in cls.playable_classes:
+                playable = kls.from_node(node)
+                if playable:
+                    return playable
+            return node
+        return kls(node.path, node.app)
+
+    @classmethod
+    def from_urlpath(cls, path, app=None):
+        kls = cls.get_extension_class(path)
+        if cls.generic:
+            for kls in cls.playable_extension_classes:
+                if kls.detect_extension(path):
+                    return kls.from_urlpath(path, app=app)
+        return super(PlayableExtension, cls).from_urlpath(path, app=app)
+
+    @classmethod
+    def register_playable_extension_class(cls, kls):
+        cls.playable_extension_classes.append(kls)
+        return kls
+
+
+@PlayableExtension.register_playable_extension_class
+class PlayableAudioFile(PlayableExtension, File):
+    """Audio file node."""
+
+    playable_extensions = {
+        'mp3': 'audio/mpeg',
+        'ogg': 'audio/ogg',
+        'wav': 'audio/wav',
+        }
+
+
+@PlayableExtension.register_playable_extension_class
+class PLSFile(PlayableExtension, File):
+    """PLS playlist file node."""
+
+    playable_list = True
+    playable_extensions = {
+        'pls': 'audio/x-scpls',
+        }
+
     ini_parser_class = PLSFileParser
     maxsize = getattr(sys, 'maxint', 0) or getattr(sys, 'maxsize', 0) or 2**32
-    mimetype = 'audio/x-scpls'
-    extensions = PlayableBase.extensions_from_mimetypes([mimetype])
 
     def _entries(self):
         parser = self.ini_parser_class(self.path)
@@ -180,9 +227,15 @@ class PLSFile(PlayListFile):
                 )
 
 
-class M3UFile(PlayListFile):
-    mimetype = 'audio/x-mpegurl'
-    extensions = PlayableBase.extensions_from_mimetypes([mimetype])
+@PlayableExtension.register_playable_extension_class
+class M3UFile(PlayableExtension, File):
+    """M3U playlist file node."""
+
+    playable_list = True
+    playable_extensions = {
+        'm3u': 'audio/x-mpegurl',
+        'm3u8': 'audio/x-mpegurl',
+        }
 
     def _iter_lines(self):
         prefix = '#EXTM3U\n'
@@ -214,32 +267,34 @@ class M3UFile(PlayListFile):
             data.clear()
 
 
-class PlayableDirectory(Directory):
-    file_class = PlayableFile
-    name = ''
+@Playable.register_directory_class
+class PlayListDirectory(Playable, Directory):
+    """Playable directory node."""
+
+    playable_list = True
 
     @cached_property
     def parent(self):
+        """Get standard directory node."""
         return self.directory_class(self.path, app=self.app)
 
-    @classmethod
-    def detect(cls, node):
-        if node.is_directory:
-            for file in node._listdir():
-                if cls.file_class.detect(file):
-                    return cls.mimetype
-        return None
-
     def entries(self, sortkey=None, reverse=None):
-        listdir_fnc = super(PlayableDirectory, self).listdir
-        for file in listdir_fnc(sortkey=sortkey, reverse=reverse):
-            if self.file_class.detect(file):
-                yield file
+        """Get playable directory entries."""
+        for node in self.listdir(sortkey=sortkey, reverse=reverse):
+            if (not node.is_directory) and node.is_playable:
+                yield node
+
+    @classmethod
+    def playable_check(cls, node):
+        """Detect if given node contains playable files."""
+        super_check = super(PlayListDirectory, cls).playable_check
+        return node.is_directory and any(
+            super_check(child)
+            for child in node._listdir()
+            if not child.is_directory
+            )
 
 
-def detect_playable_mimetype(path, os_sep=os.sep):
-    basename = path.rsplit(os_sep)[-1]
-    if '.' in basename:
-        ext = basename.rsplit('.')[-1]
-        return PlayableBase.extensions.get(ext, None)
-    return None
+def detect_playable_mimetype(path):
+    """Detect if path corresponds to a playable file by its extension."""
+    return PlayableExtension.detect_mimetype(path)

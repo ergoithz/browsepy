@@ -30,6 +30,9 @@ jedi
 sphinx
 pycodestyle
 pydocstyle
+mypy
+radon
+unittest-resources[testing]
 pyyaml
 beautifulsoup4
 

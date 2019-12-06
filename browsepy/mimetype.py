@@ -1,4 +1,9 @@
-# -*- coding: UTF-8 -*-
+"""
+File mimetype detection functions.
+
+This module exposes an :var:`alternatives` tuple containing an ordered
+list of detection strategies, sorted by priority.
+"""
 
 import re
 import subprocess
@@ -11,17 +16,19 @@ re_mime_validate = re.compile(r'\w+/\w+(; \w+=[^;]+)*')
 
 
 def by_python(path):
+    """Get mimetype by file extension using python mimetype database."""
     mime, encoding = mimetypes.guess_type(path)
     if mime in generic_mimetypes:
         return None
     return "%s%s%s" % (
-        mime or "application/octet-stream", "; "
-        if encoding else
-        "", encoding or ""
+        mime or "application/octet-stream",
+        "; " if encoding else "",
+        encoding or ""
         )
 
 
 def by_file(path):
+    """Get mimetype by calling file POSIX utility."""
     try:
         output = subprocess.check_output(
             ("file", "-ib", path),
@@ -36,6 +43,7 @@ def by_file(path):
 
 
 def by_default(path):
+    """Get default generic mimetype."""
     return "application/octet-stream"
 
 

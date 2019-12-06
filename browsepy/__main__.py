@@ -39,7 +39,6 @@ class ArgParse(SafeArgumentParser):
     default_port = os.getenv('BROWSEPY_PORT', '8080')
 
     defaults = {
-        'add_help': True,
         'prog': name,
         'formatter_class': HelpFormatter,
         'description': 'description: starts a %s web file browser' % name
@@ -55,6 +54,9 @@ class ArgParse(SafeArgumentParser):
             'port', nargs='?', type=int,
             default=self.default_port,
             help='port to listen (default: %(default)s)')
+        self.add_argument(
+            '--help', action='store_true',
+            help='show help and exit (honors --plugin)')
         self.add_argument(
             '--help-all', action='store_true',
             help='show help for all available plugins and exit')

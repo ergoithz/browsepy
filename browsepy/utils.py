@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""Small utility functions for common tasks."""
 
 import sys
 import os
@@ -13,7 +13,7 @@ import flask
 
 def ppath(*args, **kwargs):
     """
-    Get joined file path relative to module location.
+    Join given path components relative to a module location.
 
     :param module: Module name
     :type module: str
@@ -30,10 +30,7 @@ def ppath(*args, **kwargs):
 
 @contextlib.contextmanager
 def dummy_context():
-    """
-    Context manager which does nothing besides exposing the context
-    manger interface
-    """
+    """Get a dummy context manager."""
     yield
 
 
@@ -67,8 +64,10 @@ def random_string(size, sample=tuple(map(chr, range(256)))):
 
 def solve_local(context_local):
     """
-    Resolve given context local to its actual value. If given object
-    it's not a context local nothing happens, just returns the same value.
+    Resolve given context local to its actual value.
+
+    If given object isn't a context local, nothing happens, return the
+    same object.
     """
     if callable(getattr(context_local, '_get_current_object', None)):
         return context_local._get_current_object()
@@ -105,6 +104,9 @@ def defaultsnamedtuple(name, fields, defaults=None):
     """
     Generate namedtuple with default values.
 
+    This somewhat tries to mimic py3.7 namedtuple with keyword-based
+    defaults, in a backwards-compatible way.
+
     :param name: name
     :param fields: iterable with field names
     :param defaults: iterable or mapping with field defaults
@@ -112,9 +114,12 @@ def defaultsnamedtuple(name, fields, defaults=None):
     :rtype: collections.defaultdict
     """
     nt = collections.namedtuple(name, fields)
-    nt.__new__.__defaults__ = (None, ) * len(nt._fields)
-    if isinstance(defaults, collections.Mapping):
-        nt.__new__.__defaults__ = tuple(nt(**defaults))
-    elif defaults:
-        nt.__new__.__defaults__ = tuple(nt(*defaults))
+    nt.__new__.__defaults__ = (None, ) * len(fields)
+    nt.__module__ = __name__
+    if defaults:
+        nt.__new__.__defaults__ = tuple(
+            nt(**defaults)
+            if isinstance(defaults, collections.Mapping) else
+            nt(*defaults)
+            )
     return nt

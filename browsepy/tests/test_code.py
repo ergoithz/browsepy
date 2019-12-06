@@ -1,34 +1,42 @@
+import re
 
 import unittest_resources.testing as bases
 
 
-class TypingTestCase(bases.TypingTestCase):
-    """TestCase checking :module:`mypy`."""
+class Rules:
+    """Browsepy module mixin."""
 
     meta_module = 'browsepy'
+    meta_module_pattern = re.compile(r'^([^t]*|t(?!ests?))+$')
+    meta_resource_pattern = re.compile(r'^([^t]*|t(?!ests?))+\.py$')
 
 
-class CodeStyleTestCase(bases.CodeStyleTestCase):
+# class TypingTestCase(Rules, bases.TypingTestCase):
+#     """TestCase checking :module:`mypy`."""
+#
+#     pass
+
+
+class CodeStyleTestCase(Rules, bases.CodeStyleTestCase):
     """TestCase checking :module:`pycodestyle`."""
 
-    meta_module = 'browsepy'
+    pass
 
 
-class DocStyleTestCase(bases.DocStyleTestCase):
+class DocStyleTestCase(Rules, bases.DocStyleTestCase):
     """TestCase checking :module:`pydocstyle`."""
 
-    meta_module = 'browsepy'
+    pass
 
 
-class MaintainabilityIndexTestCase(bases.MaintainabilityIndexTestCase):
+class MaintainabilityIndexTestCase(Rules, bases.MaintainabilityIndexTestCase):
     """TestCase checking :module:`radon` maintainability index."""
 
-    meta_module = 'browsepy'
+    pass
 
 
-class CodeComplexityTestCase(bases.CodeComplexityTestCase):
+class CodeComplexityTestCase(Rules, bases.CodeComplexityTestCase):
     """TestCase checking :module:`radon` code complexity."""
 
-    meta_module = 'browsepy'
     max_class_complexity = 7
     max_function_complexity = 7

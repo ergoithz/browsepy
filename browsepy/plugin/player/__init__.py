@@ -1,15 +1,11 @@
 # -*- coding: UTF-8 -*-
 
-from flask import Blueprint, render_template
-from werkzeug.exceptions import NotFound
-
+from flask import Blueprint, abort
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
-from browsepy.file import OutsideDirectoryBase
 from browsepy.utils import ppath
 from browsepy.stream import stream_template
 
-from .playable import PlayableFile, PlayableDirectory, \
-                      PlayListFile, detect_playable_mimetype
+from .playable import Playable, detect_playable_mimetype
 
 
 player = Blueprint(
@@ -21,51 +17,29 @@ player = Blueprint(
     )
 
 
-@player.route('/audio/<path:path>')
-def audio(path):
-    try:
-        file = PlayableFile.from_urlpath(path)
-        if file.is_file:
-            return render_template('audio.player.html', file=file)
-    except OutsideDirectoryBase:
-        pass
-    return NotFound()
+@player.route('/', defaults={'path': ''})
+@player.route('/<path:path>')
+def play(path):
+    """
+    Handle player requests.
 
-
-@player.route('/list/<path:path>')
-def playlist(path):
-    try:
-        file = PlayListFile.from_urlpath(path)
-        if file.is_file:
-            return stream_template(
-                'audio.player.html',
-                file=file,
-                playlist=True
-                )
-    except OutsideDirectoryBase:
-        pass
-    return NotFound()
-
-
-@player.route('/directory', defaults={'path': ''})
-@player.route('/directory/<path:path>')
-def directory(path):
+    :param path: path to directory
+    :type path: str
+    :returns: flask.Response
+    """
     sort_property = get_cookie_browse_sorting(path, 'text')
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
-    try:
-        file = PlayableDirectory.from_urlpath(path)
-        if file.is_directory:
-            return stream_template(
-                'audio.player.html',
-                file=file,
-                sort_property=sort_property,
-                sort_fnc=sort_fnc,
-                sort_reverse=sort_reverse,
-                playlist=True
-                )
-    except OutsideDirectoryBase:
-        pass
-    return NotFound()
+    node = Playable.from_urlpath(path)
+    if node.is_playable and not node.is_excluded:
+        return stream_template(
+            'audio.player.html',
+            file=node,
+            sort_property=sort_property,
+            sort_fnc=sort_fnc,
+            sort_reverse=sort_reverse,
+            playlist=node.playable_list,
+            )
+    abort(404)
 
 
 def register_arguments(manager):
@@ -77,7 +51,6 @@ def register_arguments(manager):
     :param manager: plugin manager
     :type manager: browsepy.manager.PluginManager
     """
-
     # Arguments are forwarded to argparse:ArgumentParser.add_argument,
     # https://docs.python.org/3.7/library/argparse.html#the-add-argument-method
     manager.register_argument(
@@ -108,15 +81,8 @@ def register_plugin(manager):
     manager.register_widget(
         place='entry-link',
         type='link',
-        endpoint='player.audio',
-        filter=PlayableFile.detect
-        )
-    manager.register_widget(
-        place='entry-link',
-        icon='playlist',
-        type='link',
-        endpoint='player.playlist',
-        filter=PlayListFile.detect
+        endpoint='player.play',
+        filter=Playable.playable_check,
         )
 
     # register action buttons
@@ -124,15 +90,8 @@ def register_plugin(manager):
         place='entry-actions',
         css='play',
         type='button',
-        endpoint='player.audio',
-        filter=PlayableFile.detect
-        )
-    manager.register_widget(
-        place='entry-actions',
-        css='play',
-        type='button',
-        endpoint='player.playlist',
-        filter=PlayListFile.detect
+        endpoint='player.play',
+        filter=Playable.playable_check,
         )
 
     # check argument (see `register_arguments`) before registering
@@ -141,7 +100,7 @@ def register_plugin(manager):
         manager.register_widget(
             place='header',
             type='button',
-            endpoint='player.directory',
+            endpoint='player.play',
             text='Play directory',
-            filter=PlayableDirectory.detect
+            filter=Playable.playable_check,
             )

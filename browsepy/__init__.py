@@ -10,7 +10,7 @@ import cookieman
 
 from flask import request, render_template, redirect, \
                   url_for, send_from_directory, \
-                  session
+                  session, abort
 from werkzeug.exceptions import NotFound
 
 from .appconfig import Flask
@@ -139,17 +139,12 @@ def template_globals():
 @app.route('/sort/<string:property>', defaults={'path': ''})
 @app.route('/sort/<string:property>/<path:path>')
 def sort(property, path):
-    try:
-        directory = Node.from_urlpath(path)
-    except OutsideDirectoryBase:
-        return NotFound()
-
-    if not directory.is_directory or directory.is_excluded:
-        return NotFound()
-
-    session['browse:sort'] = \
-        [(path, property)] + session.get('browse:sort', [])
-    return redirect(url_for('.browse', path=directory.urlpath))
+    directory = Node.from_urlpath(path)
+    if directory.is_directory and not directory.is_excluded:
+        session['browse:sort'] = \
+            [(path, property)] + session.get('browse:sort', [])
+        return redirect(url_for('.browse', path=directory.urlpath))
+    abort(404)
 
 
 @app.route('/browse', defaults={'path': ''})
@@ -157,119 +152,93 @@ def sort(property, path):
 def browse(path):
     sort_property = get_cookie_browse_sorting(path, 'text')
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
-
-    try:
-        directory = Node.from_urlpath(path)
-        if directory.is_directory and not directory.is_excluded:
-            response = stream_template(
-                'browse.html',
-                file=directory,
+    directory = Node.from_urlpath(path)
+    if directory.is_directory and not directory.is_excluded:
+        response = stream_template(
+            'browse.html',
+            file=directory,
+            sort_property=sort_property,
+            sort_fnc=sort_fnc,
+            sort_reverse=sort_reverse
+            )
+        response.last_modified = directory.content_mtime
+        response.set_etag(
+            etag(
+                content_mtime=directory.content_mtime,
                 sort_property=sort_property,
-                sort_fnc=sort_fnc,
-                sort_reverse=sort_reverse
-                )
-            response.last_modified = directory.content_mtime
-            response.set_etag(
-                etag(
-                    content_mtime=directory.content_mtime,
-                    sort_property=sort_property,
-                    ),
-                )
-            response.make_conditional(request)
-            return response
-    except OutsideDirectoryBase:
-        pass
-    return NotFound()
+                ),
+            )
+        response.make_conditional(request)
+        return response
+    abort(404)
 
 
 @app.route('/open/<path:path>', endpoint='open')
 def open_file(path):
-    try:
-        file = Node.from_urlpath(path)
-        if file.is_file and not file.is_excluded:
-            return send_from_directory(file.parent.path, file.name)
-    except OutsideDirectoryBase:
-        pass
-    return NotFound()
+    file = Node.from_urlpath(path)
+    if file.is_file and not file.is_excluded:
+        return send_from_directory(file.parent.path, file.name)
+    abort(404)
 
 
 @app.route('/download/file/<path:path>')
 def download_file(path):
-    try:
-        file = Node.from_urlpath(path)
-        if file.is_file and not file.is_excluded:
-            return file.download()
-    except OutsideDirectoryBase:
-        pass
-    return NotFound()
+    file = Node.from_urlpath(path)
+    if file.is_file and not file.is_excluded:
+        return file.download()
+    abort(404)
 
 
 @app.route('/download/directory/<path:path>.tgz')
 def download_directory(path):
-    try:
-        directory = Node.from_urlpath(path)
-        if directory.is_directory and not directory.is_excluded:
-            return directory.download()
-    except OutsideDirectoryBase:
-        pass
-    return NotFound()
+    directory = Node.from_urlpath(path)
+    if directory.is_directory and not directory.is_excluded:
+        return directory.download()
+    abort(404)
 
 
 @app.route('/remove/<path:path>', methods=('GET', 'POST'))
 def remove(path):
-    try:
-        file = Node.from_urlpath(path)
-    except OutsideDirectoryBase:
-        return NotFound()
-
-    if not file.can_remove or file.is_excluded:
-        return NotFound()
-
-    if request.method == 'GET':
-        return render_template('remove.html', file=file)
-
-    file.remove()
-    return redirect(url_for(".browse", path=file.parent.urlpath))
+    file = Node.from_urlpath(path)
+    if file.can_remove and not file.is_excluded:
+        if request.method == 'GET':
+            return render_template('remove.html', file=file)
+        file.remove()
+        return redirect(url_for(".browse", path=file.parent.urlpath))
+    abort(404)
 
 
 @app.route('/upload', defaults={'path': ''}, methods=('POST',))
 @app.route('/upload/<path:path>', methods=('POST',))
 def upload(path):
-    try:
-        directory = Node.from_urlpath(path)
-    except OutsideDirectoryBase:
-        return NotFound()
-
+    directory = Node.from_urlpath(path)
     if (
-      not directory.is_directory or
-      not directory.can_upload or
-      directory.is_excluded
+      directory.is_directory and
+      directory.can_upload and
+      not directory.is_excluded
       ):
-        return NotFound()
-
-    for v in request.files.listvalues():
-        for f in v:
-            filename = secure_filename(f.filename)
-            if filename:
-                filename = directory.choose_filename(filename)
-                filepath = os.path.join(directory.path, filename)
-                f.save(filepath)
-            else:
+        files = (
+            (secure_filename(file.filename), file)
+            for values in request.files.listvalues()
+            for file in values
+            )
+        for filename, file in files:
+            if not filename:
                 raise InvalidFilenameError(
                     path=directory.path,
-                    filename=f.filename
+                    filename=file.filename,
                     )
-    return redirect(url_for('.browse', path=directory.urlpath))
+            filename = directory.choose_filename(filename)
+            filepath = os.path.join(directory.path, filename)
+            file.save(filepath)
+        return redirect(url_for('.browse', path=directory.urlpath))
+    abort(404)
 
 
 @app.route('/')
 def index():
     path = app.config['DIRECTORY_START'] or app.config['DIRECTORY_BASE']
-    try:
-        urlpath = Node(path).urlpath
-    except OutsideDirectoryBase:
-        return NotFound()
-    return browse(urlpath)
+    return browse(Node(path).urlpath)
 
 
 @app.errorhandler(InvalidPathError)
@@ -284,11 +253,13 @@ def bad_request_error(e):
 
 
 @app.errorhandler(OutsideRemovableBase)
+@app.errorhandler(OutsideDirectoryBase)
 @app.errorhandler(404)
 def page_not_found_error(e):
     return render_template('404.html'), 404
 
 
+@app.errorhandler(Exception)
 @app.errorhandler(500)
 def internal_server_error(e):  # pragma: no cover
     logger.exception(e)

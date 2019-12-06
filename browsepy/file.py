@@ -14,7 +14,6 @@ import flask
 from werkzeug.utils import cached_property
 
 from . import compat
-from . import manager
 from . import utils
 from . import stream
 
@@ -60,13 +59,14 @@ class Node(object):
     to specify :meth:`from_urlpath` classmethod behavior:
 
     * :attr:`generic`, if true, an instance of directory_class or file_class
-      will be created instead of an instance of this class tself.
+       will be created instead of an instance of this class itself.
     * :attr:`directory_class`, class will be used for directory nodes,
     * :attr:`file_class`, class will be used for file nodes.
     """
     generic = True
-    directory_class = None  # set later at import time
-    file_class = None  # set later at import time
+    directory_class = None  # set at import time
+    file_class = None  # set at import time
+    manager_class = None  # set at import time
 
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     can_download = False
@@ -75,8 +75,7 @@ class Node(object):
     @cached_property
     def is_excluded(self):
         """
-        Get if current node shouldn't be shown, using :attt:`app` config's
-        exclude_fnc.
+        Get if current node should be avoided based on registered rules.
 
         :returns: True if excluded, False otherwise
         """
@@ -104,7 +103,7 @@ class Node(object):
         """
         return (
             self.app.extensions.get('plugin_manager') or
-            manager.PluginManager(self.app)
+            self.manager_class(self.app)
             )
 
     @cached_property
@@ -339,7 +338,7 @@ class Node(object):
     @classmethod
     def register_file_class(cls, kls):
         """
-        Convenience method for setting current class file_class property.
+        Set given type as file_class constructor for current class.
 
         :param kls: class to set
         :type kls: type
@@ -352,7 +351,7 @@ class Node(object):
     @classmethod
     def register_directory_class(cls, kls):
         """
-        Convenience method for setting current class directory_class property.
+        Set given type as directory_class constructor for current class.
 
         :param kls: class to set
         :type kls: type
@@ -360,6 +359,19 @@ class Node(object):
         :rtype: type
         """
         cls.directory_class = kls
+        return kls
+
+    @classmethod
+    def register_manager_class(cls, kls):
+        """
+        Set given type as manager_class constructor for current class.
+
+        :param kls: class to set
+        :type kls: type
+        :returns: given class (enabling using this as decorator)
+        :rtype: type
+        """
+        cls.manager_class = kls
         return kls
 
 
