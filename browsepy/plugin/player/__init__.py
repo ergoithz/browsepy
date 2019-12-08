@@ -5,7 +5,7 @@ from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.utils import ppath
 from browsepy.stream import stream_template
 
-from .playable import Playable, detect_playable_mimetype
+from .playable import PlayableNode, PlayableDirectory, PlayableFile
 
 
 player = Blueprint(
@@ -29,7 +29,7 @@ def play(path):
     """
     sort_property = get_cookie_browse_sorting(path, 'text')
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
-    node = Playable.from_urlpath(path)
+    node = PlayableNode.from_urlpath(path)
     if node.is_playable and not node.is_excluded:
         return stream_template(
             'audio.player.html',
@@ -67,7 +67,7 @@ def register_plugin(manager):
     :type manager: browsepy.manager.PluginManager
     """
     manager.register_blueprint(player)
-    manager.register_mimetype_function(detect_playable_mimetype)
+    manager.register_mimetype_function(PlayableFile.detect_mimetype)
 
     # add style tag
     manager.register_widget(
@@ -82,7 +82,7 @@ def register_plugin(manager):
         place='entry-link',
         type='link',
         endpoint='player.play',
-        filter=Playable.playable_check,
+        filter=PlayableFile.detect,
         )
 
     # register action buttons
@@ -91,7 +91,7 @@ def register_plugin(manager):
         css='play',
         type='button',
         endpoint='player.play',
-        filter=Playable.playable_check,
+        filter=PlayableFile.detect,
         )
 
     # check argument (see `register_arguments`) before registering
@@ -102,5 +102,5 @@ def register_plugin(manager):
             type='button',
             endpoint='player.play',
             text='Play directory',
-            filter=Playable.playable_check,
+            filter=PlayableDirectory.detect,
             )

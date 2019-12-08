@@ -25,14 +25,14 @@
     data-player-urls="
       {%- for entry in file.entries(sortkey=sort_fnc, reverse=sort_reverse) -%}
         {%- if not loop.first -%}|{%- endif -%}
-        {{- entry.mimetype -}}|
+        {{- entry.extension -}}|
         {{- entry.name -}}|
         {{- url_for('open', path=entry.urlpath) -}}
       {%- endfor -%}
     "
   {% else %}
     data-player-title="{{ file.name }}"
-    data-player-format="{{ file.mimetype }}"
+    data-player-format="{{ file.extension }}"
     data-player-url="{{ url_for('open', path=file.urlpath) }}"
   {% endif %}
   ></div>
@@ -84,7 +84,7 @@
     {% endif %}
     <div class="jp-no-solution">
       <span>Update Required</span>
-      In order to get this player working either update your browse or your <a href="http://get.adobe.com/flashplayer/" target="_blank">Flash plugin</a>.
+      In order to get this player working either update your browser or your <a href="http://get.adobe.com/flashplayer/" target="_blank">Flash plugin</a>.
     </div>
   </div>
 </div>

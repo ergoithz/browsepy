@@ -23,6 +23,7 @@ class PluginManagerBase(object):
     """
     Base plugin manager for plugin module loading and Flask extension logic.
     """
+
     _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
 
     @property
@@ -165,12 +166,12 @@ class PluginManagerBase(object):
         """
         plugin = plugin.replace('-', '_')
         names = [
-            name
-            for ns in self.namespaces
-            for name in (
-                '%s%s' % (ns, plugin),
-                '%s.%s' % (ns.rstrip('.'), plugin),
+            '%s%s%s' % (
+                namespace,
+                '.' if namespace and namespace[-1] not in '._' else '',
+                plugin,
                 )
+            for namespace in self.namespaces
             ]
         names = sorted(frozenset(names), key=names.index)
         for name in names:
@@ -258,7 +259,7 @@ class ExcludePluginManager(PluginManagerBase):
 
     def register_exclude_function(self, exclude_fnc):
         """
-        Register given exclude-function on curren app.
+        Register given exclude-function on current app.
 
         This method is intended to be used on plugin's module-level
         :func:`register_plugin` functions.
