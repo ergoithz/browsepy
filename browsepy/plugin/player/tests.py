@@ -44,30 +44,6 @@ class ManagerMock(object):
         return self.argument_values.get(name, default)
 
 
-class TestPLSFileParser(unittest.TestCase):
-    module = player_playable
-    exceptions = player_playable.PLSFileParser.option_exceptions
-
-    def get_parser(self, content=''):
-        with compat.mkdtemp() as path:
-            name = os.path.join(path, 'file.pls')
-            with open(name, 'w') as f:
-                f.write(content)
-            return self.module.PLSFileParser(name)
-
-    def test_getint(self):
-        parser = self.get_parser()
-        self.assertEqual(parser.getint('a', 'a', 2), 2)
-        with self.assertRaises(self.exceptions):
-            parser.getint('a', 'a')
-
-    def test_get(self):
-        parser = self.get_parser()
-        self.assertEqual(parser.get('a', 'a', 2), 2)
-        with self.assertRaises(self.exceptions):
-            parser.get('a', 'a')
-
-
 class TestPlayerBase(unittest.TestCase):
     module = player
 
@@ -263,7 +239,7 @@ class TestPlayable(TestIntegrationBase):
             file = p(tmpdir, 'playable.m3u')
             with open(file, 'w') as f:
                 f.write(data)
-            playlist = self.module.M3UFile(path=file, app=self.app)
+            playlist = self.module.PlayableFile(path=file, app=self.app)
             self.assertPathListEqual(
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
@@ -281,7 +257,7 @@ class TestPlayable(TestIntegrationBase):
             file = p(tmpdir, 'playable.pls')
             with open(file, 'w') as f:
                 f.write(data)
-            playlist = self.module.PLSFile(path=file, app=self.app)
+            playlist = self.module.PlayableFile(path=file, app=self.app)
             self.assertPathListEqual(
                 [a.path for a in playlist.entries()],
                 [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]

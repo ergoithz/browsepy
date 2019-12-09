@@ -1,1 +1,1 @@
-# -*- coding: UTF-8 -*-
+"""Browsepy builtin plugin submodule."""

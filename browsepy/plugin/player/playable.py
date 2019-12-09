@@ -1,12 +1,4 @@
-# -*- coding: UTF-8 -*-
-
-import sys
-import codecs
-import os.path
-import warnings
-
-import six
-import six.moves
+"""Playable file classes."""
 
 from werkzeug.utils import cached_property
 
@@ -40,7 +32,7 @@ class PlayableNode(Node):
 
 @PlayableNode.register_file_class
 class PlayableFile(PlayableNode, File):
-    """=Generic node for filenames with extension."""
+    """Generic node for filenames with extension."""
 
     title = None
     duration = None
@@ -76,7 +68,7 @@ class PlayableFile(PlayableNode, File):
         return self.detect_extension(self.path)
 
     def entries(self):
-        """Iter playlist files."""
+        """Iterate playlist files."""
         parser = self.playable_list_parsers.get(self.extension)
         if parser:
             for options in parser(self):
@@ -94,6 +86,7 @@ class PlayableFile(PlayableNode, File):
 
     @classmethod
     def detect_extension(cls, path):
+        """Detect extension from given path."""
         for extension in cls.playable_extensions:
             if path.endswith('.%s' % extension):
                 return extension
@@ -115,7 +108,7 @@ class PlayableDirectory(PlayableNode, Directory):
     playable_list = True
 
     def entries(self, sortkey=None, reverse=None):
-        """Iter playable directory playable files."""
+        """Iterate playable directory playable files."""
         for node in self.listdir(sortkey=sortkey, reverse=reverse):
             if not node.is_directory and node.is_playable:
                 yield node
@@ -123,11 +116,8 @@ class PlayableDirectory(PlayableNode, Directory):
     @classmethod
     def detect(cls, node):
         """Detect if given node contains playable files."""
-        file_detect = cls.file_class.detect
         return node.is_directory and any(
-            file_detect(child)
+            child.is_playable
             for child in node._listdir()
             if not child.is_directory
             )
-
-

@@ -1,5 +1,13 @@
-# -*- coding: UTF-8 -*-
+"""
+Player plugin.
 
+This plugin is both functional and simple enough to server as example for:
+- Blueprint registration.
+- Widget with filtering function.
+- Custom file nodes.
+- Sorting cookie retrieval and usage.
+
+"""
 from flask import Blueprint, abort
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.utils import ppath

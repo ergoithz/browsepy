@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""Browsepy simple file server."""
 
 __version__ = '0.6.0'
 
@@ -11,7 +11,6 @@ import cookieman
 from flask import request, render_template, redirect, \
                   url_for, send_from_directory, \
                   session, abort
-from werkzeug.exceptions import NotFound
 
 from .appconfig import Flask
 from .manager import PluginManager

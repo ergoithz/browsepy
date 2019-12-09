@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""Filesystem utility functions."""
 
 import os
 import os.path
@@ -15,6 +15,7 @@ from .exceptions import InvalidClipboardModeError, \
 
 
 def copy(target, node, join_fnc=os.path.join):
+    """Copy node into target path."""
     if node.is_excluded:
         raise OSError(2, os.strerror(2))
 
@@ -32,6 +33,7 @@ def copy(target, node, join_fnc=os.path.join):
 
 
 def move(target, node, join_fnc=os.path.join):
+    """Move node into target path."""
     if node.is_excluded or not node.can_remove:
         code = 2 if node.is_excluded else 1
         raise OSError(code, os.strerror(code))
@@ -46,9 +48,7 @@ def move(target, node, join_fnc=os.path.join):
 
 
 def paste(target, mode, clipboard):
-    """
-    Get pasting function for given directory and keyboard.
-    """
+    """Get pasting function for given directory and keyboard."""
     if mode == 'cut':
         paste_fnc = functools.partial(move, target)
     elif mode == 'copy':
@@ -78,6 +78,7 @@ def paste(target, mode, clipboard):
 
 
 def mkdir(path, name):
+    """Create directory under path with given nam."""
     if secure_filename(name) != name or not name:
         raise InvalidDirnameError(path=path, name=name)
 

@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""Plugin module with filesystem functionality."""
 
 from flask import Blueprint, render_template, request, redirect, url_for, \
                   session, current_app, g
@@ -37,6 +37,7 @@ re_basename = '^[^ {0}]([^{0}]*[^ {0}])?$'.format(
                defaults={'path': ''})
 @actions.route('/create/directory/<path:path>', methods=('GET', 'POST'))
 def create_directory(path):
+    """Handle request to create directory."""
     try:
         directory = Node.from_urlpath(path)
     except OutsideDirectoryBase:
@@ -60,6 +61,7 @@ def create_directory(path):
 @actions.route('/selection', methods=('GET', 'POST'), defaults={'path': ''})
 @actions.route('/selection/<path:path>', methods=('GET', 'POST'))
 def selection(path):
+    """Handle file selection clipboard request."""
     sort_property = get_cookie_browse_sorting(path, 'text')
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
 
@@ -105,6 +107,7 @@ def selection(path):
 @actions.route('/clipboard/paste', defaults={'path': ''})
 @actions.route('/clipboard/paste/<path:path>')
 def clipboard_paste(path):
+    """Handle clipboard paste-here request."""
     try:
         directory = Node.from_urlpath(path)
     except OutsideDirectoryBase:
@@ -141,13 +144,15 @@ def clipboard_paste(path):
 @actions.route('/clipboard/clear', defaults={'path': ''})
 @actions.route('/clipboard/clear/<path:path>')
 def clipboard_clear(path):
+    """Handle clear clipboard request."""
     session.pop('clipboard:mode', None)
     session.pop('clipboard:items', None)
     return redirect(url_for('browse', path=path))
 
 
 @actions.errorhandler(FileActionsException)
-def clipboard_error(e):
+def file_actions_error(e):
+    """Serve informative error page on plugin errors."""
     file = Node(e.path) if hasattr(e, 'path') else None
     issues = getattr(e, 'issues', ())
 
@@ -174,6 +179,7 @@ def clipboard_error(e):
 
 
 def shrink_session(data, last):
+    """Session shrinking logic (only obeys final attempt)."""
     if last:
         raise InvalidClipboardSizeError(
             mode=data.pop('clipboard:mode', None),
@@ -183,21 +189,26 @@ def shrink_session(data, last):
 
 
 def detect_upload(directory):
+    """Detect if directory node can be used as clipboard target."""
     return directory.is_directory and directory.can_upload
 
 
 def detect_clipboard(directory):
+    """Detect if clipboard is available on given directory node."""
     return directory.is_directory and session.get('clipboard:mode')
 
 
 def detect_selection(directory):
-    return directory.is_directory and \
-            current_app.config.get('DIRECTORY_UPLOAD')
+    """Detect if file selection is available on given directory node."""
+    return (
+        directory.is_directory and
+        current_app.config.get('DIRECTORY_UPLOAD')
+        )
 
 
 def excluded_clipboard(path):
     """
-    Exclusion function for files in clipboard.
+    Check if given path should be ignored when pasting clipboard.
 
     :param path: path to check
     :type path: str
