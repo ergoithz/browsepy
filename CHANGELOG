@@ -1,14 +1,19 @@
 ## [0.6.0] - Upcoming
 ### Added
 - Plugin discovery.
-- New plugin `file-actions for copy/cut/paste and directory creation.
-- Smart cookie sessions.
+- New plugin file-actions providing copy/cut/paste and directory creation.
+- Smart cookie-baked sessions.
+- Directory browsing cache headers.
+- Favicon statics and metadata.
 
 ### Changes
 - Faster directory tarball streaming with more options.
+- Code simplification.
+- Base directory is downloadable now.
+- Directory entries stats are retrieved first and foremost.
 
 ### Removed
-- Python 3.3 and 3.4 support have been dropped.
+- Python 2.7, 3.3 and 3.4 support have been dropped.
 
 ## [0.5.6] - 2017-09-09
 ### Added

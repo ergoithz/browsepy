@@ -9,7 +9,16 @@ import jinja2.lexer
 from . import StateMachine
 
 
-class CompressContext(StateMachine):
+class Context(object):
+    def feed(self, token):
+        yield token
+
+    def finish(self):
+        return
+        yield
+
+
+class CompressContext(Context, StateMachine):
     """Base jinja2 template token finite state machine."""
 
     token_class = jinja2.lexer.Token
@@ -113,14 +122,25 @@ class HTMLCompressContext(SGMLCompressContext):
         }
 
 
-class HTMLCompress(jinja2.ext.Extension):
+class TemplateCompress(jinja2.ext.Extension):
     """Jinja2 HTML template compression extension."""
 
-    context_class = HTMLCompressContext
+    default_context_class = Context
+    context_classes = {
+        '.xhtml': HTMLCompressContext,
+        '.html': HTMLCompressContext,
+        '.htm': HTMLCompressContext,
+        }
+
+    def get_context(self, filename):
+        for extension, context_class in self.context_classes.items():
+            if filename.endswith(extension):
+                return context_class()
+        return self.default_context_class()
 
     def filter_stream(self, stream):
         """Yield compressed tokens from :class:`~jinja2.lexer.TokenStream`."""
-        transform = self.context_class()
+        transform = self.get_context(stream.name)
 
         for token in stream:
             for compressed in transform.feed(token):

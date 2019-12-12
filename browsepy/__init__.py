@@ -21,6 +21,7 @@ from .http import etag
 from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
                         InvalidFilenameError, InvalidPathError
 
+from . import mimetype
 from . import compat
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ app.config.update(
         ),
     EXCLUDE_FNC=None,
     )
-app.jinja_env.add_extension('browsepy.transform.htmlcompress.HTMLCompress')
+app.jinja_env.add_extension('browsepy.transform.compress.TemplateCompress')
 app.session_interface = cookieman.CookieMan()
 
 if 'BROWSEPY_SETTINGS' in os.environ:
@@ -260,7 +261,10 @@ def upload(path):
 
 @app.route('/<any("manifest.json", "browserconfig.xml"):filename>')
 def metadata(filename):
-    response = app.response_class(render_template(filename))
+    response = app.response_class(
+        render_template(filename),
+        content_type=mimetype.by_python(filename),
+        )
     response.last_modified = app.config['APPLICATION_TIME']
     response.make_conditional(request)
     return response
