@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""HTTP utility module."""
 
 import re
 import logging
@@ -8,32 +8,34 @@ import msgpack
 from werkzeug.http import dump_header, dump_options_header, generate_etag
 from werkzeug.datastructures import Headers as BaseHeaders
 
+from .compat import typing
+
 
 logger = logging.getLogger(__name__)
 
 
 class Headers(BaseHeaders):
     """
-    A wrapper around :class:`werkzeug.datastructures.Headers`, allowing
-    to specify headers with options on initialization.
+    Covenience :class:`werkzeug.datastructures.Headers` wrapper.
 
-    Headers are provided as keyword arguments while values can be either
-    :type:`str` (no options) or tuple of :type:`str` and :type:`dict`.
+    This datastructure allows specifying initial values, as keyword
+    arguments while values can be either :type:`str` (no options)
+    or tuple of :type:`str` and :type:`dict`.
     """
+
     snake_replace = staticmethod(re.compile(r'(^|-)[a-z]').sub)
 
     @classmethod
-    def genpair(cls, key, value):
+    def genpair(cls,
+                key,  # type: str
+                value,  # type: typing.Union[str, typing.Mapping]
+                ):  # type: (...) -> typing.Tuple[str, str]
         """
-        Extract value and options from values dict based on given key and
-        options-key.
+        Fix header name and options to be passed to werkzeug.
 
         :param key: value key
-        :type key: str
         :param value: value or value/options pair
-        :type value: str or pair of (str, dict)
         :returns: tuple with key and value
-        :rtype: tuple of (str, str)
         """
         rkey = cls.snake_replace(
             lambda x: x.group(0).upper(),
@@ -47,9 +49,11 @@ class Headers(BaseHeaders):
         return rkey, rvalue
 
     def __init__(self, **kwargs):
+        # type: (**typing.Union[str, typing.Mapping]) -> None
         """
+        Initialize.
+
         :param **kwargs: header and values as keyword arguments
-        :type **kwargs: str or (str, dict)
         """
         items = [
             self.genpair(key, value)
@@ -59,5 +63,6 @@ class Headers(BaseHeaders):
 
 
 def etag(*args, **kwargs):
+    # type: (*typing.Any, **typing.Any) -> str
     """Generate etag identifier from given parameters."""
     return generate_etag(msgpack.dumps((args, kwargs)))

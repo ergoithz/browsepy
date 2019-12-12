@@ -5,40 +5,42 @@ __version__ = '0.6.0'
 import logging
 import os
 import os.path
+import time
 
 import cookieman
 
-from flask import request, render_template, redirect, \
+from flask import request, render_template, jsonify, redirect, \
                   url_for, send_from_directory, \
                   session, abort
 
 from .appconfig import Flask
 from .manager import PluginManager
 from .file import Node, secure_filename
-from .stream import stream_template
+from .stream import tarfile_extension, stream_template
 from .http import etag
 from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
                         InvalidFilenameError, InvalidPathError
+
 from . import compat
-from . import utils
 
 logger = logging.getLogger(__name__)
 
 app = Flask(
     __name__,
-    static_url_path='/static',
-    static_folder=utils.ppath('static'),
-    template_folder=utils.ppath('templates'),
+    template_folder='templates',
+    static_folder='static',
     )
 app.config.update(
-    SECRET_KEY=utils.random_string(4096),
+    SECRET_KEY=os.urandom(4096),
     APPLICATION_NAME='browsepy',
+    APPLICATION_TIME=None,
     DIRECTORY_BASE=compat.getcwd(),
     DIRECTORY_START=None,
     DIRECTORY_REMOVE=None,
     DIRECTORY_UPLOAD=None,
     DIRECTORY_TAR_BUFFSIZE=262144,
     DIRECTORY_TAR_COMPRESSION='gzip',
+    DIRECTORY_TAR_EXTENSION=None,
     DIRECTORY_TAR_COMPRESSLEVEL=1,
     DIRECTORY_DOWNLOADABLE=True,
     USE_BINARY_MULTIPLES=True,
@@ -57,6 +59,22 @@ if 'BROWSEPY_SETTINGS' in os.environ:
     app.config.from_envvar('BROWSEPY_SETTINGS')
 
 plugin_manager = PluginManager(app)
+
+
+@app.before_first_request
+def prepare():
+    config = app.config
+    if config['APPLICATION_TIME'] is None:
+        config['APPLICATION_TIME'] = time.time()
+
+
+@app.url_defaults
+def default_download_extension(endpoint, values):
+    if endpoint == 'download_directory':
+        values.setdefault(
+            'extension',
+            tarfile_extension(app.config['DIRECTORY_TAR_EXTENSION']),
+            )
 
 
 @app.session_interface.register('browse:sort')
@@ -158,9 +176,12 @@ def browse(path):
             file=directory,
             sort_property=sort_property,
             sort_fnc=sort_fnc,
-            sort_reverse=sort_reverse
+            sort_reverse=sort_reverse,
             )
-        response.last_modified = directory.content_mtime
+        response.last_modified = max(
+            directory.content_mtime,
+            app.config['APPLICATION_TIME'],
+            )
         response.set_etag(
             etag(
                 content_mtime=directory.content_mtime,
@@ -188,8 +209,11 @@ def download_file(path):
     abort(404)
 
 
-@app.route('/download/directory/<path:path>.tgz')
-def download_directory(path):
+@app.route('/download/directory.<string:extension>', defaults={'path': ''})
+@app.route('/download/directory/?<path:path>.<string:extension>')
+def download_directory(path, extension):
+    if extension != tarfile_extension(app.config['DIRECTORY_TAR_COMPRESSION']):
+        abort(404)
     directory = Node.from_urlpath(path)
     if directory.is_directory and not directory.is_excluded:
         return directory.download()
@@ -232,6 +256,14 @@ def upload(path):
             file.save(filepath)
         return redirect(url_for('.browse', path=directory.urlpath))
     abort(404)
+
+
+@app.route('/<any("manifest.json", "browserconfig.xml"):filename>')
+def metadata(filename):
+    response = app.response_class(render_template(filename))
+    response.last_modified = app.config['APPLICATION_TIME']
+    response.make_conditional(request)
+    return response
 
 
 @app.route('/')

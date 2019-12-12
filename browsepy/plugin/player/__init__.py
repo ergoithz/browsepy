@@ -10,7 +10,6 @@ This plugin is both functional and simple enough to server as example for:
 """
 from flask import Blueprint, abort
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
-from browsepy.utils import ppath
 from browsepy.stream import stream_template
 
 from .playable import PlayableNode, PlayableDirectory, PlayableFile
@@ -20,8 +19,8 @@ player = Blueprint(
     'player',
     __name__,
     url_prefix='/play',
-    template_folder=ppath('templates', module=__name__),
-    static_folder=ppath('static', module=__name__),
+    template_folder='templates',
+    static_folder='static',
     )
 
 

@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""Module providing runtime and platform compatibility workarounds."""
 
 import os
 import os.path
@@ -15,6 +15,7 @@ import warnings
 import posixpath
 import ntpath
 import argparse
+import types
 
 try:
     import builtins  # python 3+
@@ -45,6 +46,16 @@ try:
     from collections.abc import Iterator as BaseIterator  # python 3.3+
 except ImportError:
     from collections import Iterator as BaseIterator  # noqa
+
+try:
+    from importlib import import_module as _import_module  # python 3.3+
+except ImportError:
+    _import_module = None  # noqa
+
+try:
+    import typing  # python 3.5+
+except ImportError:
+    typing = None  # noqa
 
 
 FS_ENCODING = sys.getfilesystemencoding()
@@ -112,6 +123,7 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
 
 @contextlib.contextmanager
 def scandir(path):
+    # type: (str) -> typing.Generator[typing.Iterator[os.DirEntry], None, None]
     """
     Get iterable of :class:`os.DirEntry` as context manager.
 
@@ -130,7 +142,23 @@ def scandir(path):
             files.close()
 
 
+def import_module(name):
+    # type: (str) -> types.ModuleType
+    """
+    Import a module by absolute name.
+
+    The 'package' argument is required when performing a relative import. It
+    specifies the package to use as the anchor point from which to resolve the
+    relative import to an absolute import.
+    """
+    if _import_module:
+        return _import_module(name)
+    __import__(name)
+    return sys.modules[name]
+
+
 def _unsafe_rmtree(path):
+    # type: (str) -> None
     """
     Remove directory tree, without error handling.
 
@@ -152,6 +180,7 @@ def _unsafe_rmtree(path):
 
 
 def rmtree(path):
+    # type: (str) -> None
     """
     Remove directory tree, with platform-specific fixes.
 

@@ -12,24 +12,23 @@ from cookieman import CookieMan
 from . import mimetype
 from . import compat
 from . import file
-from . import utils
 
+from .compat import typing, types
 from .utils import defaultsnamedtuple
 from .exceptions import PluginNotFoundError, InvalidArgumentError, \
                         WidgetParameterException
 
 
 class PluginManagerBase(object):
-    """
-    Base plugin manager for plugin module loading and Flask extension logic.
-    """
+    """Base plugin manager with loading and Flask extension logic."""
 
     _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
 
     @property
     def namespaces(self):
+        # type: () -> typing.Iterable[str]
         """
-        List of plugin namespaces taken from app config.
+        List plugin namespaces taken from app config.
 
         :returns: list of plugin namespaces
         :rtype: typing.List[str]
@@ -37,9 +36,11 @@ class PluginManagerBase(object):
         return self.app.config.get('PLUGIN_NAMESPACES', []) if self.app else []
 
     def __init__(self, app=None):
+        # type app: typing.Optional[flask.Flask]
         """
+        Initialize.
+
         :param app: flask application
-        :type app: flask.Flask
         """
         self.plugin_filters = []
 
@@ -49,11 +50,11 @@ class PluginManagerBase(object):
             self.init_app(app)
 
     def init_app(self, app):
+        # type app: flask.Flask
         """
         Initialize this Flask extension for given app.
 
         :param app: flask application
-        :type app: flask.Flask
         """
         self.app = app
         if not hasattr(app, 'extensions'):
@@ -74,23 +75,18 @@ class PluginManagerBase(object):
             self.load_plugin(plugin)
 
     def clear(self):
-        """
-        Clear plugin manager state.
-        """
+        """Clear plugin manager state."""
         pass
 
     def _iter_modules(self, prefix):
-        """
-        Iterate thru all root modules containing given prefix.
-        """
+        """Iterate thru all root modules containing given prefix."""
         for finder, name, ispkg in pkgutil.iter_modules():
             if name.startswith(prefix):
                 yield name
 
     def _content_import_name(self, module, item, prefix):
-        """
-        Get importable module contnt import name..
-        """
+        # type: (str, str, str) -> typing.Optional[str]
+        """Get importable module contnt import name."""
         res = compat.res
         name = '%s.%s' % (module, item)
         if name.startswith(prefix):
@@ -99,11 +95,11 @@ class PluginManagerBase(object):
                     return name[:-len(ext)]
             if not res.is_resource(module, item):
                 return name
+        return None
 
     def _iter_submodules(self, prefix):
-        """
-        Iterate thru all modules which full name contains given prefix.
-        """
+        # type: (str) -> typing.Generator[str, None, None]
+        """Iterate thru all modules with an absolute prefix."""
         res = compat.res
         parent = prefix.rsplit('.', 1)[0]
         for base in (prefix, parent):
@@ -115,13 +111,15 @@ class PluginManagerBase(object):
             except ImportError:
                 pass
 
-    def _iter_plugin_modules(self, get_module_fnc=utils.get_module):
+    def _iter_plugin_modules(self, get_module_fnc=compat.import_module):
         """
-        Iterate plugin modules, yielding both full qualified name and
-        short plugin name as tuple.
+        Iterate plugin modules.
+
+        This generator yields both full qualified name and short plugin
+        names.
         """
-        nameset = set()
-        shortset = set()
+        nameset = set()  # type: typing.Set[str]
+        shortset = set()  # type: typing.Set[str]
         filters = self.plugin_filters
         for prefix in filter(None, self.namespaces):
             name_iter_fnc = (
@@ -151,12 +149,12 @@ class PluginManagerBase(object):
 
     @cached_property
     def available_plugins(self):
-        """
-        Iterate through all loadable plugins on default import locations
-        """
+        # type: () -> typing.List[types.ModuleType]
+        """Iterate through all loadable plugins on typical paths."""
         return list(self._iter_plugin_modules())
 
-    def import_plugin(self, plugin, get_module_fnc=utils.get_module):
+    def import_plugin(self, plugin, get_module_fnc=compat.import_module):
+        # type: (str) -> types.ModuleType
         """
         Import plugin by given name, looking at :attr:`namespaces`.
 
@@ -184,6 +182,7 @@ class PluginManagerBase(object):
             plugin, names)
 
     def load_plugin(self, plugin):
+        # type: (str) -> types.ModuleType
         """
         Import plugin (see :meth:`import_plugin`) and load related data.
 

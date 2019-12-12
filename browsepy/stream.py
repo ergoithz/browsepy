@@ -254,6 +254,17 @@ class TarFileStream(compat.Iterator):
                 raise self._thread_exception
 
 
+def tarfile_extension(compress, tarfile_class=TarFileStream):
+    """
+    Get file extension for given compression mode (as in contructor).
+
+    :param compress: compression mode
+    :returns: file extension
+    """
+    _, extension = tarfile_class.compresion_modes[compress]
+    return extension
+
+
 def stream_template(template_name, **context):
     """
     Get streaming response rendering a jinja template.
@@ -270,4 +281,4 @@ def stream_template(template_name, **context):
     app.update_template_context(context)
     template = app.jinja_env.get_template(template_name)
     stream = template.generate(context)
-    return flask.Response(flask.stream_with_context(stream))
+    return app.response_class(flask.stream_with_context(stream))
