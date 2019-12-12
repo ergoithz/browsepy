@@ -286,7 +286,11 @@ class TestBlueprint(TestPlayerBase):
     def setUp(self):
         super(TestBlueprint, self).setUp()
         app = self.app
-        app.template_folder = utils.ppath('templates')
+        app.template_folder = os.path.join(
+            # FIXME: get a better way
+            os.path.dirname(browsepy.__path__),
+            'templates',
+            )
         app.config['DIRECTORY_BASE'] = tempfile.mkdtemp()
         app.register_blueprint(self.module.player)
 

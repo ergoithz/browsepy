@@ -132,10 +132,11 @@ class TemplateCompress(jinja2.ext.Extension):
         '.htm': HTMLCompressContext,
         }
 
-    def get_context(self, filename):
-        for extension, context_class in self.context_classes.items():
-            if filename.endswith(extension):
-                return context_class()
+    def get_context(self, filename=None):
+        if filename:
+            for extension, context_class in self.context_classes.items():
+                if filename.endswith(extension):
+                    return context_class()
         return self.default_context_class()
 
     def filter_stream(self, stream):

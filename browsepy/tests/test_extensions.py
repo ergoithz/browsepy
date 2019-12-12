@@ -2,16 +2,16 @@
 import unittest
 import jinja2
 
-import browsepy.transform.htmlcompress
+import browsepy.transform.compress
 
 
 class TestHTMLCompress(unittest.TestCase):
-    extension = browsepy.transform.htmlcompress.HTMLCompress
+    extension = browsepy.transform.compress.TemplateCompress
 
     def setUp(self):
         self.env = jinja2.Environment(
             autoescape=True,
-            extensions=[self.extension]
+            extensions=[self.extension],
             )
 
     def render(self, html, **kwargs):
