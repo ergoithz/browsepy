@@ -8,7 +8,11 @@
 {% block content %}
   <p>Do you really want to remove this {% if file.is_directory %}directory{% else %}file{% endif %}?</p>
   <form method="post" class="group">
-    <a class="long button text" href="{{ url_for('browse', path=file.parent.urlpath) }}" title="Go back">Cancel</a>
+    <a
+      class="long button text"
+      href="{{ url_for('browsepy.browse', path=file.parent.urlpath) }}"
+      title="Go back"
+      >Cancel</a>
     <input class="long button destructive text" type="submit" value="Yes" />
   </form>
 {% endblock %}

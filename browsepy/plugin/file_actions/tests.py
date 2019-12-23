@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 
 import unittest
 import tempfile
@@ -9,8 +8,6 @@ import functools
 import bs4
 import flask
 
-from werkzeug.utils import cached_property
-
 import browsepy.compat as compat
 import browsepy.utils as utils
 import browsepy.plugin.file_actions as file_actions
@@ -19,6 +16,8 @@ import browsepy.file as browsepy_file
 import browsepy.manager as browsepy_manager
 import browsepy.exceptions as browsepy_exceptions
 import browsepy
+
+from browsepy.compat import cached_property
 
 
 class Page(object):
@@ -232,6 +231,7 @@ class TestAction(unittest.TestCase):
         self.base = tempfile.mkdtemp()
         self.basename = os.path.basename(self.base)
         self.app = flask.Flask('browsepy')
+        self.app.register_blueprint(browsepy.blueprint)
         self.app.register_blueprint(self.module.actions)
         self.app.config.update(
             SECRET_KEY='secret',
@@ -243,7 +243,7 @@ class TestAction(unittest.TestCase):
             )
         self.app.add_url_rule(
             '/browse/<path:path>',
-            endpoint='browse',
+            endpoint='browsepy.browse',
             view_func=lambda path: None
             )
 

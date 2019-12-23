@@ -1,9 +1,10 @@
+
 import unittest
 import re
 
-from werkzeug.utils import cached_property
-
 import browsepy.compat
+
+from browsepy.compat import cached_property
 
 
 class TestCompat(unittest.TestCase):

@@ -7,9 +7,9 @@
 
 {% set buttons %}
   {% if file %}
-    <a class="long button text" href="{{ url_for('browse', path=file.urlpath) }}" title="Go back">Accept</a>
+    <a class="long button text" href="{{ url_for('browsepy.browse', path=file.urlpath) }}" title="Go back">Accept</a>
   {% else %}
-    <a class="long button text" href="{{ url_for('index') }}" title="Go home">Accept</a>
+    <a class="long button text" href="{{ url_for('browsepy.index') }}" title="Go home">Accept</a>
   {% endif %}
 {% endset %}
 

@@ -1,5 +1,5 @@
 {% macro breadcrumb(file) -%}
-  <a href="{{ url_for('browse', path=file.urlpath) }}"
+  <a href="{{ url_for('browsepy.browse', path=file.urlpath) }}"
      {% if file.is_root %}class="root"{% endif %}
      >{{ file.name }}</a>
 {%- endmacro %}
@@ -24,17 +24,31 @@
   <meta name="viewport" content="width=device-width, user-scalable=no"/>
   <title>{% block title %}{{ config.get('APPLICATION_NAME', 'browsepy') }}{% endblock %}</title>
   {% block styles %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='base.css') }}"/>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('browsepy.static', filename='base.css') }}">
     {% block icon %}
       {% for i in (57, 60, 72, 76, 114, 120, 144, 152, 180) %}
-        <link rel="apple-touch-icon" sizes="{{ i }}x{{ i }}" href="{{ url_for('static', filename='icon/apple-icon-{0}x{0}.png'.format(i)) }}">
+        <link
+          rel="apple-touch-icon"
+          sizes="{{ i }}x{{ i }}"
+          href="{{ url_for('browsepy.static', filename='icon/apple-icon-{0}x{0}.png'.format(i)) }}">
       {% endfor %}
       {% for i in (192, 96, 32, 16) %}
-        <link rel="icon" type="image/png" sizes="{{ i }}x{{ i }}" href="{{ url_for('static', filename='icon/android-icon-{0}x{0}.png'.format(i)) }}">
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="{{ i }}x{{ i }}"
+          href="{{ url_for('browsepy.static', filename='icon/android-icon-{0}x{0}.png'.format(i)) }}">
       {% endfor %}
-      <link rel="manifest" href="{{ url_for('metadata', filename='manifest.json') }}">
+      <link
+        rel="manifest"
+        href="{{ url_for('browsepy.metadata', filename='manifest.json') }}">
       <meta name="msapplication-TileColor" content="#ffffff">
-      <meta name="msapplication-TileImage" content="{{ url_for('static', filename='icon/ms-icon-144x144.png') }}">
+      <meta
+        name="msapplication-TileImage"
+        content="{{ url_for('browsepy.static', filename='icon/ms-icon-144x144.png') }}">
       <meta name="theme-color" content="#ffffff">
     {% endblock %}
   {% endblock %}

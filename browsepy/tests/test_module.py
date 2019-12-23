@@ -203,12 +203,16 @@ class TestApp(unittest.TestCase):
             )
 
         self.base_directories = [
-            self.url_for('browse', path='remove'),
-            self.url_for('browse', path='start'),
-            self.url_for('browse', path='upload'),
+            self.url_for('browsepy.browse', path='remove'),
+            self.url_for('browsepy.browse', path='start'),
+            self.url_for('browsepy.browse', path='upload'),
             ]
-        self.start_files = [self.url_for('open', path='start/testfile.txt')]
-        self.remove_files = [self.url_for('open', path='remove/testfile.txt')]
+        self.start_files = [
+            self.url_for('browsepy.open', path='start/testfile.txt'),
+            ]
+        self.remove_files = [
+            self.url_for('browsepy.open', path='remove/testfile.txt'),
+            ]
         self.upload_files = []
 
     def clear(self, path):
@@ -229,13 +233,13 @@ class TestApp(unittest.TestCase):
     def get(self, endpoint, **kwargs):
         status_code = kwargs.pop('status_code', 200)
         follow_redirects = kwargs.pop('follow_redirects', False)
-        if endpoint in ('index', 'browse'):
+        if endpoint in ('browsepy.index', 'browsepy.browse'):
             page_class = self.list_page_class
-        elif endpoint == 'remove':
+        elif endpoint == 'browsepy.remove':
             page_class = self.confirm_page_class
-        elif endpoint == 'sort' and follow_redirects:
+        elif endpoint == 'browsepy.sort' and follow_redirects:
             page_class = self.list_page_class
-        elif endpoint == 'download_directory':
+        elif endpoint == 'browsepy.download_directory':
             page_class = self.directory_download_class
         else:
             page_class = self.generic_page_class
@@ -279,7 +283,7 @@ class TestApp(unittest.TestCase):
             return flask.url_for(endpoint, _external=False, **kwargs)
 
     def test_index(self):
-        page = self.get('index')
+        page = self.get('browsepy.index')
         self.assertEqual(page.path, '%s/start' % os.path.basename(self.base))
 
         start = os.path.abspath(os.path.join(self.base, '..'))
@@ -287,32 +291,32 @@ class TestApp(unittest.TestCase):
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'index'
+            self.get, 'browsepy.index'
             )
 
         self.app.config['DIRECTORY_START'] = self.start
 
     def test_browse(self):
         basename = os.path.basename(self.base)
-        page = self.get('browse')
+        page = self.get('browsepy.browse')
         self.assertEqual(page.path, basename)
         self.assertEqual(page.directories, self.base_directories)
         self.assertFalse(page.removable)
         self.assertFalse(page.upload)
 
-        page = self.get('browse', path='start')
+        page = self.get('browsepy.browse', path='start')
         self.assertEqual(page.path, '%s/start' % basename)
         self.assertEqual(page.files, self.start_files)
         self.assertFalse(page.removable)
         self.assertFalse(page.upload)
 
-        page = self.get('browse', path='remove')
+        page = self.get('browsepy.browse', path='remove')
         self.assertEqual(page.path, '%s/remove' % basename)
         self.assertEqual(page.files, self.remove_files)
         self.assertTrue(page.removable)
         self.assertFalse(page.upload)
 
-        page = self.get('browse', path='upload')
+        page = self.get('browsepy.browse', path='upload')
         self.assertEqual(page.path, '%s/upload' % basename)
         self.assertEqual(page.files, self.upload_files)
         self.assertFalse(page.removable)
@@ -320,24 +324,24 @@ class TestApp(unittest.TestCase):
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'browse', path='..'
+            self.get, 'browsepy.browse', path='..'
             )
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'browse', path='start/testfile.txt'
+            self.get, 'browsepy.browse', path='start/testfile.txt'
             )
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'browse', path='exclude'
+            self.get, 'browsepy.browse', path='exclude'
             )
 
         self.app.config['DIRECTORY_DOWNLOADABLE'] = True
-        page = self.get('browse')
+        page = self.get('browsepy.browse')
         self.assertTrue(page.tarfile)
         self.app.config['DIRECTORY_DOWNLOADABLE'] = False
-        page = self.get('browse')
+        page = self.get('browsepy.browse')
         self.assertFalse(page.tarfile)
 
     def test_open(self):
@@ -345,12 +349,12 @@ class TestApp(unittest.TestCase):
         with open(os.path.join(self.start, 'testfile3.txt'), 'wb') as f:
             f.write(content)
 
-        page = self.get('open', path='start/testfile3.txt')
+        page = self.get('browsepy.open', path='start/testfile3.txt')
         self.assertEqual(page.data, content)
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'open', path='../shall_not_pass.txt'
+            self.get, 'browsepy.open', path='../shall_not_pass.txt'
             )
 
     def test_remove(self):
@@ -358,46 +362,49 @@ class TestApp(unittest.TestCase):
 
         basename = os.path.basename(self.base)
 
-        page = self.get('remove', path='remove/testfile2.txt')
+        page = self.get('browsepy.remove', path='remove/testfile2.txt')
         self.assertEqual(page.path, '%s/remove/testfile2.txt' % basename)
-        self.assertEqual(page.back, self.url_for('browse', path='remove'))
+        self.assertEqual(
+            page.back,
+            self.url_for('browsepy.browse', path='remove'),
+            )
 
-        page = self.post('remove', path='remove/testfile2.txt')
+        page = self.post('browsepy.remove', path='remove/testfile2.txt')
         self.assertEqual(page.path, '%s/remove' % basename)
         self.assertEqual(page.files, self.remove_files)
 
         os.mkdir(os.path.join(self.remove, 'directory'))
-        page = self.post('remove', path='remove/directory')
+        page = self.post('browsepy.remove', path='remove/directory')
         self.assertEqual(page.path, '%s/remove' % basename)
         self.assertEqual(page.files, self.remove_files)
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'remove', path='start/testfile.txt'
+            self.get, 'browsepy.remove', path='start/testfile.txt'
             )
 
         self.assertRaises(
             Page404Exception,
-            self.post, 'remove', path='start/testfile.txt'
+            self.post, 'browsepy.remove', path='start/testfile.txt'
             )
 
         self.app.config['DIRECTORY_REMOVE'] = None
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'remove', path='remove/testfile.txt'
+            self.get, 'browsepy.remove', path='remove/testfile.txt'
             )
 
         self.app.config['DIRECTORY_REMOVE'] = self.remove
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'remove', path='../shall_not_pass.txt'
+            self.get, 'browsepy.remove', path='../shall_not_pass.txt'
             )
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'remove', path='exclude/testfile.txt'
+            self.get, 'browsepy.remove', path='exclude/testfile.txt'
             )
 
     def test_download_file(self):
@@ -406,24 +413,24 @@ class TestApp(unittest.TestCase):
 
         with open(binfile, 'wb') as f:
             f.write(bindata)
-        page = self.get('download_file', path='testfile.bin')
+        page = self.get('browsepy.download_file', path='testfile.bin')
         os.remove(binfile)
 
         self.assertEqual(page.data, bindata)
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'download_file', path='../shall_not_pass.txt'
+            self.get, 'browsepy.download_file', path='../shall_not_pass.txt'
             )
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'download_file', path='start'
+            self.get, 'browsepy.download_file', path='start'
             )
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'download_file', path='exclude/testfile.txt'
+            self.get, 'browsepy.download_file', path='exclude/testfile.txt'
             )
 
     def test_download_directory(self):
@@ -438,7 +445,7 @@ class TestApp(unittest.TestCase):
 
         self.app.config['EXCLUDE_FNC'] = None
 
-        response = self.get('download_directory', path='start')
+        response = self.get('browsepy.download_directory', path='start')
         self.assertEqual(response.filename, 'start.tgz')
         self.assertEqual(response.content_type, 'application/x-tar')
         self.assertEqual(response.encoding, 'gzip')
@@ -449,7 +456,7 @@ class TestApp(unittest.TestCase):
 
         self.app.config['EXCLUDE_FNC'] = lambda p: p.endswith('.exc')
 
-        response = self.get('download_directory', path='start')
+        response = self.get('browsepy.download_directory', path='start')
         self.assertEqual(response.filename, 'start.tgz')
         self.assertEqual(response.content_type, 'application/x-tar')
         self.assertEqual(response.encoding, 'gzip')
@@ -462,12 +469,14 @@ class TestApp(unittest.TestCase):
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'download_directory', path='../../shall_not_pass'
+            self.get, 'browsepy.download_directory',
+            path='../../shall_not_pass',
             )
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'download_directory', path='exclude'
+            self.get, 'browsepy.download_directory',
+            path='exclude',
             )
 
     def test_upload(self):
@@ -480,7 +489,7 @@ class TestApp(unittest.TestCase):
             'testfile.bin': genbytesio(255, 'utf-8'),
             }
         output = self.post(
-            'upload',
+            'browsepy.upload',
             path='upload',
             data={
                 'file%d' % n: (data, name)
@@ -488,7 +497,7 @@ class TestApp(unittest.TestCase):
                 }
             )
         expected_links = sorted(
-            self.url_for('open', path='upload/%s' % i)
+            self.url_for('browsepy.open', path='upload/%s' % i)
             for i in files
             )
         self.assertEqual(sorted(output.files), expected_links)
@@ -496,7 +505,7 @@ class TestApp(unittest.TestCase):
 
         self.assertRaises(
             Page404Exception,
-            self.post, 'upload', path='start', data={
+            self.post, 'browsepy.upload', path='start', data={
                 'file': (genbytesio(127, 'ascii'), 'testfile.txt')
                 }
             )
@@ -509,7 +518,7 @@ class TestApp(unittest.TestCase):
             ('testfile.txt', 'something_new'),
             )
         output = self.post(
-            'upload',
+            'browsepy.upload',
             path='upload',
             data={
                'file%d' % n: (io.BytesIO(data.encode('ascii')), name)
@@ -519,7 +528,10 @@ class TestApp(unittest.TestCase):
 
         self.assertEqual(len(files), len(output.files))
 
-        first_file_url = self.url_for('open', path='upload/%s' % files[0][0])
+        first_file_url = self.url_for(
+            'browsepy.open',
+            path='upload/%s' % files[0][0]
+            )
         self.assertIn(first_file_url, output.files)
 
         file_contents = []
@@ -542,7 +554,7 @@ class TestApp(unittest.TestCase):
 
         self.assertRaises(
             Page400Exception,
-            self.post, 'upload', path='upload', data={
+            self.post, 'browsepy.upload', path='upload', data={
                 'file': (io.BytesIO('test'.encode('ascii')), longname + 'a')
                 }
             )
@@ -556,14 +568,14 @@ class TestApp(unittest.TestCase):
         os.makedirs(longpath)
         self.assertRaises(
             Page400Exception,
-            self.post, 'upload', path='upload/' + '/'.join(subdirs), data={
+            self.post, 'browsepy.upload', path='upload/' + '/'.join(subdirs), data={
                 'file': (io.BytesIO('test'.encode('ascii')), longname)
                 }
             )
 
         self.assertRaises(
             Page400Exception,
-            self.post, 'upload', path='upload', data={
+            self.post, 'browsepy.upload', path='upload', data={
                 'file': (io.BytesIO('test'.encode('ascii')), '..')
                 }
             )
@@ -572,7 +584,7 @@ class TestApp(unittest.TestCase):
 
         self.assertRaises(
             Page404Exception,
-            self.get, 'sort', property='text', path='exclude'
+            self.get, 'browsepy.sort', property='text', path='exclude'
             )
 
         files = {
@@ -581,19 +593,19 @@ class TestApp(unittest.TestCase):
             'c.zip': 'a'
             }
         by_name = [
-            self.url_for('open', path=name)
+            self.url_for('browsepy.open', path=name)
             for name in sorted(files)
             ]
         by_name_desc = list(reversed(by_name))
 
         by_type = [
-            self.url_for('open', path=name)
+            self.url_for('browsepy.open', path=name)
             for name in sorted(files, key=lambda x: mimetypes.guess_type(x)[0])
             ]
         by_type_desc = list(reversed(by_type))
 
         by_size = [
-            self.url_for('open', path=name)
+            self.url_for('browsepy.open', path=name)
             for name in sorted(files, key=lambda x: len(files[x]))
             ]
         by_size_desc = list(reversed(by_size))
@@ -604,43 +616,43 @@ class TestApp(unittest.TestCase):
                 f.write(content.encode('ascii'))
 
         with self.app.test_client() as client:
-            page = self.get('browse', client=client)
+            page = self.get('browsepy.browse', client=client)
             self.assertListEqual(page.files, by_name)
 
             self.assertRaises(
                 Page302Exception,
-                self.get, 'sort', property='text', client=client
+                self.get, 'browsepy.sort', property='text', client=client
                 )
 
-            page = self.get('browse', client=client)
+            page = self.get('browsepy.browse', client=client)
             self.assertListEqual(page.files, by_name)
 
-            page = self.get('sort', property='-text', client=client,
+            page = self.get('browsepy.sort', property='-text', client=client,
                             follow_redirects=True)
             self.assertListEqual(page.files, by_name_desc)
 
-            page = self.get('sort', property='type', client=client,
+            page = self.get('browsepy.sort', property='type', client=client,
                             follow_redirects=True)
             self.assertListEqual(page.files, by_type)
 
-            page = self.get('sort', property='-type', client=client,
+            page = self.get('browsepy.sort', property='-type', client=client,
                             follow_redirects=True)
             self.assertListEqual(page.files, by_type_desc)
 
-            page = self.get('sort', property='size', client=client,
+            page = self.get('browsepy.sort', property='size', client=client,
                             follow_redirects=True)
             self.assertListEqual(page.files, by_size)
 
-            page = self.get('sort', property='-size', client=client,
+            page = self.get('browsepy.sort', property='-size', client=client,
                             follow_redirects=True)
             self.assertListEqual(page.files, by_size_desc)
 
             # Cannot to test modified sorting due filesystem time resolution
-            page = self.get('sort', property='modified', client=client,
-                            follow_redirects=True)
+            page = self.get('browsepy.sort', property='modified',
+                            client=client, follow_redirects=True)
 
-            page = self.get('sort', property='-modified', client=client,
-                            follow_redirects=True)
+            page = self.get('browsepy.sort', property='-modified',
+                            client=client, follow_redirects=True)
 
     def test_sort_cookie_size(self):
         files = [chr(i) * 150 for i in range(97, 123)]
@@ -650,8 +662,13 @@ class TestApp(unittest.TestCase):
 
         with self.app.test_client() as client:
             for name in files:
-                page = self.get('sort', property='modified', path=name,
-                                client=client, status_code=302)
+                page = self.get(
+                    'browsepy.sort',
+                    property='modified',
+                    path=name,
+                    client=client,
+                    status_code=302,
+                    )
 
                 for cookie in page.response.headers.getlist('set-cookie'):
                     if cookie.startswith('browse-sorting='):

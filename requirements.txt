@@ -11,16 +11,16 @@
 # Requirement file inheritance tree
 # ---------------------------------
 #
-# - requirements.txt
-#   - requirements/development.txt
-#     - requirements/base.txt
+#   requirements.txt
+#   └ requirements/development.txt
+#     └ requirements/base.txt
 #
 # See also
 # --------
 #
-# - requirements/ci.txt
+# - requirements/base.txt
 # - requirements/development.txt
+# - requirements/doc.txt
 #
 
 -r requirements/development.txt
-

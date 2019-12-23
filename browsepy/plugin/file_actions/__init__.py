@@ -48,7 +48,9 @@ def create_directory(path):
     if request.method == 'POST':
         path = utils.mkdir(directory.path, request.form['name'])
         base = current_app.config['DIRECTORY_BASE']
-        return redirect(url_for('browse', path=abspath_to_urlpath(path, base)))
+        return redirect(
+            url_for('browsepy.browse', path=abspath_to_urlpath(path, base))
+            )
 
     return render_template(
         'create_directory.file_actions.html',
@@ -89,7 +91,7 @@ def selection(path):
 
         session['clipboard:mode'] = mode
         session['clipboard:items'] = clipboard
-        return redirect(url_for('browse', path=directory.urlpath))
+        return redirect(url_for('browsepy.browse', path=directory.urlpath))
 
     return stream_template(
         'selection.file_actions.html',
@@ -137,7 +139,7 @@ def clipboard_paste(path):
         session.pop('clipboard:mode', None)
         session.pop('clipboard:items', None)
 
-    return redirect(url_for('browse', path=directory.urlpath))
+    return redirect(url_for('browsepy.browse', path=directory.urlpath))
 
 
 @actions.route('/clipboard/clear', defaults={'path': ''})
@@ -146,7 +148,7 @@ def clipboard_clear(path):
     """Handle clear clipboard request."""
     session.pop('clipboard:mode', None)
     session.pop('clipboard:items', None)
-    return redirect(url_for('browse', path=path))
+    return redirect(url_for('browsepy.browse', path=path))
 
 
 @actions.errorhandler(FileActionsException)

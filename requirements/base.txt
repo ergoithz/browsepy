@@ -10,6 +10,7 @@
 #
 # - requirements.txt
 # - requirements/development.txt
+# - requirements/doc.txt
 #
 
 six

@@ -53,6 +53,11 @@ except ImportError:
     _import_module = None  # noqa
 
 try:
+    from functools import cached_property   # python 3.8+
+except ImportError:
+    from werkzeug.utils import cached_property  # noqa
+
+try:
     import typing  # python 3.5+
 except ImportError:
     typing = None  # noqa
@@ -188,9 +193,7 @@ def rmtree(path):
     platforms and python version combinations.
 
     :param path: path to remove
-    :type path: str
     """
-
     exc_info = ()
     for retry in range(10):
         try:
@@ -360,8 +363,9 @@ def deprecated(func_or_text, environ=os.environ):
 
 
 def usedoc(other):
+    # type: (typing.Any) -> typing.Callable[[...], typing.Any]
     """
-    Decorator which copies __doc__ of given object into decorated one.
+    Get decorating function which copies given object __doc__.
 
     :param other: anything with a __doc__ attribute
     :type other: any

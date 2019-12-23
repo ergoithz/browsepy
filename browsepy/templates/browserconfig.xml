@@ -2,9 +2,9 @@
 <browserconfig>
     <msapplication>
         <tile>
-            <square70x70logo src="{{ url_for('static', filename='icon/ms-icon-70x70.png') }}"/>
-            <square150x150logo src="{{ url_for('static', filename='icon/ms-icon-150x150.png') }}"/>
-            <square310x310logo src="{{ url_for('static', filename='icon/ms-icon-310x310.png') }}"/>
+            <square70x70logo src="{{ url_for('browsepy.static', filename='icon/ms-icon-70x70.png') }}"/>
+            <square150x150logo src="{{ url_for('browsepy.static', filename='icon/ms-icon-150x150.png') }}"/>
+            <square310x310logo src="{{ url_for('browsepy.static', filename='icon/ms-icon-310x310.png') }}"/>
             <TileColor>#ffffff</TileColor>
         </tile>
     </msapplication>

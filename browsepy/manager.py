@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+"""Browsepy plugin manager classes."""
 
 import os.path
 import pkgutil
@@ -6,14 +6,13 @@ import argparse
 import functools
 import warnings
 
-from werkzeug.utils import cached_property
 from cookieman import CookieMan
 
 from . import mimetype
 from . import compat
 from . import file
 
-from .compat import typing, types
+from .compat import typing, types, cached_property
 from .utils import defaultsnamedtuple
 from .exceptions import PluginNotFoundError, InvalidArgumentError, \
                         WidgetParameterException
@@ -23,6 +22,7 @@ class PluginManagerBase(object):
     """Base plugin manager with loading and Flask extension logic."""
 
     _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
+    get_module = staticmethod(compat.import_module)
 
     @property
     def namespaces(self):
@@ -111,7 +111,7 @@ class PluginManagerBase(object):
             except ImportError:
                 pass
 
-    def _iter_plugin_modules(self, get_module_fnc=compat.import_module):
+    def _iter_plugin_modules(self):
         """
         Iterate plugin modules.
 
@@ -121,6 +121,7 @@ class PluginManagerBase(object):
         nameset = set()  # type: typing.Set[str]
         shortset = set()  # type: typing.Set[str]
         filters = self.plugin_filters
+        get_module_fnc = self.get_module
         for prefix in filter(None, self.namespaces):
             name_iter_fnc = (
                 self._iter_submodules
@@ -153,13 +154,12 @@ class PluginManagerBase(object):
         """Iterate through all loadable plugins on typical paths."""
         return list(self._iter_plugin_modules())
 
-    def import_plugin(self, plugin, get_module_fnc=compat.import_module):
+    def import_plugin(self, plugin):
         # type: (str) -> types.ModuleType
         """
         Import plugin by given name, looking at :attr:`namespaces`.
 
         :param plugin: plugin module name
-        :type plugin: str
         :raises PluginNotFoundError: if not found on any namespace
         """
         plugin = plugin.replace('-', '_')
@@ -172,6 +172,7 @@ class PluginManagerBase(object):
             for namespace in self.namespaces
             ]
         names = sorted(frozenset(names), key=names.index)
+        get_module_fnc = self.get_module
         for name in names:
             try:
                 return get_module_fnc(name)
@@ -187,7 +188,6 @@ class PluginManagerBase(object):
         Import plugin (see :meth:`import_plugin`) and load related data.
 
         :param plugin: plugin module name
-        :type plugin: str
         :raises PluginNotFoundError: if not found on any namespace
         """
         return self.import_plugin(plugin)
@@ -195,10 +195,14 @@ class PluginManagerBase(object):
 
 class RegistrablePluginManager(PluginManagerBase):
     """
-    Base plugin manager for plugin registration via :func:`register_plugin`
-    functions at plugin module level.
+    Plugin registration manager.
+
+    Plugin registration requires a :func:`register_plugin` function at
+    the plugin module level.
     """
+
     def __init__(self, app=None):
+        """Initialize."""
         super(RegistrablePluginManager, self).__init__(app)
         self.plugin_filters.append(
             lambda o: callable(getattr(o, 'register_plugin', None))
@@ -223,12 +227,19 @@ class RegistrablePluginManager(PluginManagerBase):
 
 class BlueprintPluginManager(PluginManagerBase):
     """
-    Manager for blueprint registration via :meth:`register_plugin` calls.
+    Plugin blueprint registration manager.
+
+    Blueprint registration done via :meth:`register_blueprint`
+    calls inside plugin :func:`register_plugin`.
 
     Note: blueprints are not removed on `clear` nor reloaded on `reload`
-    as flask does not allow it.
+    as flask does not allow it, consider creating a new clean
+    :class:`flask.Flask` browsepy app by using :func:`browsepy.create_app`.
+
     """
+
     def __init__(self, app=None):
+        """Initialize."""
         self._blueprint_known = set()
         super(BlueprintPluginManager, self).__init__(app=app)
 
@@ -249,10 +260,15 @@ class BlueprintPluginManager(PluginManagerBase):
 
 class ExcludePluginManager(PluginManagerBase):
     """
-    Manager for exclude-function registration via :meth:`register_exclude_fnc`
-    calls.
+    Plugin node exclusion registration manager.
+
+    Exclude-function registration done via :meth:`register_exclude_fnc`
+    calls inside plugin :func:`register_plugin`.
+
     """
+
     def __init__(self, app=None):
+        """Initialize."""
         self._exclude_functions = set()
         super(ExcludePluginManager, self).__init__(app=app)
 
@@ -308,14 +324,15 @@ class ExcludePluginManager(PluginManagerBase):
 
 class WidgetPluginManager(PluginManagerBase):
     """
-    Plugin manager for widget registration.
+    Plugin widget registration manager.
 
-    This class provides a dictionary of widget types at its
+    This class provides a dictionary of supported widget types available as
     :attr:`widget_types` attribute. They can be referenced by their keys on
     both :meth:`create_widget` and :meth:`register_widget` methods' `type`
     parameter, or instantiated directly and passed to :meth:`register_widget`
     via `widget` parameter.
     """
+
     widget_types = {
         'base': defaultsnamedtuple(
             'Widget',
@@ -363,8 +380,8 @@ class WidgetPluginManager(PluginManagerBase):
         """
         List registered widgets, optionally matching given criteria.
 
-        :param file: optional file object will be passed to widgets' filter
-                     functions.
+        :param file: optional file object will be passed to widgets'
+                     filter functions.
         :type file: browsepy.file.Node or None
         :param place: optional template place hint.
         :type place: str
@@ -494,9 +511,8 @@ class WidgetPluginManager(PluginManagerBase):
 
 
 class MimetypePluginManager(RegistrablePluginManager):
-    """
-    Plugin manager for mimetype-function registration.
-    """
+    """Plugin mimetype function registration manager."""
+
     _default_mimetype_functions = mimetype.alternatives
 
     def clear(self):
@@ -539,13 +555,16 @@ class MimetypePluginManager(RegistrablePluginManager):
 
 
 class SessionPluginManager(PluginManagerBase):
+    """Plugin session shrink function registration manager."""
+
     def register_session(self, key_or_keys, shrink_fnc=None):
         """
-        Register session shrink function for specific session key or
-        keys. Can be used as decorator.
+        Register shrink function for specific session key or keys.
+
+        Can be used as decorator.
 
         Usage:
-        >>> @app.session_interface.register('my_session_key')
+        >>> @manager.register_session('my_session_key')
         ... def my_shrink_fnc(data):
         ...     del data['my_session_key']
         ...     return data
@@ -565,7 +584,7 @@ class SessionPluginManager(PluginManagerBase):
 
 class ArgumentPluginManager(PluginManagerBase):
     """
-    Plugin manager for command-line argument registration.
+    Plugin command-line argument registration manager.
 
     This function is used by browsepy's :mod:`__main__` module in order
     to attach extra arguments at argument-parsing time.
@@ -585,6 +604,7 @@ class ArgumentPluginManager(PluginManagerBase):
         return parser
 
     def __init__(self, app=None):
+        """Initialize."""
         super(ArgumentPluginManager, self).__init__(app)
         self.plugin_filters.append(
             lambda o: callable(getattr(o, 'register_arguments', None))
@@ -592,8 +612,9 @@ class ArgumentPluginManager(PluginManagerBase):
 
     def extract_plugin_arguments(self, plugin):
         """
-        Given a plugin name, extracts its registered_arguments as an
-        iterable of (args, kwargs) tuples.
+        Extract registered argument pairs from given plugin name,
+
+        Arguments are returned as an iterable of (args, kwargs) tuples.
 
         :param plugin: plugin name
         :type plugin: str
@@ -626,8 +647,11 @@ class ArgumentPluginManager(PluginManagerBase):
             )
 
     def load_arguments(self, argv, base=None):
+        # type: (typing.Iterable[str], argparse.ArgumentParser) -> argparse.Ar
         """
-        Process given argument list based on registered arguments and given
+        Process command line argument iterable.
+
+        Argument processing is based on registered arguments and given
         optional base :class:`argparse.ArgumentParser` instance.
 
         This method saves processed arguments on itself, and this state won't

@@ -10,10 +10,14 @@ from . import StateMachine
 
 
 class Context(object):
+    """Compression context stub class."""
+
     def feed(self, token):
+        """Add token to context an yield tokens."""
         yield token
 
     def finish(self):
+        """Finish context and yield tokens."""
         return
         yield
 
@@ -133,6 +137,7 @@ class TemplateCompress(jinja2.ext.Extension):
         }
 
     def get_context(self, filename=None):
+        """Get compression context bassed on given filename."""
         if filename:
             for extension, context_class in self.context_classes.items():
                 if filename.endswith(extension):

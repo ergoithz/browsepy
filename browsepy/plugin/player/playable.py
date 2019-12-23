@@ -1,7 +1,6 @@
 """Playable file classes."""
 
-from werkzeug.utils import cached_property
-
+from browsepy.compat import cached_property
 from browsepy.file import Node, File, Directory
 
 

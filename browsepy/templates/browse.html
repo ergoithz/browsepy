@@ -50,7 +50,7 @@
     {% set prop = property_desc if sort_property == property else property %}
     {% set active = ' active' if sort_property in (property, property_desc) else '' %}
     {% set desc = ' desc' if sort_property == property_desc else '' %}
-    <a href="{{ url_for('sort', path=urlpath, property=prop) }}"
+    <a href="{{ url_for('browsepy.sort', path=urlpath, property=prop) }}"
        class="{{type}} sorting{{active}}{{desc}}"
        >{{ text }}</a>
   {% else %}

@@ -292,13 +292,8 @@ class TestBlueprint(TestPlayerBase):
             'templates',
             )
         app.config['DIRECTORY_BASE'] = tempfile.mkdtemp()
+        app.register_blueprint(browsepy.blueprint)
         app.register_blueprint(self.module.player)
-
-        @app.route("/browse", defaults={"path": ""}, endpoint='browse')
-        @app.route('/browse/<path:path>', endpoint='browse')
-        @app.route('/open/<path:path>', endpoint='open')
-        def dummy(path):
-            pass
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():

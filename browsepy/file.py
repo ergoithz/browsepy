@@ -11,13 +11,11 @@ import logging
 
 import flask
 
-from werkzeug.utils import cached_property
-
 from . import compat
 from . import utils
 from . import stream
 
-from .compat import range
+from .compat import range, cached_property
 from .http import Headers
 
 from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
@@ -94,6 +92,16 @@ class Node(object):
         return os.path.islink(self.path)
 
     @cached_property
+    def is_directory(self):
+        """
+        Get if path points to a real directory.
+
+        :returns: True if real directory, False otherwise
+        :rtype: bool
+        """
+        return os.path.isdir(self.path)
+
+    @cached_property
     def plugin_manager(self):
         """
         Get current app's plugin manager.
@@ -124,7 +132,7 @@ class Node(object):
                     'button',
                     file=self,
                     css='remove',
-                    endpoint='remove'
+                    endpoint='browsepy.remove',
                     )
                 )
         return widgets + self.plugin_manager.get_widgets(file=self)
@@ -282,6 +290,8 @@ class Node(object):
 
     def __init__(self, path=None, app=None, **defaults):
         """
+        Initialize.
+
         :param path: local path
         :type path: str
         :param app: app instance (optional inside application context)
@@ -413,7 +423,7 @@ class File(Node):
                 'entry-link',
                 'link',
                 file=self,
-                endpoint='open'
+                endpoint='browsepy.open',
                 )
             ]
         if self.can_download:
@@ -423,14 +433,14 @@ class File(Node):
                     'button',
                     file=self,
                     css='download',
-                    endpoint='download_file'
+                    endpoint='browsepy.download_file',
                     ),
                 self.plugin_manager.create_widget(
                     'header',
                     'button',
                     file=self,
                     text='Download file',
-                    endpoint='download_file'
+                    endpoint='browsepy.download_file',
                     ),
                 ))
         return widgets + super(File, self).widgets
@@ -560,7 +570,7 @@ class Directory(Node):
                 'entry-link',
                 'link',
                 file=self,
-                endpoint='browse'
+                endpoint='browsepy.browse',
                 )
             ]
         if self.can_download:
@@ -570,14 +580,14 @@ class Directory(Node):
                     'button',
                     file=self,
                     css='download',
-                    endpoint='download_directory'
+                    endpoint='browsepy.download_directory',
                     ),
                 self.plugin_manager.create_widget(
                     'header',
                     'button',
                     file=self,
                     text='Download all',
-                    endpoint='download_directory'
+                    endpoint='browsepy.download_directory',
                     ),
                 ))
         if self.can_upload:
@@ -586,35 +596,25 @@ class Directory(Node):
                     'head',
                     'script',
                     file=self,
-                    endpoint='static',
-                    filename='browse.directory.head.js'
+                    endpoint='browsepy.static',
+                    filename='browse.directory.head.js',
                     ),
                 self.plugin_manager.create_widget(
                     'scripts',
                     'script',
                     file=self,
-                    endpoint='static',
-                    filename='browse.directory.body.js'
+                    endpoint='browsepy.static',
+                    filename='browse.directory.body.js',
                     ),
                 self.plugin_manager.create_widget(
                     'header',
                     'upload',
                     file=self,
                     text='Upload',
-                    endpoint='upload'
+                    endpoint='browsepy.upload',
                     )
                 ))
         return widgets + super(Directory, self).widgets
-
-    @cached_property
-    def is_directory(self):
-        """
-        Get if path points to a real directory.
-
-        :returns: True if real directory, False otherwise
-        :rtype: bool
-        """
-        return os.path.isdir(self.path)
 
     @cached_property
     def is_root(self):

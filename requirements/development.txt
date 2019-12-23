@@ -10,14 +10,14 @@
 # Requirement file inheritance tree
 # ---------------------------------
 #
-# - requirements/development.txt
-#   - requirements/base.txt
+#   requirements/development.txt
+#   └ requirements/base.txt
 #
 # See also
 # --------
 #
 # - requirements.txt
-# - requirements/ci.txt
+# - requirements/doc.txt
 #
 
 -r base.txt
@@ -27,7 +27,6 @@ flake8
 yapf
 coverage
 jedi
-sphinx
 pycodestyle
 pydocstyle
 mypy
