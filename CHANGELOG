@@ -2,7 +2,7 @@
 ### Added
 - Plugin discovery.
 - New plugin file-actions providing copy/cut/paste and directory creation.
-- Smart cookie-baked sessions.
+- Smart cookie-based sessions.
 - Directory browsing cache headers.
 - Favicon statics and metadata.
 
@@ -11,6 +11,9 @@
 - Code simplification.
 - Base directory is downloadable now.
 - Directory entries stats are retrieved first and foremost.
+
+### Breaking changes
+- All browsepy routes are now under browsepy.
 
 ### Removed
 - Python 2.7, 3.3 and 3.4 support have been dropped.
