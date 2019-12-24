@@ -13,7 +13,6 @@ import browsepy.utils as utils
 import browsepy.plugin.file_actions as file_actions
 import browsepy.plugin.file_actions.exceptions as file_actions_exceptions
 import browsepy.file as browsepy_file
-import browsepy.manager as browsepy_manager
 import browsepy.exceptions as browsepy_exceptions
 import browsepy
 
@@ -62,25 +61,22 @@ class Page(object):
 
 class TestRegistration(unittest.TestCase):
     actions_module = file_actions
-    manager_module = browsepy_manager
     browsepy_module = browsepy
 
     def setUp(self):
         self.base = 'c:\\base' if os.name == 'nt' else '/base'
-        self.app = flask.Flask(self.__class__.__name__)
+        self.app = browsepy.create_app()
         self.app.config.update(
             DIRECTORY_BASE=self.base,
             EXCLUDE_FNC=None,
             )
+        self.manager = self.app.extensions['plugin_manager']
 
     def tearDown(self):
         utils.clear_flask_context()
 
     def test_register_plugin(self):
-        self.app.config.update(self.browsepy_module.app.config)
-        self.app.config['PLUGIN_NAMESPACES'] = ('browsepy.plugin',)
-        manager = self.manager_module.PluginManager(self.app)
-        manager.load_plugin('file-actions')
+        self.manager.load_plugin('file-actions')
         self.assertIn(
             self.actions_module.actions,
             self.app.blueprints.values()
@@ -91,7 +87,6 @@ class TestRegistration(unittest.TestCase):
             PLUGIN_MODULES=[],
             PLUGIN_NAMESPACES=[]
             )
-        manager = self.manager_module.PluginManager(self.app)
         self.assertNotIn(
             self.actions_module.actions,
             self.app.blueprints.values()
@@ -100,7 +95,7 @@ class TestRegistration(unittest.TestCase):
             PLUGIN_MODULES=['file-actions'],
             PLUGIN_NAMESPACES=['browsepy.plugin']
             )
-        manager.reload()
+        self.manager.reload()
         self.assertIn(
             self.actions_module.actions,
             self.app.blueprints.values()
@@ -109,13 +104,11 @@ class TestRegistration(unittest.TestCase):
 
 class TestIntegration(unittest.TestCase):
     actions_module = file_actions
-    manager_module = browsepy_manager
     browsepy_module = browsepy
 
     def setUp(self):
         self.base = tempfile.mkdtemp()
-        self.app = self.browsepy_module.app
-        self.original_config = dict(self.app.config)
+        self.app = browsepy.create_app()
         self.app.config.update(
             SECRET_KEY='secret',
             DIRECTORY_BASE=self.base,
@@ -230,21 +223,13 @@ class TestAction(unittest.TestCase):
     def setUp(self):
         self.base = tempfile.mkdtemp()
         self.basename = os.path.basename(self.base)
-        self.app = flask.Flask('browsepy')
-        self.app.register_blueprint(browsepy.blueprint)
-        self.app.register_blueprint(self.module.actions)
+        self.app = browsepy.create_app()
+        self.app.extensions['plugin_manager'].load_plugin('file_actions')
         self.app.config.update(
             SECRET_KEY='secret',
             DIRECTORY_BASE=self.base,
             DIRECTORY_UPLOAD=self.base,
             DIRECTORY_REMOVE=self.base,
-            EXCLUDE_FNC=None,
-            USE_BINARY_MULTIPLES=True,
-            )
-        self.app.add_url_rule(
-            '/browse/<path:path>',
-            endpoint='browsepy.browse',
-            view_func=lambda path: None
             )
 
         @self.app.errorhandler(browsepy_exceptions.InvalidPathError)
@@ -467,7 +452,7 @@ class TestException(unittest.TestCase):
     node_class = browsepy_file.Node
 
     def setUp(self):
-        self.app = flask.Flask('browsepy')
+        self.app = browsepy.create_app()
 
     def tearDown(self):
         utils.clear_flask_context()

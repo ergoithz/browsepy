@@ -75,7 +75,7 @@ def init_config():
 
 
 @create_app.register
-def init_plugin_manager():
+def init_plugins():
     """Configure plugin manager."""
     current_app.session_interface = cookieman.CookieMan()
     plugin_manager = PluginManager()
@@ -131,8 +131,7 @@ def init_error_handlers():
 @blueprint.url_defaults
 def default_directory_download_extension(endpoint, values):
     """Set default extension for download_directory endpoint."""
-    print(endpoint)
-    if endpoint == 'download_directory':
+    if endpoint == 'browsepy.download_directory':
         compression = current_app.config['DIRECTORY_TAR_COMPRESSION']
         values.setdefault('ext', tarfile_extension(compression))
 

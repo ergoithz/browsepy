@@ -5,11 +5,13 @@ import pkgutil
 import argparse
 import functools
 import warnings
+import abc
 
 from cookieman import CookieMan
 
 from . import mimetype
 from . import compat
+from . import utils
 from . import file
 
 from .compat import typing, types, cached_property
@@ -18,11 +20,31 @@ from .exceptions import PluginNotFoundError, InvalidArgumentError, \
                         WidgetParameterException
 
 
+class RegisterPluginModule(abc.ABC):
+    @classmethod
+    def __subclasshook__(cls, module):
+        return (
+            isinstance(module, types.ModuleType) and
+            callable(getattr(module, 'register_plugin'))
+            )
+
+
+class RegisterArgumentsModule(abc.ABC):
+    @classmethod
+    def __subclasshook__(cls, module):
+        return (
+            isinstance(module, types.ModuleType) and
+            callable(getattr(module, 'register_arguments'))
+            )
+
+
 class PluginManagerBase(object):
     """Base plugin manager with loading and Flask extension logic."""
 
     _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
+
     get_module = staticmethod(compat.import_module)
+    module_classes = ()  # type: typing.Tuple[type, ...]
 
     @property
     def namespaces(self):
@@ -42,8 +64,6 @@ class PluginManagerBase(object):
 
         :param app: flask application
         """
-        self.plugin_filters = []
-
         if app is None:
             self.clear()
         else:
@@ -56,7 +76,7 @@ class PluginManagerBase(object):
 
         :param app: flask application
         """
-        self.app = app
+        self.app = utils.solve_local(app)
         if not hasattr(app, 'extensions'):
             app.extensions = {}
         app.extensions['plugin_manager'] = self
@@ -111,17 +131,10 @@ class PluginManagerBase(object):
             except ImportError:
                 pass
 
-    def _iter_plugin_modules(self):
-        """
-        Iterate plugin modules.
-
-        This generator yields both full qualified name and short plugin
-        names.
-        """
+    def _iter_namespace_modules(self):
+        # type: () -> typing.Generator[typing.Tuple[str, str], None, None]
+        """Iterate module names under namespaces."""
         nameset = set()  # type: typing.Set[str]
-        shortset = set()  # type: typing.Set[str]
-        filters = self.plugin_filters
-        get_module_fnc = self.get_module
         for prefix in filter(None, self.namespaces):
             name_iter_fnc = (
                 self._iter_submodules
@@ -129,24 +142,36 @@ class PluginManagerBase(object):
                 self._iter_modules
                 )
             for name in name_iter_fnc(prefix):
-                if name in nameset:
-                    continue
+                if name not in nameset:
+                    nameset.add(name)
+                    yield prefix, name
 
-                try:
-                    module = get_module_fnc(name)
-                except ImportError:
-                    continue
+    def _iter_plugin_modules(self):
+        """
+        Iterate plugin modules.
 
-                if not any(f(module) for f in filters):
-                    continue
-
-                short = name[len(prefix):].lstrip('.').replace('_', '-')
+        This generator yields both full qualified name and short plugin
+        names.
+        """
+        shortset = set()  # type: typing.Set[str]
+        for namespace, name in self._iter_namespace_modules():
+            plugin = self._get_plugin_module(name)
+            if plugin:
+                short = name[len(namespace):].lstrip('.').replace('_', '-')
                 yield (
                     name,
                     None if short in shortset or '.' in short else short
                     )
-                nameset.add(name)
                 shortset.add(short)
+
+    def _get_plugin_module(self, name):
+        """Import plugin module from absolute name."""
+        try:
+            module = self.get_module(name)
+            return module if isinstance(module, self.module_classes) else None
+        except ImportError:
+            pass
+        return None
 
     @cached_property
     def available_plugins(self):
@@ -172,12 +197,10 @@ class PluginManagerBase(object):
             for namespace in self.namespaces
             ]
         names = sorted(frozenset(names), key=names.index)
-        get_module_fnc = self.get_module
         for name in names:
-            try:
-                return get_module_fnc(name)
-            except ImportError:
-                pass
+            module = self._get_plugin_module(name)
+            if module:
+                return module
         raise PluginNotFoundError(
             'No plugin module %r found, tried %r' % (plugin, names),
             plugin, names)
@@ -201,12 +224,8 @@ class RegistrablePluginManager(PluginManagerBase):
     the plugin module level.
     """
 
-    def __init__(self, app=None):
-        """Initialize."""
-        super(RegistrablePluginManager, self).__init__(app)
-        self.plugin_filters.append(
-            lambda o: callable(getattr(o, 'register_plugin', None))
-            )
+    register_plugin_module_class = RegisterPluginModule
+    module_classes = (register_plugin_module_class,)
 
     def load_plugin(self, plugin):
         """
@@ -593,8 +612,12 @@ class ArgumentPluginManager(PluginManagerBase):
     and calls their respective :func:`register_arguments` module-level
     function.
     """
+
     _argparse_kwargs = {'add_help': False}
     _argparse_arguments = argparse.Namespace()
+
+    register_arguments_module_class = RegisterArgumentsModule
+    module_classes = (register_arguments_module_class,)
 
     @cached_property
     def _default_argument_parser(self):
@@ -602,13 +625,6 @@ class ArgumentPluginManager(PluginManagerBase):
         parser.add_argument('--plugin', action='append', default=[])
         parser.add_argument('--help-all', action='store_true')
         return parser
-
-    def __init__(self, app=None):
-        """Initialize."""
-        super(ArgumentPluginManager, self).__init__(app)
-        self.plugin_filters.append(
-            lambda o: callable(getattr(o, 'register_arguments', None))
-            )
 
     def extract_plugin_arguments(self, plugin):
         """
@@ -622,7 +638,7 @@ class ArgumentPluginManager(PluginManagerBase):
         :rtype: iterable
         """
         module = self.import_plugin(plugin)
-        if hasattr(module, 'register_arguments'):
+        if isinstance(module, self.register_arguments_class):
             manager = ArgumentPluginManager()
             module.register_arguments(manager)
             return manager._argparse_argkwargs
@@ -646,31 +662,7 @@ class ArgumentPluginManager(PluginManagerBase):
             epilog=epilog.strip(),
             )
 
-    def load_arguments(self, argv, base=None):
-        # type: (typing.Iterable[str], argparse.ArgumentParser) -> argparse.Ar
-        """
-        Process command line argument iterable.
-
-        Argument processing is based on registered arguments and given
-        optional base :class:`argparse.ArgumentParser` instance.
-
-        This method saves processed arguments on itself, and this state won't
-        be lost after :meth:`clean` calls.
-
-        Processed argument state will be available via :meth:`get_argument`
-        method.
-
-        :param argv: command-line arguments (without command itself)
-        :type argv: iterable of str
-        :param base: optional base :class:`argparse.ArgumentParser` instance.
-        :type base: argparse.ArgumentParser or None
-        :returns: argparse.Namespace instance with processed arguments as
-                  given by :meth:`argparse.ArgumentParser.parse_args`.
-        :rtype: argparse.Namespace
-        """
-        parser = self._plugin_argument_parser(base)
-        options, _ = parser.parse_known_args(argv)
-
+    def _plugin_arguments(self, parser, options):
         plugins = [
             plugin
             for plugins in options.plugin
@@ -687,11 +679,38 @@ class ArgumentPluginManager(PluginManagerBase):
         for plugin in sorted(set(plugins), key=plugins.index):
             arguments = self.extract_plugin_arguments(plugin)
             if arguments:
-                group = parser.add_argument_group(
-                    '%s arguments' % plugin
-                    )
-                for argargs, argkwargs in arguments:
-                    group.add_argument(*argargs, **argkwargs)
+                yield plugin, arguments
+
+    def load_arguments(
+            self,
+            argv,  # type: typing.Iterable[str]
+            base=None,  # type: typing.Optional[argparse.ArgumentParser]
+            ):  # type: (...) -> argparse.Namespace
+        """
+        Process command line argument iterable.
+
+        Argument processing is based on registered arguments and given
+        optional base :class:`argparse.ArgumentParser` instance.
+
+        This method saves processed arguments on itself, and this state won't
+        be lost after :meth:`clean` calls.
+
+        Processed argument state will be available via :meth:`get_argument`
+        method.
+
+        :param argv: command-line arguments (without command itself)
+        :param base: optional base :class:`argparse.ArgumentParser` instance.
+        :returns: argparse.Namespace instance with processed arguments as
+                  given by :meth:`argparse.ArgumentParser.parse_args`.
+        :rtype: argparse.Namespace
+        """
+        parser = self._plugin_argument_parser(base)
+        options, _ = parser.parse_known_args(argv)
+
+        for plugin, arguments in self._plugin_arguments(parser, options):
+            group = parser.add_argument_group('%s arguments' % plugin)
+            for argargs, argkwargs in arguments:
+                group.add_argument(*argargs, **argkwargs)
 
         if options.help or options.help_all:
             parser.print_help()
@@ -769,6 +788,18 @@ class PluginManager(BlueprintPluginManager,
     parameter, or instantiated directly and passed to :meth:`register_widget`
     via `widget` parameter.
     """
+
+    module_classes = sum((
+        parent.module_classes
+        for parent in (
+            BlueprintPluginManager,
+            ExcludePluginManager,
+            WidgetPluginManager,
+            MimetypePluginManager,
+            SessionPluginManager,
+            ArgumentPluginManager)
+        ), ())
+
     def clear(self):
         """
         Clear plugin manager state.

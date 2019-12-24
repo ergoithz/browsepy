@@ -99,7 +99,7 @@ class StateMachine(object):
 
         It is expected transformation logic makes use of :attr:`start`,
         :attr:`current` and :attr:`streaming` instance attributes to
-        bettee know the state is being left.
+        better know the state is being left.
 
         :param data: string to transform (includes start)
         :type data: str

@@ -15,7 +15,6 @@ import browsepy
 import browsepy.compat as compat
 import browsepy.utils as utils
 import browsepy.file as browsepy_file
-import browsepy.manager as browsepy_manager
 import browsepy.plugin.player as player
 import browsepy.plugin.player.playable as player_playable
 
@@ -61,12 +60,13 @@ class TestPlayerBase(unittest.TestCase):
 
     def setUp(self):
         self.base = 'c:\\base' if os.name == 'nt' else '/base'
-        self.app = flask.Flask(self.__class__.__name__)
+        self.app = browsepy.create_app()
         self.app.config.update(
+            PLUGIN_NAMESPACES=['browsepy.plugin'],
             DIRECTORY_BASE=self.base,
             SERVER_NAME='localhost',
             )
-        self.manager = ManagerMock()
+        self.manager = self.app.extensions['plugin_manager']
 
     def tearDown(self):
         utils.clear_flask_context()
@@ -74,47 +74,49 @@ class TestPlayerBase(unittest.TestCase):
 
 class TestPlayer(TestPlayerBase):
     def test_register_plugin(self):
-        self.module.register_plugin(self.manager)
-        self.assertListEqual(self.manager.arguments, [])
+        manager = ManagerMock()
+        self.module.register_plugin(manager)
+        self.assertListEqual(manager.arguments, [])
 
-        self.assertIn(self.module.player, self.manager.blueprints)
+        self.assertIn(self.module.player, manager.blueprints)
         self.assertIn(
             self.module.playable.detect_playable_mimetype,
-            self.manager.mimetype_functions
+            manager.mimetype_functions
             )
 
         widgets = [
             action['filename']
-            for action in self.manager.widgets
+            for action in manager.widgets
             if action['type'] == 'stylesheet'
             ]
         self.assertIn('css/browse.css', widgets)
 
-        actions = [action['endpoint'] for action in self.manager.widgets]
+        actions = [action['endpoint'] for action in manager.widgets]
         self.assertIn('player.static', actions)
         self.assertIn('player.audio', actions)
         self.assertIn('player.playlist', actions)
         self.assertNotIn('player.directory', actions)
 
     def test_register_plugin_with_arguments(self):
-        self.manager.argument_values['player_directory_play'] = True
-        self.module.register_plugin(self.manager)
+        manager = ManagerMock()
+        manager.argument_values['player_directory_play'] = True
+        self.module.register_plugin(manager)
 
-        actions = [action['endpoint'] for action in self.manager.widgets]
+        actions = [action['endpoint'] for action in manager.widgets]
         self.assertIn('player.directory', actions)
 
     def test_register_arguments(self):
-        self.module.register_arguments(self.manager)
-        self.assertEqual(len(self.manager.arguments), 1)
+        manager = ManagerMock()
+        self.module.register_arguments(manager)
+        self.assertEqual(len(manager.arguments), 1)
 
-        arguments = [arg[0][0] for arg in self.manager.arguments]
+        arguments = [arg[0][0] for arg in manager.arguments]
         self.assertIn('--player-directory-play', arguments)
 
 
 class TestIntegrationBase(TestPlayerBase):
     player_module = player
     browsepy_module = browsepy
-    manager_module = browsepy_manager
 
     def tearDown(self):
         utils.clear_flask_context()
@@ -125,47 +127,27 @@ class TestIntegration(TestIntegrationBase):
     directory_args = ['--plugin', 'player', '--player-directory-play']
 
     def test_register_plugin(self):
-        self.app.config.update(self.browsepy_module.app.config)
-        self.app.config['PLUGIN_NAMESPACES'] = ('browsepy.plugin',)
-        manager = self.manager_module.PluginManager(self.app)
-        manager.load_plugin('player')
+        self.manager.load_plugin('player')
         self.assertIn(self.player_module.player, self.app.blueprints.values())
 
     def test_register_arguments(self):
-        self.app.config.update(self.browsepy_module.app.config)
-        self.app.config['PLUGIN_NAMESPACES'] = ('browsepy.plugin',)
-
-        manager = self.manager_module.ArgumentPluginManager(self.app)
-        manager.load_arguments(self.non_directory_args)
-        self.assertFalse(manager.get_argument('player_directory_play'))
-        manager.load_arguments(self.directory_args)
-        self.assertTrue(manager.get_argument('player_directory_play'))
+        self.manager.load_arguments(self.non_directory_args)
+        self.assertFalse(self.manager.get_argument('player_directory_play'))
+        self.manager.load_arguments(self.directory_args)
+        self.assertTrue(self.manager.get_argument('player_directory_play'))
 
     def test_reload(self):
-        self.app.config.update(
-            PLUGIN_MODULES=['player'],
-            PLUGIN_NAMESPACES=['browsepy.plugin']
-            )
-        manager = self.manager_module.PluginManager(self.app)
-        manager.load_arguments(self.non_directory_args)
-        manager.reload()
+        self.app.config.update(PLUGIN_MODULES=['player'])
 
-        manager = self.manager_module.PluginManager(self.app)
-        manager.load_arguments(self.directory_args)
-        manager.reload()
+        self.manager.load_arguments(self.non_directory_args)
+        self.manager.reload()
+
+        self.manager.load_arguments(self.directory_args)
+        self.manager.reload()
 
 
 class TestPlayable(TestIntegrationBase):
     module = player_playable
-
-    def setUp(self):
-        super(TestPlayable, self).setUp()
-        self.manager = self.manager_module.PluginManager(
-            self.app
-            )
-        self.manager.register_mimetype_function(
-            self.player_module.playable.detect_playable_mimetype
-            )
 
     def test_normalize_playable_path(self):
         playable = self.module.PlayListFile(
@@ -285,12 +267,7 @@ class TestPlayable(TestIntegrationBase):
 class TestBlueprint(TestPlayerBase):
     def setUp(self):
         super(TestBlueprint, self).setUp()
-        app = self.app
-        app.template_folder = os.path.join(
-            # FIXME: get a better way
-            os.path.dirname(browsepy.__path__),
-            'templates',
-            )
+        app = browsepy.create_app()
         app.config['DIRECTORY_BASE'] = tempfile.mkdtemp()
         app.register_blueprint(browsepy.blueprint)
         app.register_blueprint(self.module.player)

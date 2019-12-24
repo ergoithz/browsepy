@@ -20,23 +20,17 @@ class Rules:
 class CodeStyleTestCase(Rules, bases.CodeStyleTestCase):
     """TestCase checking :module:`pycodestyle`."""
 
-    pass
 
-
-class DocStyleTestCase(Rules, bases.DocStyleTestCase):
-    """TestCase checking :module:`pydocstyle`."""
-
-    pass
+# class DocStyleTestCase(Rules, bases.DocStyleTestCase):
+#     """TestCase checking :module:`pydocstyle`."""
 
 
 class MaintainabilityIndexTestCase(Rules, bases.MaintainabilityIndexTestCase):
     """TestCase checking :module:`radon` maintainability index."""
-
-    pass
 
 
 class CodeComplexityTestCase(Rules, bases.CodeComplexityTestCase):
     """TestCase checking :module:`radon` code complexity."""
 
     max_class_complexity = 7
-    max_function_complexity = 7
+    max_function_complexity = 10

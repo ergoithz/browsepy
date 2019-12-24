@@ -8,14 +8,14 @@ import browsepy.transform.compress
 class TestHTMLCompress(unittest.TestCase):
     extension = browsepy.transform.compress.TemplateCompress
 
-    def setUp(self):
-        self.env = jinja2.Environment(
+    def render(self, html, **kwargs):
+        data = {'code.html': html}
+        env = jinja2.Environment(
             autoescape=True,
             extensions=[self.extension],
+            loader=jinja2.DictLoader(data),
             )
-
-    def render(self, html, **kwargs):
-        return self.env.from_string(html).render(**kwargs)
+        return env.get_template('code.html').render(**kwargs)
 
     def test_compress(self):
         html = self.render('''

@@ -98,20 +98,25 @@ class CreateApp(object):
     """Flask create_app pattern factory."""
 
     flask_class = Flask
+    defaults = {
+        'static_folder': None,
+        'template_folder': None,
+        }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, import_name, **options):
         """
         Initialize.
 
         Arguments are passed to :class:`Flask` constructor.
         """
-        self.args = args
-        self.kwargs = kwargs
+        self.import_name = import_name
+        self.options = self.defaults.copy()
+        self.options.update(options)
         self.registry = []
 
     def __call__(self):  # type: () -> Flask
         """Create Flask app instance."""
-        app = self.flask_class(*self.args, **self.kwargs)
+        app = self.flask_class(self.import_name, **self.options)
         with app.app_context():
             for fnc in self.registry:
                 fnc()
