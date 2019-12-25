@@ -13,7 +13,6 @@ import collections
 import flask
 import bs4
 
-from werkzeug.exceptions import NotFound
 from werkzeug.http import parse_options_header
 
 import browsepy
@@ -22,6 +21,7 @@ import browsepy.manager
 import browsepy.__main__
 import browsepy.compat as compat
 import browsepy.utils as utils
+import browsepy.exceptions as exceptions
 
 PY_LEGACY = compat.PY_LEGACY
 range = compat.range  # noqa
@@ -566,19 +566,20 @@ class TestApp(unittest.TestCase):
         longpath = os.path.join(self.upload, *subdirs)
 
         os.makedirs(longpath)
-        self.assertRaises(
-            Page400Exception,
-            self.post, 'browsepy.upload', path='upload/' + '/'.join(subdirs), data={
-                'file': (io.BytesIO('test'.encode('ascii')), longname)
-                }
-            )
 
-        self.assertRaises(
-            Page400Exception,
-            self.post, 'browsepy.upload', path='upload', data={
-                'file': (io.BytesIO('test'.encode('ascii')), '..')
-                }
-            )
+        with self.assertRaises(Page400Exception):
+            self.post(
+                'browsepy.upload',
+                path='upload/' + '/'.join(subdirs),
+                data={'file': (io.BytesIO('test'.encode('ascii')), longname)},
+                )
+
+        with self.assertRaises(Page400Exception):
+            self.post(
+                'browsepy.upload',
+                path='upload',
+                data={'file': (io.BytesIO('test'.encode('ascii')), '..')},
+                )
 
     def test_sort(self):
 
@@ -675,40 +676,24 @@ class TestApp(unittest.TestCase):
                         self.assertLessEqual(len(cookie), 4000)
 
     def test_endpoints(self):
-        # test endpoint function for the library use-case
-        # likely not to happen when serving due flask's routing protections
         with self.app.app_context():
-            self.assertIsInstance(
-                self.module.sort(property='name', path='..'),
-                NotFound
-                )
+            with self.assertRaises(exceptions.OutsideDirectoryBase):
+                self.module.sort(property='name', path='..')
 
-            self.assertIsInstance(
-                self.module.browse(path='..'),
-                NotFound
-                )
+            with self.assertRaises(exceptions.OutsideDirectoryBase):
+                self.module.browse(path='..')
 
-            self.assertIsInstance(
-                self.module.open_file(path='../something'),
-                NotFound
-                )
+            with self.assertRaises(exceptions.OutsideDirectoryBase):
+                self.module.open_file(path='../something')
 
-            self.assertIsInstance(
-                self.module.download_file(path='../something'),
-                NotFound
-                )
+            with self.assertRaises(exceptions.OutsideDirectoryBase):
+                self.module.download_file(path='../something')
 
-            self.assertIsInstance(
-                self.module.download_directory(path='..'),
-                NotFound
-                )
+            with self.assertRaises(exceptions.OutsideDirectoryBase):
+                self.module.download_directory(path='..', ext='tgz')
 
-            self.assertIsInstance(
-                self.module.remove(path='../something'),
-                NotFound
-                )
+            with self.assertRaises(exceptions.OutsideDirectoryBase):
+                self.module.remove(path='../something')
 
-            self.assertIsInstance(
-                self.module.upload(path='..'),
-                NotFound
-                )
+            with self.assertRaises(exceptions.OutsideDirectoryBase):
+                self.module.upload(path='..')

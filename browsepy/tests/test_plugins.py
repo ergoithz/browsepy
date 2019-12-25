@@ -119,7 +119,7 @@ class TestPlugins(unittest.TestCase):
         self.app.config['PLUGIN_NAMESPACES'] = (
             self.plugin_namespace + '.test_',
             )
-        self.assertTrue(self.manager.import_plugin('module'))
+        self.assertTrue(self.manager.import_plugin('plugins'))
         self.assertIn(
             (self.plugin_namespace + '.' + self.plugin_name, 'plugins'),
             self.manager.available_plugins,
