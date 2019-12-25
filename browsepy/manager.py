@@ -5,7 +5,6 @@ import pkgutil
 import argparse
 import functools
 import warnings
-import abc
 
 from cookieman import CookieMan
 
@@ -20,31 +19,13 @@ from .exceptions import PluginNotFoundError, InvalidArgumentError, \
                         WidgetParameterException
 
 
-class RegisterPluginModule(abc.ABC):
-    @classmethod
-    def __subclasshook__(cls, module):
-        return (
-            isinstance(module, types.ModuleType) and
-            callable(getattr(module, 'register_plugin'))
-            )
-
-
-class RegisterArgumentsModule(abc.ABC):
-    @classmethod
-    def __subclasshook__(cls, module):
-        return (
-            isinstance(module, types.ModuleType) and
-            callable(getattr(module, 'register_arguments'))
-            )
-
-
 class PluginManagerBase(object):
     """Base plugin manager with loading and Flask extension logic."""
 
     _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
 
     get_module = staticmethod(compat.import_module)
-    module_classes = ()  # type: typing.Tuple[type, ...]
+    plugin_module_methods = ()  # type: typing.Tuple[str, ...]
 
     @property
     def namespaces(self):
@@ -168,7 +149,9 @@ class PluginManagerBase(object):
         """Import plugin module from absolute name."""
         try:
             module = self.get_module(name)
-            return module if isinstance(module, self.module_classes) else None
+            for name in self.plugin_module_methods:
+                if callable(getattr(module, name, None)):
+                    return module
         except ImportError:
             pass
         return None
@@ -224,8 +207,7 @@ class RegistrablePluginManager(PluginManagerBase):
     the plugin module level.
     """
 
-    register_plugin_module_class = RegisterPluginModule
-    module_classes = (register_plugin_module_class,)
+    plugin_module_methods = ('register_plugin',)
 
     def load_plugin(self, plugin):
         """
@@ -616,8 +598,7 @@ class ArgumentPluginManager(PluginManagerBase):
     _argparse_kwargs = {'add_help': False}
     _argparse_arguments = argparse.Namespace()
 
-    register_arguments_module_class = RegisterArgumentsModule
-    module_classes = (register_arguments_module_class,)
+    plugin_module_methods = ('register_arguments',)
 
     @cached_property
     def _default_argument_parser(self):
@@ -789,8 +770,8 @@ class PluginManager(BlueprintPluginManager,
     via `widget` parameter.
     """
 
-    module_classes = sum((
-        parent.module_classes
+    plugin_module_methods = sum((
+        parent.plugin_module_methods
         for parent in (
             BlueprintPluginManager,
             ExcludePluginManager,

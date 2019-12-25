@@ -9,21 +9,20 @@ import flask
 
 import browsepy
 import browsepy.manager
-import browsepy.utils as utils
 import browsepy.compat as compat
 import browsepy.exceptions as exceptions
 
 import browsepy.plugin.player.tests as test_player
 import browsepy.plugin.file_actions.tests as test_file_actions
 
-suites = {
+nested_suites = {
     'NestedPlayer': test_player,
     'NestedFileActions': test_file_actions,
     }
 
 globals().update(
     ('%s%s' % (prefix, name), testcase)
-    for prefix, module in suites.items()
+    for prefix, module in nested_suites.items()
     for name, testcase in vars(module).items()
     if isinstance(testcase, type) and issubclass(testcase, unittest.TestCase)
     )
@@ -67,8 +66,7 @@ class TestPlugins(unittest.TestCase):
     def setUp(self):
         self.app = self.app_module.create_app()
         self.original_namespaces = self.app.config['PLUGIN_NAMESPACES']
-        self.plugin_namespace = __package__
-        self.plugin_name = __name__
+        self.plugin_namespace, self.plugin_name = __name__.rsplit('.', 1)
         self.app.config['PLUGIN_NAMESPACES'] = (self.plugin_namespace,)
         self.manager = self.manager_module.PluginManager(self.app)
 
