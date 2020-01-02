@@ -6,10 +6,8 @@ import os.path
 import sys
 import six
 import errno
-import abc
 import time
 import tempfile
-import itertools
 import functools
 import contextlib
 import warnings
@@ -81,7 +79,7 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
 
     def __init__(self, prog, indent_increment=2, max_help_position=24,
                  width=None):
-        """Initialize object."""
+        """Initialize."""
         if width is None:
             try:
                 width = shutil.get_terminal_size().columns - 2
@@ -322,14 +320,17 @@ def usedoc(other):
 
     Usage:
 
-    >>> def fnc1():
-    ...     \"""docstring\"""
-    ...     pass
-    >>> @usedoc(fnc1)
-    ... def fnc2():
-    ...     pass
-    >>> fnc2.__doc__
-    'docstring'collections.abc.D
+    .. code-block:: python
+
+        def fnc1():
+            '''docstring'''
+            pass
+
+        @usedoc(fnc1)
+        def fnc2():
+            pass
+
+        print(fnc2.__doc__)  # 'docstring'
 
     """
     def inner(fnc):
@@ -405,7 +406,6 @@ def pathconf(path,
     :returns: dictionary containing pathconf keys and their values (both str)
     :rtype: dict
     """
-
     if pathconf_fnc and pathconf_names:
         return {key: pathconf_fnc(path, key) for key in pathconf_names}
     if os_name == 'nt':

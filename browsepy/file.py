@@ -18,8 +18,10 @@ from . import stream
 from .compat import cached_property
 from .http import Headers
 
-from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
-                        PathTooLongError, FilenameTooLongError
+from .exceptions import (
+    OutsideDirectoryBase, OutsideRemovableBase,
+    PathTooLongError, FilenameTooLongError
+    )
 
 
 underscore_replace = '%s:underscore' % __name__
@@ -59,6 +61,7 @@ class Node(object):
     * :attr:`directory_class`, class will be used for directory nodes,
     * :attr:`file_class`, class will be used for file nodes.
     """
+
     generic = True
     directory_class = None  # type: typing.Type[Node]
     file_class = None  # type: typing.Type[Node]
@@ -102,7 +105,7 @@ class Node(object):
     @cached_property
     def plugin_manager(self):
         """
-        Get current app's plugin manager.
+        Get current app plugin manager.
 
         :returns: plugin manager instance
         :type: browsepy.manager.PluginManagerBase
@@ -115,7 +118,7 @@ class Node(object):
     @cached_property
     def widgets(self):
         """
-        List widgets with filter return True for this node (or without filter).
+        List widgets for this node (or without filter).
 
         Remove button is prepended if :property:can_remove returns true.
 
@@ -152,8 +155,9 @@ class Node(object):
     @cached_property
     def can_remove(self):
         """
-        Get if current node can be removed based on app config's
-        `DIRECTORY_REMOVE`.
+        Get if current node can be removed.
+
+        This depends on app `DIRECTORY_REMOVE` config property.
 
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
@@ -180,6 +184,7 @@ class Node(object):
     def pathconf(self):
         """
         Get filesystem config for current path.
+
         See :func:`compat.pathconf`.
 
         :returns: fs config
@@ -233,8 +238,10 @@ class Node(object):
     @property
     def urlpath(self):
         """
-        Get the url substring corresponding to this node for those endpoints
-        accepting a 'path' parameter, suitable for :meth:`from_urlpath`.
+        Get public url for this node, suitable for path endpoints.
+
+        Endpoints accepting this value as 'path' parameter are also
+        expected to use :meth:`Node.from_urlpath`.
 
         :returns: relative-url-like for node's path
         :rtype: str
@@ -257,7 +264,7 @@ class Node(object):
     @property
     def type(self):
         """
-        Get the mime portion of node's mimetype (without the encoding part).
+        Get mimetype mime part (mimetype without encoding).
 
         :returns: mimetype
         :rtype: str
@@ -267,7 +274,7 @@ class Node(object):
     @property
     def category(self):
         """
-        Get mimetype category (first portion of mimetype before the slash).
+        Get mimetype category part (mimetype part before the slash).
 
         :returns: mimetype category
         :rtype: str
@@ -283,6 +290,7 @@ class Node(object):
             * multipart
             * text
             * video
+
         """
         return self.type.split('/', 1)[0]
 
@@ -311,7 +319,7 @@ class Node(object):
 
     def remove(self):
         """
-        Does nothing except raising if can_remove property returns False.
+        Do nothing but raising if can_remove property returns False.
 
         :raises: OutsideRemovableBase if :property:`can_remove` returns false
         """
@@ -321,7 +329,9 @@ class Node(object):
     @classmethod
     def from_urlpath(cls, path, app=None):
         """
-        Alternative constructor which accepts a path as taken from URL and uses
+        Create appropriate node from given url path.
+
+        Alternative constructor accepting a path as taken from URL using
         the given app or the current app config to get the real path.
 
         If class has attribute `generic` set to True, `directory_class` or
@@ -399,6 +409,7 @@ class File(Node):
     * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
       will always return instances of this class.
     """
+
     can_download = True
     can_upload = False
     is_directory = False
@@ -409,9 +420,9 @@ class File(Node):
         """
         List widgets with filter return True for this file (or without filter).
 
-        Entry link is prepended.
-        Download button is prepended if :property:can_download returns true.
-        Remove button is prepended if :property:can_remove returns true.
+        - Entry link is prepended.
+        - Download button is prepended if :property:can_download returns true.
+        - Remove button is prepended if :property:can_remove returns true.
 
         :returns: list of widgets
         :rtype: list of namedtuple instances
@@ -467,6 +478,7 @@ class File(Node):
     def size(self):
         """
         Get human-readable node size in bytes.
+
         If directory, this will corresponds with own inode size.
 
         :returns: fuzzy size with unit
@@ -500,6 +512,7 @@ class File(Node):
     def remove(self):
         """
         Remove file.
+
         :raises OutsideRemovableBase: when not under removable base directory
         """
         super(File, self).remove()
@@ -531,6 +544,7 @@ class Directory(Node):
     * :attr:`generic` is set to False, so static method :meth:`from_urlpath`
       will always return instances of this class.
     """
+
     stream_class = stream.TarFileStream
 
     _listdir_cache = None
@@ -555,10 +569,10 @@ class Directory(Node):
         """
         List widgets with filter return True for this dir (or without filter).
 
-        Entry link is prepended.
-        Upload scripts and widget are added if :property:can_upload is true.
-        Download button is prepended if :property:can_download returns true.
-        Remove button is prepended if :property:can_remove returns true.
+        - Entry link is prepended.
+        - Upload scripts and widget are added if :property:can_upload is true.
+        - Download button is prepended if :property:can_download returns true.
+        - Remove button is prepended if :property:can_remove returns true.
 
         :returns: list of widgets
         :rtype: list of namedtuple instances
@@ -617,7 +631,7 @@ class Directory(Node):
     @cached_property
     def is_root(self):
         """
-        Get if directory is filesystem's root
+        Get if directory is filesystem root.
 
         :returns: True if FS root, False otherwise
         :rtype: bool
@@ -627,8 +641,9 @@ class Directory(Node):
     @cached_property
     def can_download(self):
         """
-        Get if path is downloadable (if app's `DIRECTORY_DOWNLOADABLE` config
-        property is True).
+        Get if node path is downloadable.
+
+        This depends on app `DIRECTORY_DOWNLOADABLE` config property.
 
         :returns: True if downloadable, False otherwise
         :rtype: bool
@@ -638,8 +653,9 @@ class Directory(Node):
     @cached_property
     def can_upload(self):
         """
-        Get if a file can be uploaded to path (if directory path is under app's
-        `DIRECTORY_UPLOAD` config property).
+        Get if a file can be uploaded to node path.
+
+        This depends on app `DIRECTORY_UPLOAD` config property.
 
         :returns: True if a file can be upload to directory, False otherwise
         :rtype: bool
@@ -650,8 +666,9 @@ class Directory(Node):
     @cached_property
     def can_remove(self):
         """
-        Get if current node can be removed based on app config's
-        directory_remove.
+        Get if current node can be removed.
+
+        This depends on app `DIRECTORY_REMOVE` config property.
 
         :returns: True if current node can be removed, False otherwise.
         :rtype: bool
@@ -661,7 +678,7 @@ class Directory(Node):
     @cached_property
     def is_empty(self):
         """
-        Get if directory is empty (based on :meth:`_listdir`).
+        Get if directory is empty.
 
         :returns: True if this directory has no entries, False otherwise.
         :rtype: bool
@@ -695,7 +712,7 @@ class Directory(Node):
 
     def download(self):
         """
-        Get a Flask Response object streaming a tarball of this directory.
+        Generate Flask Response object streaming a tarball of this directory.
 
         :returns: Response object
         :rtype: flask.Response
@@ -739,8 +756,7 @@ class Directory(Node):
 
     def choose_filename(self, filename, attempts=999):
         """
-        Get a new filename which does not colide with any entry on directory,
-        based on given filename.
+        Get a filename for considered safe for this directory.
 
         :param filename: base filename
         :type filename: str
@@ -911,14 +927,12 @@ def urlpath_to_abspath(path, base, os_sep=os.sep):
 
 def generic_filename(path):
     """
-    Extract filename of given path os-indepently, taking care of known path
-    separators.
+    Extract filename from given path based on all known path separators.
 
     :param path: path
     :return: filename
     :rtype: str or unicode (depending on given path)
     """
-
     for sep in common_path_separators:
         if sep in path:
             _, path = path.rsplit(sep, 1)
@@ -1053,7 +1067,7 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
 
 def alternative_filename(filename, attempt=None):
     """
-    Generates an alternative version of given filename.
+    Generate an alternative version of given filename.
 
     If an number attempt parameter is given, will be used on the alternative
     name, a random value will be used otherwise.

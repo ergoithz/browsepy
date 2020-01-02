@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+"""Browsepy command entrypoint module."""
 
 import re
 import sys
@@ -15,7 +14,10 @@ from .transform.glob import translate
 
 
 class CommaSeparatedAction(argparse.Action):
+    """Argparse action for multi-comma separated options."""
+
     def __call__(self, parser, namespace, value, option_string=None):
+        """Parse option value and update namespace."""
         values = value.split(',')
         prev = getattr(namespace, self.dest, None)
         if isinstance(prev, list):
@@ -24,6 +26,8 @@ class CommaSeparatedAction(argparse.Action):
 
 
 class ArgParse(SafeArgumentParser):
+    """Browsepy argument parser class."""
+
     default_directory = app.config['DIRECTORY_BASE']
     default_initial = (
         None
@@ -44,6 +48,7 @@ class ArgParse(SafeArgumentParser):
         }
 
     def __init__(self, sep=os.sep):
+        """Initialize."""
         super(ArgParse, self).__init__(**self.defaults)
         self.add_argument(
             'host', nargs='?',
@@ -115,6 +120,7 @@ class ArgParse(SafeArgumentParser):
 
 
 def create_exclude_fnc(patterns, base, sep=os.sep):
+    """Create browsepy exclude function from list of glob patterns."""
     if patterns:
         regex = '|'.join(translate(pattern, sep, base) for pattern in patterns)
         return re.compile(regex).search
@@ -122,6 +128,7 @@ def create_exclude_fnc(patterns, base, sep=os.sep):
 
 
 def collect_exclude_patterns(paths):
+    """Extract list of glob patterns from given list of glob files."""
     patterns = []
     for path in paths:
         with open(path, 'r') as f:
@@ -133,11 +140,13 @@ def collect_exclude_patterns(paths):
 
 
 def list_union(*lists):
+    """Get unique union list from given iterables."""
     lst = [i for l in lists for i in l]
     return sorted(frozenset(lst), key=lst.index)
 
 
 def filter_union(*functions):
+    """Get union of given filter callables."""
     filtered = [fnc for fnc in functions if fnc]
     if filtered:
         if len(filtered) == 1:
@@ -147,6 +156,7 @@ def filter_union(*functions):
 
 
 def main(argv=sys.argv[1:], app=app, parser=ArgParse, run_fnc=flask.Flask.run):
+    """Run browsepy."""
     plugin_manager = app.extensions['plugin_manager']
     args = plugin_manager.load_arguments(argv, parser())
     patterns = args.exclude + collect_exclude_patterns(args.exclude_from)

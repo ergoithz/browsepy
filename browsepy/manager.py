@@ -531,8 +531,7 @@ class MimetypePluginManager(RegistrablePluginManager):
 
     def get_mimetype(self, path):
         """
-        Get mimetype of given path calling all registered mime functions (and
-        default ones).
+        Get mimetype of given path based on registered mimetype functions.
 
         :param path: filesystem path of file
         :type path: str
@@ -613,7 +612,7 @@ class ArgumentPluginManager(PluginManagerBase):
 
     def extract_plugin_arguments(self, plugin):
         """
-        Extract registered argument pairs from given plugin name,
+        Extract registered argument pairs from given plugin name.
 
         Arguments are returned as an iterable of (args, kwargs) tuples.
 

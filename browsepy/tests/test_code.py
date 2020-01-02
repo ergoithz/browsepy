@@ -1,6 +1,7 @@
+
 import re
 
-import unittest_resources.testing as bases
+import unittest_resources.testing as base
 
 
 class Rules:
@@ -11,25 +12,23 @@ class Rules:
     meta_resource_pattern = re.compile(r'^([^t]*|t(?!ests?))+\.py$')
 
 
-# class TypingTestCase(Rules, bases.TypingTestCase):
-#     """TestCase checking :module:`mypy`."""
-#
-#     pass
+class TypingTestCase(Rules, base.TypingTestCase):
+    """TestCase checking :module:`mypy`."""
 
 
-class CodeStyleTestCase(Rules, bases.CodeStyleTestCase):
+class CodeStyleTestCase(Rules, base.CodeStyleTestCase):
     """TestCase checking :module:`pycodestyle`."""
 
 
-# class DocStyleTestCase(Rules, bases.DocStyleTestCase):
-#     """TestCase checking :module:`pydocstyle`."""
+class DocStyleTestCase(Rules, base.DocStyleTestCase):
+    """TestCase checking :module:`pydocstyle`."""
 
 
-class MaintainabilityIndexTestCase(Rules, bases.MaintainabilityIndexTestCase):
+class MaintainabilityIndexTestCase(Rules, base.MaintainabilityIndexTestCase):
     """TestCase checking :module:`radon` maintainability index."""
 
 
-class CodeComplexityTestCase(Rules, bases.CodeComplexityTestCase):
+class CodeComplexityTestCase(Rules, base.CodeComplexityTestCase):
     """TestCase checking :module:`radon` code complexity."""
 
     max_class_complexity = 7

@@ -6,8 +6,6 @@ import warnings
 import flask
 import flask.config
 
-from . import compat
-
 
 T = typing.TypeVar('T')
 

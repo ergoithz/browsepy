@@ -112,6 +112,7 @@ class PlayableDirectory(PlayableNode, Directory):
 
     @property
     def parent(self):
+        """Get directory."""
         return Directory(self.path, self.app)
 
     def entries(self, sortkey=None, reverse=None):

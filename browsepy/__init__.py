@@ -3,27 +3,31 @@
 __version__ = '0.6.0'
 
 import typing
-import logging
 import os
 import os.path
 import time
 
 import cookieman
 
-from flask import request, render_template, redirect, \
-                  url_for, send_from_directory, \
-                  current_app, session, abort
+from flask import (
+    request, render_template, redirect,
+    url_for, send_from_directory,
+    current_app, session, abort,
+    )
 
-from .appconfig import CreateApp
-from .manager import PluginManager
-from .file import Node, secure_filename
-from .stream import tarfile_extension, stream_template
-from .http import etag
-from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
-                        InvalidFilenameError, InvalidPathError
+import browsepy.mimetype as mimetype
+import browsepy.compat as compat
 
-from . import mimetype
-from . import compat
+from browsepy.appconfig import CreateApp
+from browsepy.manager import PluginManager
+from browsepy.file import Node, secure_filename
+from browsepy.stream import tarfile_extension, stream_template
+from browsepy.http import etag
+from browsepy.exceptions import (
+    OutsideRemovableBase, OutsideDirectoryBase,
+    InvalidFilenameError, InvalidPathError
+    )
+
 
 create_app = CreateApp(
     __name__,
