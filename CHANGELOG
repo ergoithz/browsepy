@@ -12,9 +12,6 @@
 - Base directory is downloadable now.
 - Directory entries stats are retrieved first and foremost.
 
-### Breaking changes
-- All browsepy routes are now under browsepy.
-
 ### Removed
 - Python 2.7, 3.3 and 3.4 support have been dropped.
 

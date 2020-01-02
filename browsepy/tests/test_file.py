@@ -11,9 +11,6 @@ import browsepy.compat as compat
 import browsepy.utils as utils
 
 
-PY_LEGACY = compat.PY_LEGACY
-
-
 class TestFile(unittest.TestCase):
     module = browsepy.file
 
@@ -42,7 +39,7 @@ class TestFile(unittest.TestCase):
     def test_repr(self):
         self.assertIsInstance(
             repr(self.module.Node('a', app=self.app)),
-            compat.basestring
+            str
             )
 
     def test_iter_listdir(self):
@@ -144,10 +141,7 @@ class TestFile(unittest.TestCase):
         virtual_file = os.path.join(self.workbench, 'file.txt')
         f = self.module.File(virtual_file, app=self.app)
 
-        self.assertRaises(
-            compat.FileNotFoundError,
-            lambda: f.stats
-            )
+        self.assertRaises(FileNotFoundError, lambda: f.stats)
         self.assertEqual(f.modified, None)
         self.assertEqual(f.size, None)
 
@@ -249,18 +243,9 @@ class TestFileFunctions(unittest.TestCase):
             self.module.secure_filename('\xf1', fs_encoding='ascii'),
             '_')
 
-        if PY_LEGACY:
-            expected = unicode('\xf1', encoding='latin-1')  # noqa
-            self.assertEqual(
-                self.module.secure_filename('\xf1', fs_encoding='utf-8'),
-                expected)
-            self.assertEqual(
-                self.module.secure_filename(expected, fs_encoding='utf-8'),
-                expected)
-        else:
-            self.assertEqual(
-                self.module.secure_filename('\xf1', fs_encoding='utf-8'),
-                '\xf1')
+        self.assertEqual(
+            self.module.secure_filename('\xf1', fs_encoding='utf-8'),
+            '\xf1')
 
     def test_alternative_filename(self):
         self.assertEqual(

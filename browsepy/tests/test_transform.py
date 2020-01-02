@@ -1,20 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import re
 import unittest
 import warnings
 
-from browsepy.compat import unicode
-
 import browsepy.transform
 import browsepy.transform.glob
-
-
-def fu(c):
-    if isinstance(c, unicode):
-        return c
-    return c.decode('utf-8')
 
 
 class TestStateMachine(unittest.TestCase):
@@ -78,7 +68,7 @@ class TestGlob(unittest.TestCase):
                 '/a',
                 '/ñ',
                 '/1',
-                b'/\xc3\xa0',  # /à
+                '/à',
                 ), (
                 '/_',
                 )),
@@ -93,9 +83,9 @@ class TestGlob(unittest.TestCase):
         for pattern, matching, nonmatching in tests:
             pattern = re.compile(self.translate(pattern, sep='/'))
             for test in matching:
-                self.assertTrue(pattern.match(fu(test)))
+                self.assertTrue(pattern.match(test))
             for test in nonmatching:
-                self.assertFalse(pattern.match(fu(test)))
+                self.assertFalse(pattern.match(test))
 
     def test_unsupported(self):
         translations = [

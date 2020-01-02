@@ -1,17 +1,15 @@
 """Flask app config utilities."""
 
+import typing
 import warnings
 
 import flask
 import flask.config
 
-from .compat import typing
-
 from . import compat
 
 
-if typing:
-    T = typing.TypeVar('T')
+T = typing.TypeVar('T')
 
 
 class Config(flask.config.Config):
@@ -35,7 +33,7 @@ class Config(flask.config.Config):
         :param k: key
         :returns: uppercase key
         """
-        if isinstance(key, compat.basestring):
+        if isinstance(key, str):
             uppercase = key.upper()
             if key not in self._warned and key != uppercase:
                 self._warned.add(key)
@@ -94,6 +92,27 @@ class Flask(flask.Flask):
     config_class = Config
 
 
+class AppDecoratorProxy(object):
+    """Flask app decorator proxy."""
+
+    def __init__(self, name, nested=False):
+        """Initialize."""
+        self.name = name
+        self.nested = nested
+
+    def __get__(self, obj, type=None):
+        """Get deferred registering decorator."""
+        def decorator(*args, **kwargs):
+            def wrapper(fnc):
+                def callback():
+                    meth = getattr(flask.current_app, self.name)
+                    meth(*args, **kwargs)(fnc) if self.nested else meth(fnc)
+                obj.register(callback)
+                return fnc
+            return wrapper
+        return decorator if self.nested else decorator()
+
+
 class CreateApp(object):
     """Flask create_app pattern factory."""
 
@@ -126,3 +145,9 @@ class CreateApp(object):
         """Register function to be called when app is initialized."""
         self.registry.append(fnc)
         return fnc
+
+    before_first_request = AppDecoratorProxy('before_first_request')
+    context_processor = AppDecoratorProxy('context_processor')
+    url_defaults = AppDecoratorProxy('url_defaults')
+    errorhandler = AppDecoratorProxy('errorhandler', nested=True)
+    route = AppDecoratorProxy('route', nested=True)

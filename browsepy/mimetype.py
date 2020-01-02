@@ -9,7 +9,7 @@ import re
 import subprocess
 import mimetypes
 
-from .compat import FileNotFoundError, which  # noqa
+from .compat import which
 
 generic_mimetypes = frozenset(('application/octet-stream', None))
 re_mime_validate = re.compile(r'\w+/\w+(; \w+=[^;]+)*')

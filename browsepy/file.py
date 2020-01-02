@@ -1,5 +1,6 @@
-# -*- coding: UTF-8 -*-
+"""File node classes and functions."""
 
+import typing
 import os
 import os.path
 import re
@@ -7,7 +8,6 @@ import codecs
 import string
 import random
 import datetime
-import logging
 
 import flask
 
@@ -15,19 +15,17 @@ from . import compat
 from . import utils
 from . import stream
 
-from .compat import range, cached_property
+from .compat import cached_property
 from .http import Headers
 
 from .exceptions import OutsideDirectoryBase, OutsideRemovableBase, \
                         PathTooLongError, FilenameTooLongError
 
 
-logger = logging.getLogger(__name__)
-unicode_underscore = compat.unicode('_')
 underscore_replace = '%s:underscore' % __name__
 codecs.register_error(
     underscore_replace,
-    lambda error: (unicode_underscore, getattr(error, 'start', 0) + 1),
+    lambda error: (u'_', getattr(error, 'start', 0) + 1),
     )
 binary_units = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
 standard_units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
@@ -62,9 +60,9 @@ class Node(object):
     * :attr:`file_class`, class will be used for file nodes.
     """
     generic = True
-    directory_class = None  # set at import time
-    file_class = None  # set at import time
-    manager_class = None  # set at import time
+    directory_class = None  # type: typing.Type[Node]
+    file_class = None  # type: typing.Type[Node]
+    manager_class = None
 
     re_charset = re.compile('; charset=(?P<charset>[^;]+)')
     can_download = False
@@ -132,7 +130,7 @@ class Node(object):
                     'button',
                     file=self,
                     css='remove',
-                    endpoint='browsepy.remove',
+                    endpoint='remove',
                     )
                 )
         return widgets + self.plugin_manager.get_widgets(file=self)
@@ -173,7 +171,7 @@ class Node(object):
         """
         try:
             return os.stat(self.path)
-        except compat.FileNotFoundError:
+        except FileNotFoundError:
             if self.is_symlink:
                 return os.lstat(self.path)
             raise
@@ -423,7 +421,7 @@ class File(Node):
                 'entry-link',
                 'link',
                 file=self,
-                endpoint='browsepy.open',
+                endpoint='open',
                 )
             ]
         if self.can_download:
@@ -433,14 +431,14 @@ class File(Node):
                     'button',
                     file=self,
                     css='download',
-                    endpoint='browsepy.download_file',
+                    endpoint='download_file',
                     ),
                 self.plugin_manager.create_widget(
                     'header',
                     'button',
                     file=self,
                     text='Download file',
-                    endpoint='browsepy.download_file',
+                    endpoint='download_file',
                     ),
                 ))
         return widgets + super(File, self).widgets
@@ -570,7 +568,7 @@ class Directory(Node):
                 'entry-link',
                 'link',
                 file=self,
-                endpoint='browsepy.browse',
+                endpoint='browse',
                 )
             ]
         if self.can_download:
@@ -580,14 +578,14 @@ class Directory(Node):
                     'button',
                     file=self,
                     css='download',
-                    endpoint='browsepy.download_directory',
+                    endpoint='download_directory',
                     ),
                 self.plugin_manager.create_widget(
                     'header',
                     'button',
                     file=self,
                     text='Download all',
-                    endpoint='browsepy.download_directory',
+                    endpoint='download_directory',
                     ),
                 ))
         if self.can_upload:
@@ -596,14 +594,14 @@ class Directory(Node):
                     'head',
                     'script',
                     file=self,
-                    endpoint='browsepy.static',
+                    endpoint='static',
                     filename='browse.directory.head.js',
                     ),
                 self.plugin_manager.create_widget(
                     'scripts',
                     'script',
                     file=self,
-                    endpoint='browsepy.static',
+                    endpoint='static',
                     filename='browse.directory.body.js',
                     ),
                 self.plugin_manager.create_widget(
@@ -611,7 +609,7 @@ class Directory(Node):
                     'upload',
                     file=self,
                     text='Upload',
-                    endpoint='browsepy.upload',
+                    endpoint='upload',
                     )
                 ))
         return widgets + super(Directory, self).widgets
@@ -776,13 +774,13 @@ class Directory(Node):
         return new_filename
 
     def _listdir(self, precomputed_stats=(os.name == 'nt')):
+        # type: (bool) -> typing.Generator[Node, None, None]
         """
         Iterate unsorted entries on this directory.
 
         Symlinks are skipped when pointing outside to base directory.
 
         :yields: Directory or File instance for each entry in directory
-        :rtype: Iterator of browsepy.file.Node
         """
         directory_class = self.directory_class
         file_class = self.file_class
@@ -809,10 +807,10 @@ class Directory(Node):
                         if entry.is_dir(follow_symlinks=is_symlink) else
                         file_class(**kwargs)
                         )
-                except compat.FileNotFoundError:
+                except FileNotFoundError:
                     pass
                 except OSError as e:
-                    logger.exception(e)
+                    self.app.exception(e)
 
     def listdir(self, sortkey=None, reverse=False):
         """

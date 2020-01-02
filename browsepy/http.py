@@ -1,17 +1,12 @@
 """HTTP utility module."""
 
+import typing
 import re
-import logging
 
 import msgpack
 
 from werkzeug.http import dump_header, dump_options_header, generate_etag
 from werkzeug.datastructures import Headers as BaseHeaders
-
-from .compat import typing
-
-
-logger = logging.getLogger(__name__)
 
 
 class Headers(BaseHeaders):

@@ -10,8 +10,7 @@ import argparse
 import flask
 
 from . import app, __version__
-from .compat import PY_LEGACY, getdebug, \
-                    SafeArgumentParser, HelpFormatter
+from .compat import getdebug, SafeArgumentParser, HelpFormatter
 from .transform.glob import translate
 
 
@@ -100,9 +99,6 @@ class ArgParse(SafeArgumentParser):
             help=argparse.SUPPRESS)
 
     def _path(self, arg):
-        if PY_LEGACY and hasattr(sys.stdin, 'encoding'):
-            encoding = sys.stdin.encoding or sys.getdefaultencoding()
-            arg = arg.decode(encoding)
         return os.path.abspath(arg)
 
     def _file(self, arg):

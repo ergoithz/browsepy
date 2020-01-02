@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-  <img src="{{ url_for('browsepy.static', filename='giorgio.jpg') }}" alt=""/>
+  <img src="{{ url_for('static', filename='giorgio.jpg') }}" alt=""/>
   <p>The resource you're looking for is not available.</p>
-  <a class="long button text" href="{{ url_for('browsepy.index') }}" title="Go home">Accept</a>
+  <a class="long button text" href="{{ url_for('index') }}" title="Go home">Accept</a>
 {% endblock %}

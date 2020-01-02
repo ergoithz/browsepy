@@ -125,9 +125,6 @@ class TestIntegration(unittest.TestCase):
 
     def tearDown(self):
         compat.rmtree(self.base)
-        self.app.config.clear()
-        self.app.config.update(self.original_config)
-        self.manager.clear()
         utils.clear_flask_context()
 
     def test_detection(self):

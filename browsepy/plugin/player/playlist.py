@@ -67,7 +67,7 @@ def iter_pls_entries(node):
         parser = configparser_class()
         parser.read(node.path)
     try:
-        maxsize = parser.getint('playlist', 'NumberOfEntries')
+        maxsize = parser.getint('playlist', 'NumberOfEntries') + 1
     except configparser_option_exceptions:
         maxsize = sys.maxsize
     failures = 0
@@ -78,7 +78,7 @@ def iter_pls_entries(node):
         if not data.get('path'):
             failures += 1
             continue
-        data['path'] = normalize_playable_path(data['path'])
+        data['path'] = normalize_playable_path(data['path'], node)
         if data['path']:
             failures = 0
             yield data

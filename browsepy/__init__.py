@@ -2,19 +2,18 @@
 
 __version__ = '0.6.0'
 
+import typing
 import logging
 import os
 import os.path
 import time
 
-import flask
 import cookieman
 
 from flask import request, render_template, redirect, \
                   url_for, send_from_directory, \
                   current_app, session, abort
 
-from .compat import typing
 from .appconfig import CreateApp
 from .manager import PluginManager
 from .file import Node, secure_filename
@@ -26,20 +25,16 @@ from .exceptions import OutsideRemovableBase, OutsideDirectoryBase, \
 from . import mimetype
 from . import compat
 
-logger = logging.getLogger(__name__)
-blueprint = flask.Blueprint(
-    'browsepy',
+create_app = CreateApp(
     __name__,
     static_folder='static',
     template_folder='templates',
     )
-create_app = CreateApp(__name__)
 
 
 @create_app.register
 def init_config():
     """Configure application."""
-    current_app.register_blueprint(blueprint)
     current_app.config.update(
         SECRET_KEY=os.urandom(4096),
         APPLICATION_NAME='browsepy',
@@ -67,12 +62,6 @@ def init_config():
     if 'BROWSEPY_SETTINGS' in os.environ:
         current_app.config.from_envvar('BROWSEPY_SETTINGS')
 
-    @current_app.before_first_request
-    def prepare():
-        config = current_app.config
-        if not config['APPLICATION_TIME']:
-            config['APPLICATION_TIME'] = time.time()
-
 
 @create_app.register
 def init_plugins():
@@ -91,49 +80,56 @@ def init_plugins():
         return data
 
 
-@create_app.register
-def init_globals():
-    """Configure application global environment."""
-    @current_app.context_processor
-    def template_globals():
-        return {
-            'manager': current_app.extensions['plugin_manager'],
-            'len': len,
-            }
+@create_app.before_first_request
+def prepare_config():
+    """Prepare runtime app config."""
+    config = current_app.config
+    if not config['APPLICATION_TIME']:
+        config['APPLICATION_TIME'] = time.time()
 
 
-@create_app.register
-def init_error_handlers():
-    """Configure app error handlers."""
-    @current_app.errorhandler(InvalidPathError)
-    def bad_request_error(e):
-        file = None
-        if hasattr(e, 'path'):
-            if isinstance(e, InvalidFilenameError):
-                file = Node(e.path)
-            else:
-                file = Node(e.path).parent
-        return render_template('400.html', file=file, error=e), 400
-
-    @current_app.errorhandler(OutsideRemovableBase)
-    @current_app.errorhandler(OutsideDirectoryBase)
-    @current_app.errorhandler(404)
-    def page_not_found_error(e):
-        return render_template('404.html'), 404
-
-    @current_app.errorhandler(Exception)
-    @current_app.errorhandler(500)
-    def internal_server_error(e):  # pragma: no cover
-        logger.exception(e)
-        return getattr(e, 'message', 'Internal server error'), 500
+@create_app.context_processor
+def template_globals():
+    """Get template globals."""
+    return {
+        'manager': current_app.extensions['plugin_manager'],
+        'len': len,
+        }
 
 
-@blueprint.url_defaults
+@create_app.url_defaults
 def default_directory_download_extension(endpoint, values):
     """Set default extension for download_directory endpoint."""
-    if endpoint == 'browsepy.download_directory':
+    if endpoint == 'download_directory':
         compression = current_app.config['DIRECTORY_TAR_COMPRESSION']
         values.setdefault('ext', tarfile_extension(compression))
+
+
+@create_app.errorhandler(InvalidPathError)
+def bad_request_error(e):
+    """Handle invalid requests errors, rendering HTTP 400 page."""
+    file = None
+    if hasattr(e, 'path'):
+        file = Node(e.path)
+        if not isinstance(e, InvalidFilenameError):
+            file = file.parent
+    return render_template('400.html', file=file, error=e), 400
+
+
+@create_app.errorhandler(OutsideRemovableBase)
+@create_app.errorhandler(OutsideDirectoryBase)
+@create_app.errorhandler(404)
+def page_not_found_error(e):
+    """Handle resource not found errors, rendering 404 error page."""
+    return render_template('404.html'), 404
+
+
+@create_app.errorhandler(Exception)
+@create_app.errorhandler(500)
+def internal_server_error(e):  # pragma: no cover
+    """Handle server errors, rendering 404 error page."""
+    current_app.logger.exception(e)
+    return getattr(e, 'message', 'Internal server error'), 500
 
 
 def get_cookie_browse_sorting(path, default):
@@ -198,8 +194,8 @@ def browse_sortkey_reverse(prop):
         )
 
 
-@blueprint.route('/sort/<string:property>', defaults={'path': ''})
-@blueprint.route('/sort/<string:property>/<path:path>')
+@create_app.route('/sort/<string:property>', defaults={'path': ''})
+@create_app.route('/sort/<string:property>/<path:path>')
 def sort(property, path):
     """Handle sort request, add sorting rule to session."""
     directory = Node.from_urlpath(path)
@@ -210,8 +206,8 @@ def sort(property, path):
     abort(404)
 
 
-@blueprint.route('/browse', defaults={'path': ''})
-@blueprint.route('/browse/<path:path>')
+@create_app.route('/browse', defaults={'path': ''})
+@create_app.route('/browse/<path:path>')
 def browse(path):
     """Handle browse request, serve directory listing."""
     sort_property = get_cookie_browse_sorting(path, 'text')
@@ -240,7 +236,7 @@ def browse(path):
     abort(404)
 
 
-@blueprint.route('/open/<path:path>', endpoint='open')
+@create_app.route('/open/<path:path>', endpoint='open')
 def open_file(path):
     """Handle open request, serve file."""
     file = Node.from_urlpath(path)
@@ -249,7 +245,7 @@ def open_file(path):
     abort(404)
 
 
-@blueprint.route('/download/file/<path:path>')
+@create_app.route('/download/file/<path:path>')
 def download_file(path):
     """Handle download request, serve file as attachment."""
     file = Node.from_urlpath(path)
@@ -258,8 +254,8 @@ def download_file(path):
     abort(404)
 
 
-@blueprint.route('/download/directory.<string:ext>', defaults={'path': ''})
-@blueprint.route('/download/directory/?<path:path>.<string:ext>')
+@create_app.route('/download/directory.<string:ext>', defaults={'path': ''})
+@create_app.route('/download/directory/?<path:path>.<string:ext>')
 def download_directory(path, ext):
     """Handle download directory request, serve tarfile as attachment."""
     compression = current_app.config['DIRECTORY_TAR_COMPRESSION']
@@ -271,7 +267,7 @@ def download_directory(path, ext):
     abort(404)
 
 
-@blueprint.route('/remove/<path:path>', methods=('GET', 'POST'))
+@create_app.route('/remove/<path:path>', methods=('GET', 'POST'))
 def remove(path):
     """Handle remove request, serve confirmation dialog."""
     file = Node.from_urlpath(path)
@@ -283,8 +279,8 @@ def remove(path):
     abort(404)
 
 
-@blueprint.route('/upload', defaults={'path': ''}, methods=('POST',))
-@blueprint.route('/upload/<path:path>', methods=('POST',))
+@create_app.route('/upload', defaults={'path': ''}, methods=('POST',))
+@create_app.route('/upload/<path:path>', methods=('POST',))
 def upload(path):
     """Handle upload request."""
     directory = Node.from_urlpath(path)
@@ -311,7 +307,7 @@ def upload(path):
     abort(404)
 
 
-@blueprint.route('/<any("manifest.json", "browserconfig.xml"):filename>')
+@create_app.route('/<any("manifest.json", "browserconfig.xml"):filename>')
 def metadata(filename):
     """Handle metadata request, serve browse metadata file."""
     response = current_app.response_class(
@@ -323,7 +319,7 @@ def metadata(filename):
     return response
 
 
-@blueprint.route('/')
+@create_app.route('/')
 def index():
     """Handle index request, serve either start or base directory listing."""
     path = (

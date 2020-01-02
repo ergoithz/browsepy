@@ -7,7 +7,7 @@ from werkzeug.exceptions import NotFound
 from browsepy import get_cookie_browse_sorting, browse_sortkey_reverse
 from browsepy.file import Node, abspath_to_urlpath, current_restricted_chars, \
                           common_path_separators
-from browsepy.compat import re_escape, FileNotFoundError
+from browsepy.compat import re_escape
 from browsepy.exceptions import OutsideDirectoryBase
 from browsepy.stream import stream_template
 
@@ -49,7 +49,7 @@ def create_directory(path):
         path = utils.mkdir(directory.path, request.form['name'])
         base = current_app.config['DIRECTORY_BASE']
         return redirect(
-            url_for('browsepy.browse', path=abspath_to_urlpath(path, base))
+            url_for('browse', path=abspath_to_urlpath(path, base))
             )
 
     return render_template(
@@ -91,7 +91,7 @@ def selection(path):
 
         session['clipboard:mode'] = mode
         session['clipboard:items'] = clipboard
-        return redirect(url_for('browsepy.browse', path=directory.urlpath))
+        return redirect(url_for('browse', path=directory.urlpath))
 
     return stream_template(
         'selection.file_actions.html',
@@ -139,7 +139,7 @@ def clipboard_paste(path):
         session.pop('clipboard:mode', None)
         session.pop('clipboard:items', None)
 
-    return redirect(url_for('browsepy.browse', path=directory.urlpath))
+    return redirect(url_for('browse', path=directory.urlpath))
 
 
 @actions.route('/clipboard/clear', defaults={'path': ''})
@@ -148,7 +148,7 @@ def clipboard_clear(path):
     """Handle clear clipboard request."""
     session.pop('clipboard:mode', None)
     session.pop('clipboard:items', None)
-    return redirect(url_for('browsepy.browse', path=path))
+    return redirect(url_for('browse', path=path))
 
 
 @actions.errorhandler(FileActionsException)

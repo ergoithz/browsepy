@@ -1,10 +1,13 @@
 """Browsepy plugin manager classes."""
 
+import typing
+import types
 import os.path
 import pkgutil
 import argparse
 import functools
 import warnings
+import importlib
 
 from cookieman import CookieMan
 
@@ -13,7 +16,7 @@ from . import compat
 from . import utils
 from . import file
 
-from .compat import typing, types, cached_property
+from .compat import cached_property
 from .utils import defaultsnamedtuple
 from .exceptions import PluginNotFoundError, InvalidArgumentError, \
                         WidgetParameterException
@@ -24,7 +27,7 @@ class PluginManagerBase(object):
 
     _pyfile_extensions = ('.py', '.pyc', '.pyd', '.pyo')
 
-    get_module = staticmethod(compat.import_module)
+    get_module = staticmethod(importlib.import_module)
     plugin_module_methods = ()  # type: typing.Tuple[str, ...]
 
     @property
@@ -604,6 +607,7 @@ class ArgumentPluginManager(PluginManagerBase):
     def _default_argument_parser(self):
         parser = compat.SafeArgumentParser()
         parser.add_argument('--plugin', action='append', default=[])
+        parser.add_argument('--help', action='store_true')
         parser.add_argument('--help-all', action='store_true')
         return parser
 
@@ -619,9 +623,10 @@ class ArgumentPluginManager(PluginManagerBase):
         :rtype: iterable
         """
         module = self.import_plugin(plugin)
-        if isinstance(module, self.register_arguments_class):
+        register_arguments = getattr(module, 'register_arguments', None)
+        if callable(register_arguments):
             manager = ArgumentPluginManager()
-            module.register_arguments(manager)
+            register_arguments(manager)
             return manager._argparse_argkwargs
         return ()
 

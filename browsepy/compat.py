@@ -1,5 +1,6 @@
-"""Module providing runtime and platform compatibility workarounds."""
+"""Module providing both runtime and platform compatibility workarounds."""
 
+import typing
 import os
 import os.path
 import sys
@@ -15,12 +16,7 @@ import warnings
 import posixpath
 import ntpath
 import argparse
-import types
-
-try:
-    import builtins  # python 3+
-except ImportError:
-    import __builtin__ as builtins  # noqa
+import shutil
 
 try:
     import importlib.resources as res  # python 3.7+
@@ -28,43 +24,12 @@ except ImportError:
     import importlib_resources as res  # noqa
 
 try:
-    from os import scandir as _scandir, walk  # python 3.5+
-except ImportError:
-    from scandir import scandir as _scandir, walk  # noqa
-
-try:
-    from shutil import get_terminal_size  # python 3.3+
-except ImportError:
-    from backports.shutil_get_terminal_size import get_terminal_size  # noqa
-
-try:
-    from queue import Queue, Empty, Full  # python 3
-except ImportError:
-    from Queue import Queue, Empty, Full  # noqa
-
-try:
-    from collections.abc import Iterator as BaseIterator  # python 3.3+
-except ImportError:
-    from collections import Iterator as BaseIterator  # noqa
-
-try:
-    from importlib import import_module as _import_module  # python 3.3+
-except ImportError:
-    _import_module = None  # noqa
-
-try:
     from functools import cached_property   # python 3.8+
 except ImportError:
     from werkzeug.utils import cached_property  # noqa
 
-try:
-    import typing  # python 3.5+
-except ImportError:
-    typing = None  # noqa
-
 
 FS_ENCODING = sys.getfilesystemencoding()
-PY_LEGACY = sys.version_info < (3, )
 TRUE_VALUES = frozenset(
     # Truthy values
     ('true', 'yes', '1', 'enable', 'enabled', True, 1)
@@ -119,7 +84,7 @@ class HelpFormatter(argparse.RawTextHelpFormatter):
         """Initialize object."""
         if width is None:
             try:
-                width = get_terminal_size().columns - 2
+                width = shutil.get_terminal_size().columns - 2
             except ValueError:  # https://bugs.python.org/issue24966
                 pass
         super(HelpFormatter, self).__init__(
@@ -139,27 +104,12 @@ def scandir(path):
     :param path: path to iterate
     :type path: str
     """
-    files = _scandir(path)
+    files = os.scandir(path)
     try:
         yield files
     finally:
         if callable(getattr(files, 'close', None)):
             files.close()
-
-
-def import_module(name):
-    # type: (str) -> types.ModuleType
-    """
-    Import a module by absolute name.
-
-    The 'package' argument is required when performing a relative import. It
-    specifies the package to use as the anchor point from which to resolve the
-    relative import to an absolute import.
-    """
-    if _import_module:
-        return _import_module(name)
-    __import__(name)
-    return sys.modules[name]
 
 
 def _unsafe_rmtree(path):
@@ -170,7 +120,7 @@ def _unsafe_rmtree(path):
     :param path: directory path
     :type path: str
     """
-    for base, dirs, files in walk(path, topdown=False):
+    for base, dirs, files in os.walk(path, topdown=False):
         for filename in files:
             os.remove(os.path.join(base, filename))
 
@@ -258,8 +208,7 @@ def fsdecode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
     if not isinstance(path, bytes):
         return path
     if not errors:
-        use_strict = PY_LEGACY or os_name == 'nt'
-        errors = 'strict' if use_strict else 'surrogateescape'
+        errors = 'strict' if os_name == 'nt' else 'surrogateescape'
     return path.decode(fs_encoding, errors=errors)
 
 
@@ -282,8 +231,7 @@ def fsencode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
     if isinstance(path, bytes):
         return path
     if not errors:
-        use_strict = PY_LEGACY or os_name == 'nt'
-        errors = 'strict' if use_strict else 'surrogateescape'
+        errors = 'strict' if os_name == 'nt' else 'surrogateescape'
     return path.encode(fs_encoding, errors=errors)
 
 
@@ -527,42 +475,3 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
         uni_escape(ord(c))
         for c in pattern
         )
-
-
-if PY_LEGACY:
-    class FileNotFoundError(Exception):
-        __metaclass__ = abc.ABCMeta
-
-    FileNotFoundError.register(OSError)
-    FileNotFoundError.register(IOError)
-
-    class Iterator(BaseIterator):
-        def next(self):
-            """
-            Call :method:`__next__` for compatibility.
-
-            :returns: see :method:`__next__`
-            """
-            return self.__next__()
-
-    range = xrange  # noqa
-    filter = itertools.ifilter
-    map = itertools.imap
-    zip = itertools.izip
-    basestring = basestring  # noqa
-    unicode = unicode  # noqa
-    chr = unichr  # noqa
-    bytes = str  # noqa
-else:
-    FileNotFoundError = FileNotFoundError
-    Iterator = BaseIterator
-    range = range
-    filter = filter
-    map = map
-    zip = zip
-    basestring = str
-    unicode = str
-    chr = chr
-    bytes = bytes
-
-NoneType = type(None)

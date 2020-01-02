@@ -11,19 +11,25 @@ class PlayableNode(Node):
     """Base class for playable nodes."""
 
     playable_list = False
+    duration = None
+
+    @cached_property
+    def title(self):
+        """Get playable filename."""
+        return self.name
 
     @cached_property
     def is_playable(self):
+        # type: () -> bool
         """
         Get if node is playable.
 
         :returns: True if node is playable, False otherwise
-        :rtype: bool
         """
         return self.detect(self)
 
     @classmethod
-    def detect(cls, node):
+    def detect(cls, node, fast=False):
         """Check if class supports node."""
         kls = cls.directory_class if node.is_directory else cls.file_class
         return kls.detect(node)
@@ -33,8 +39,6 @@ class PlayableNode(Node):
 class PlayableFile(PlayableNode, File):
     """Generic node for filenames with extension."""
 
-    title = None
-    duration = None
     playable_extensions = {
         'mp3': 'audio/mpeg',
         'ogg': 'audio/ogg',
@@ -72,14 +76,14 @@ class PlayableFile(PlayableNode, File):
         if parser:
             for options in parser(self):
                 node = self.file_class(**options, app=self.app)
-                if not node.is_excluded:
+                if not node.is_excluded and node.detect(node, fast=True):
                     yield node
 
     @classmethod
-    def detect(cls, node):
+    def detect(cls, node, fast=False):
         """Get whether file is playable."""
         return (
-            not node.is_directory and
+            (fast or node.is_file) and
             cls.detect_extension(node.path) in cls.playable_extensions
             )
 
@@ -106,17 +110,20 @@ class PlayableDirectory(PlayableNode, Directory):
 
     playable_list = True
 
+    @property
+    def parent(self):
+        return Directory(self.path, self.app)
+
     def entries(self, sortkey=None, reverse=None):
         """Iterate playable directory playable files."""
         for node in self.listdir(sortkey=sortkey, reverse=reverse):
-            if not node.is_directory and node.is_playable:
+            if not node.is_directory and node.detect(node, fast=True):
                 yield node
 
     @classmethod
-    def detect(cls, node):
+    def detect(cls, node, fast=False):
         """Detect if given node contains playable files."""
-        return node.is_directory and any(
-            child.is_playable
-            for child in node._listdir()
-            if not child.is_directory
+        return (
+            node.is_directory and
+            any(PlayableFile.detect(n, fast=True) for n in node._listdir())
             )

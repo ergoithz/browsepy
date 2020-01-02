@@ -19,7 +19,4 @@ cookieman
 unicategories
 
 # compat
-backports.shutil_get_terminal_size ; python_version<'3.3'
-scandir ; python_version<'3.5'
-pathlib2 ; python_version<'3.5'
 importlib_resources ; python_version<'3.7'

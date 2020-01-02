@@ -6,7 +6,6 @@ import shutil
 import functools
 
 from browsepy.file import Node, secure_filename
-from browsepy.compat import map
 
 from .exceptions import InvalidClipboardModeError, \
                         InvalidEmptyClipboardError,\

@@ -26,7 +26,7 @@
     <div class="group">
       <a
         class="button text"
-        href="{{ url_for('browsepy.browse', path=file.urlpath) }}"
+        href="{{ url_for('browse', path=file.urlpath) }}"
         title="Go back">Cancel</a>
       {% if cut_support %}
         <input class="button text" type="submit" name="action-cut" value="Cut selected">

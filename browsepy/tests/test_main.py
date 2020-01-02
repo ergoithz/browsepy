@@ -14,7 +14,7 @@ import browsepy.compat as compat
 
 class TestMain(unittest.TestCase):
     module = main
-    stream_class = io.BytesIO if compat.PY_LEGACY else io.StringIO
+    stream_class = io.StringIO
 
     def setUp(self):
         self.app = browsepy.app

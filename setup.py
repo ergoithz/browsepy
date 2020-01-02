@@ -43,20 +43,14 @@ setup(
             )
         },
     package_data={  # ignored by sdist (see MANIFEST.in), used by bdist_wheel
-        'browsepy': [
-            'templates/*',
-            'static/fonts/*',
-            'static/*.*',  # do not capture directories
-            ],
-        'browsepy.plugin.player': [
-            'templates/*',
-            'static/*/*',
-            ],
-        'browsepy.plugin.file_actions': [
-            'templates/*',
-            'static/*',
-            ],
+        package: [
+            '{}/{}*'.format(directory, '**/' * level)
+            for directory in ('static', 'templates')
+            for level in range(3)
+            ]
+        for package in find_packages()
         },
+    python_requires='>=3.5',
     setup_requires=[
         'setuptools>36.2',
         ],
@@ -65,9 +59,6 @@ setup(
         'flask',
         'cookieman',
         'unicategories',
-        'backports.shutil_get_terminal_size ; python_version<"3.3"',
-        'scandir ; python_version<"3.5"',
-        'pathlib2 ; python_version<"3.5"',
         'importlib-resources ; python_version<"3.7"',
         ],
     tests_require=[
@@ -79,7 +70,7 @@ setup(
         'radon',
         'unittest-resources[testing]',
         ],
-    test_suite='browsepy.tests',
+    test_suite='browsepy',
     zip_safe=False,
     platforms='any',
     )

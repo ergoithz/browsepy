@@ -26,12 +26,12 @@
       {%- for entry in file.entries(sortkey=sort_fnc, reverse=sort_reverse) -%}
         {%- if not loop.first -%}|{%- endif -%}
         {{- entry.extension -}}|
-        {{- entry.name -}}|
+        {{- entry.title -}}|
         {{- url_for('open', path=entry.urlpath) -}}
       {%- endfor -%}
     "
   {% else %}
-    data-player-title="{{ file.name }}"
+    data-player-title="{{ file.title }}"
     data-player-format="{{ file.extension }}"
     data-player-url="{{ url_for('open', path=file.urlpath) }}"
   {% endif %}

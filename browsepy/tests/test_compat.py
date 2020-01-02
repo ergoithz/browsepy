@@ -124,20 +124,20 @@ class TestCompat(unittest.TestCase):
         self.assertEqual(pcfg['PC_NAME_MAX'], 242)
 
     def test_getcwd(self):
-        self.assertIsInstance(self.module.getcwd(), self.module.unicode)
+        self.assertIsInstance(self.module.getcwd(), str)
         self.assertIsInstance(
             self.module.getcwd(
                 fs_encoding='latin-1',
                 cwd_fnc=lambda: b'\xf1'
                 ),
-            self.module.unicode
+            str
             )
         self.assertIsInstance(
             self.module.getcwd(
                 fs_encoding='utf-8',
                 cwd_fnc=lambda: b'\xc3\xb1'
                 ),
-            self.module.unicode
+            str
             )
 
     def test_path(self):

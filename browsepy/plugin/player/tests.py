@@ -9,14 +9,13 @@ import six
 import six.moves
 import flask
 
-from werkzeug.exceptions import NotFound
-
 import browsepy
 import browsepy.compat as compat
 import browsepy.utils as utils
 import browsepy.file as browsepy_file
 import browsepy.plugin.player as player
 import browsepy.plugin.player.playable as player_playable
+import browsepy.plugin.player.playlist as player_playlist
 
 
 class ManagerMock(object):
@@ -59,7 +58,7 @@ class TestPlayerBase(unittest.TestCase):
             )
 
     def setUp(self):
-        self.base = 'c:\\base' if os.name == 'nt' else '/base'
+        self.base = tempfile.mkdtemp()
         self.app = browsepy.create_app()
         self.app.config.update(
             PLUGIN_NAMESPACES=['browsepy.plugin'],
@@ -69,6 +68,7 @@ class TestPlayerBase(unittest.TestCase):
         self.manager = self.app.extensions['plugin_manager']
 
     def tearDown(self):
+        compat.rmtree(self.base)
         utils.clear_flask_context()
 
 
@@ -80,7 +80,7 @@ class TestPlayer(TestPlayerBase):
 
         self.assertIn(self.module.player, manager.blueprints)
         self.assertIn(
-            self.module.playable.detect_playable_mimetype,
+            self.module.playable.PlayableFile.detect_mimetype,
             manager.mimetype_functions
             )
 
@@ -93,9 +93,7 @@ class TestPlayer(TestPlayerBase):
 
         actions = [action['endpoint'] for action in manager.widgets]
         self.assertIn('player.static', actions)
-        self.assertIn('player.audio', actions)
-        self.assertIn('player.playlist', actions)
-        self.assertNotIn('player.directory', actions)
+        self.assertIn('player.play', actions)
 
     def test_register_plugin_with_arguments(self):
         manager = ManagerMock()
@@ -103,7 +101,7 @@ class TestPlayer(TestPlayerBase):
         self.module.register_plugin(manager)
 
         actions = [action['endpoint'] for action in manager.widgets]
-        self.assertIn('player.directory', actions)
+        self.assertIn('player.play', actions)
 
     def test_register_arguments(self):
         manager = ManagerMock()
@@ -117,9 +115,6 @@ class TestPlayer(TestPlayerBase):
 class TestIntegrationBase(TestPlayerBase):
     player_module = player
     browsepy_module = browsepy
-
-    def tearDown(self):
-        utils.clear_flask_context()
 
 
 class TestIntegration(TestIntegrationBase):
@@ -150,28 +145,29 @@ class TestPlayable(TestIntegrationBase):
     module = player_playable
 
     def test_normalize_playable_path(self):
-        playable = self.module.PlayListFile(
+        playable = self.module.PlayableFile(
             path=p(self.base, 'a.m3u'),
             app=self.app
             )
+        normalize = player_playlist.normalize_playable_path
         self.assertEqual(
-            playable.normalize_playable_path('http://asdf/asdf.mp3'),
+            normalize('http://asdf/asdf.mp3', playable),
             'http://asdf/asdf.mp3'
             )
         self.assertEqual(
-            playable.normalize_playable_path('ftp://asdf/asdf.mp3'),
+            normalize('ftp://asdf/asdf.mp3', playable),
             'ftp://asdf/asdf.mp3'
             )
         self.assertPathEqual(
-            playable.normalize_playable_path('asdf.mp3'),
+            normalize('asdf.mp3', playable),
             self.base + '/asdf.mp3'
             )
         self.assertPathEqual(
-            playable.normalize_playable_path(self.base + '/other/../asdf.mp3'),
+            normalize(self.base + '/other/../asdf.mp3', playable),
             self.base + '/asdf.mp3'
             )
         self.assertEqual(
-            playable.normalize_playable_path('/other/asdf.mp3'),
+            normalize('/other/asdf.mp3', playable),
             None
             )
 
@@ -181,96 +177,94 @@ class TestPlayable(TestIntegrationBase):
             'wav': 'wav',
             'ogg': 'ogg'
             }
-        for ext, media_format in exts.items():
+        for ext, extension in exts.items():
             pf = self.module.PlayableFile(path='asdf.%s' % ext, app=self.app)
-            self.assertEqual(pf.media_format, media_format)
+            self.assertEqual(pf.extension, extension)
             self.assertEqual(pf.title, 'asdf.%s' % ext)
 
     def test_playabledirectory(self):
-        with compat.mkdtemp() as tmpdir:
-            file = p(tmpdir, 'playable.mp3')
-            open(file, 'w').close()
-            node = browsepy_file.Directory(tmpdir, app=self.app)
-            self.assertTrue(self.module.PlayableDirectory.detect(node))
+        file = p(self.base, 'playable.mp3')
+        open(file, 'w').close()
+        node = browsepy_file.Directory(self.base, app=self.app)
+        self.assertTrue(self.module.PlayableDirectory.detect(node))
 
-            directory = self.module.PlayableDirectory(tmpdir, app=self.app)
+        directory = self.module.PlayableDirectory(self.base, app=self.app)
 
-            self.assertEqual(directory.parent.path, directory.path)
+        self.assertEqual(directory.parent.path, directory.path)
 
-            entries = directory.entries()
-            self.assertEqual(next(entries).path, file)
-            self.assertRaises(StopIteration, next, entries)
+        entries = directory.entries()
+        self.assertEqual(next(entries).path, file)
+        self.assertRaises(StopIteration, next, entries)
 
-            os.remove(file)
-            self.assertFalse(self.module.PlayableDirectory.detect(node))
+        os.remove(file)
+        self.assertFalse(self.module.PlayableDirectory.detect(node))
 
     def test_playlistfile(self):
-        pf = self.module.PlayListFile.from_urlpath(
+        pf = self.module.PlayableNode.from_urlpath(
             path='filename.m3u', app=self.app)
-        self.assertTrue(isinstance(pf, self.module.M3UFile))
-        pf = self.module.PlayListFile.from_urlpath(
+        self.assertTrue(isinstance(pf, self.module.PlayableFile))
+        pf = self.module.PlayableNode.from_urlpath(
             path='filename.m3u8', app=self.app)
-        self.assertTrue(isinstance(pf, self.module.M3UFile))
-        pf = self.module.PlayListFile.from_urlpath(
+        self.assertTrue(isinstance(pf, self.module.PlayableFile))
+        pf = self.module.PlayableNode.from_urlpath(
             path='filename.pls', app=self.app)
-        self.assertTrue(isinstance(pf, self.module.PLSFile))
+        self.assertTrue(isinstance(pf, self.module.PlayableFile))
 
     def test_m3ufile(self):
-        data = '/base/valid.mp3\n/outside.ogg\n/base/invalid.bin\nrelative.ogg'
-        with compat.mkdtemp() as tmpdir:
-            file = p(tmpdir, 'playable.m3u')
-            with open(file, 'w') as f:
-                f.write(data)
-            playlist = self.module.PlayableFile(path=file, app=self.app)
-            self.assertPathListEqual(
-                [a.path for a in playlist.entries()],
-                [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
-                )
+        data = (
+            '{0}/valid.mp3\n'
+            '/outside.ogg\n'
+            '{0}/invalid.bin\n'
+            'relative.ogg'
+            ).format(self.base)
+        file = p(self.base, 'playable.m3u')
+        with open(file, 'w') as f:
+            f.write(data)
+        playlist = self.module.PlayableFile(path=file, app=self.app)
+        self.assertPathListEqual(
+            [a.path for a in playlist.entries()],
+            [p(self.base, 'valid.mp3'), p(self.base, 'relative.ogg')]
+            )
 
     def test_plsfile(self):
         data = (
             '[playlist]\n'
-            'File1=/base/valid.mp3\n'
+            'File1={0}/valid.mp3\n'
             'File2=/outside.ogg\n'
-            'File3=/base/invalid.bin\n'
+            'File3={0}/invalid.bin\n'
             'File4=relative.ogg'
+            ).format(self.base)
+        file = p(self.base, 'playable.pls')
+        with open(file, 'w') as f:
+            f.write(data)
+        playlist = self.module.PlayableFile(path=file, app=self.app)
+        self.assertPathListEqual(
+            [a.path for a in playlist.entries()],
+            [p(self.base, 'valid.mp3'), p(self.base, 'relative.ogg')]
             )
-        with compat.mkdtemp() as tmpdir:
-            file = p(tmpdir, 'playable.pls')
-            with open(file, 'w') as f:
-                f.write(data)
-            playlist = self.module.PlayableFile(path=file, app=self.app)
-            self.assertPathListEqual(
-                [a.path for a in playlist.entries()],
-                [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
-                )
 
     def test_plsfile_with_holes(self):
         data = (
             '[playlist]\n'
-            'File1=/base/valid.mp3\n'
-            'File3=/base/invalid.bin\n'
+            'File1={0}/valid.mp3\n'
+            'File3={0}/invalid.bin\n'
             'File4=relative.ogg\n'
             'NumberOfEntries=4'
+            ).format(self.base)
+        file = p(self.base, 'playable.pls')
+        with open(file, 'w') as f:
+            f.write(data)
+        playlist = self.module.PlayableFile(path=file, app=self.app)
+        self.assertPathListEqual(
+            [a.path for a in playlist.entries()],
+            [p(self.base, 'valid.mp3'), p(self.base, 'relative.ogg')]
             )
-        with compat.mkdtemp() as tmpdir:
-            file = p(tmpdir, 'playable.pls')
-            with open(file, 'w') as f:
-                f.write(data)
-            playlist = self.module.PLSFile(path=file, app=self.app)
-            self.assertPathListEqual(
-                [a.path for a in playlist.entries()],
-                [p(self.base, 'valid.mp3'), p(tmpdir, 'relative.ogg')]
-                )
 
 
 class TestBlueprint(TestPlayerBase):
     def setUp(self):
         super(TestBlueprint, self).setUp()
-        app = browsepy.create_app()
-        app.config['DIRECTORY_BASE'] = tempfile.mkdtemp()
-        app.register_blueprint(browsepy.blueprint)
-        app.register_blueprint(self.module.player)
+        self.app.register_blueprint(self.module.player)
 
     def url_for(self, endpoint, **kwargs):
         with self.app.app_context():
@@ -289,7 +283,7 @@ class TestBlueprint(TestPlayerBase):
 
     def test_playable(self):
         name = 'test.mp3'
-        url = self.url_for('player.audio', path=name)
+        url = self.url_for('player.play', path=name)
         with self.app.test_client() as client:
             result = client.get(url)
             self.assertEqual(result.status_code, 404)
@@ -300,7 +294,7 @@ class TestBlueprint(TestPlayerBase):
 
     def test_playlist(self):
         name = 'test.m3u'
-        url = self.url_for('player.playlist', path=name)
+        url = self.url_for('player.play', path=name)
         with self.app.test_client() as client:
             result = client.get(url)
             self.assertEqual(result.status_code, 404)
@@ -311,36 +305,19 @@ class TestBlueprint(TestPlayerBase):
 
     def test_directory(self):
         name = 'directory'
-        url = self.url_for('player.directory', path=name)
+        url = self.url_for('player.play', path=name)
         with self.app.test_client() as client:
             result = client.get(url)
             self.assertEqual(result.status_code, 404)
 
             self.directory(name)
             result = client.get(url)
-            self.assertEqual(result.status_code, 200)
+            self.assertEqual(result.status_code, 404)
 
             self.file('directory/test.mp3')
             result = client.get(url)
             self.assertEqual(result.status_code, 200)
             self.assertIn(b'test.mp3', result.data)
-
-    def test_endpoints(self):
-        with self.app.app_context():
-            self.assertIsInstance(
-                self.module.audio(path='..'),
-                NotFound
-                )
-
-            self.assertIsInstance(
-                self.module.playlist(path='..'),
-                NotFound
-                )
-
-            self.assertIsInstance(
-                self.module.directory(path='..'),
-                NotFound
-                )
 
 
 def p(*args):

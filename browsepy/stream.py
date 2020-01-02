@@ -4,13 +4,13 @@ import os
 import os.path
 import tarfile
 import threading
+import queue
+import collections.abc
 
 import flask
 
-from . import compat
 
-
-class ByteQueue(compat.Queue):
+class ByteQueue(queue.Queue):
     """
     Synchronized byte queue, with an additional finish method.
 
@@ -29,7 +29,7 @@ class ByteQueue(compat.Queue):
 
     def _put(self, item):
         if self.finished:
-            raise compat.Full
+            raise queue.Full
         self.queue.append(item)
         self.bytes += len(item)
 
@@ -66,7 +66,7 @@ class WriteAbort(Exception):
     pass
 
 
-class TarFileStream(compat.Iterator):
+class TarFileStream(collections.abc.Iterator):
     """
     Iterator class which yields tarfile chunks for streaming.
 
@@ -238,7 +238,7 @@ class TarFileStream(compat.Iterator):
 
         try:
             self._queue.put(data)
-        except compat.Full:
+        except queue.Full:
             raise self.abort_exception()
 
         return len(data)
