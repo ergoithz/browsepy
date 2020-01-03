@@ -110,11 +110,6 @@ class PlayableDirectory(PlayableNode, Directory):
 
     playable_list = True
 
-    @property
-    def parent(self):
-        """Get directory."""
-        return Directory(self.path, self.app)
-
     def entries(self, sortkey=None, reverse=None):
         """Iterate playable directory playable files."""
         for node in self.listdir(sortkey=sortkey, reverse=reverse):

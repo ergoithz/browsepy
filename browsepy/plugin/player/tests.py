@@ -171,7 +171,7 @@ class TestPlayable(TestIntegrationBase):
             None
             )
 
-    def test_playablefile(self):
+    def test_playable_file(self):
         exts = {
             'mp3': 'mp3',
             'wav': 'wav',
@@ -182,15 +182,13 @@ class TestPlayable(TestIntegrationBase):
             self.assertEqual(pf.extension, extension)
             self.assertEqual(pf.title, 'asdf.%s' % ext)
 
-    def test_playabledirectory(self):
+    def test_playable_directory(self):
         file = p(self.base, 'playable.mp3')
         open(file, 'w').close()
         node = browsepy_file.Directory(self.base, app=self.app)
         self.assertTrue(self.module.PlayableDirectory.detect(node))
 
         directory = self.module.PlayableDirectory(self.base, app=self.app)
-
-        self.assertEqual(directory.parent.path, directory.path)
 
         entries = directory.entries()
         self.assertEqual(next(entries).path, file)
@@ -199,7 +197,7 @@ class TestPlayable(TestIntegrationBase):
         os.remove(file)
         self.assertFalse(self.module.PlayableDirectory.detect(node))
 
-    def test_playlistfile(self):
+    def test_playlist(self):
         pf = self.module.PlayableNode.from_urlpath(
             path='filename.m3u', app=self.app)
         self.assertTrue(isinstance(pf, self.module.PlayableFile))
@@ -210,7 +208,7 @@ class TestPlayable(TestIntegrationBase):
             path='filename.pls', app=self.app)
         self.assertTrue(isinstance(pf, self.module.PlayableFile))
 
-    def test_m3ufile(self):
+    def test_m3u_file(self):
         data = (
             '{0}/valid.mp3\n'
             '/outside.ogg\n'
@@ -226,7 +224,7 @@ class TestPlayable(TestIntegrationBase):
             [p(self.base, 'valid.mp3'), p(self.base, 'relative.ogg')]
             )
 
-    def test_plsfile(self):
+    def test_pls_file(self):
         data = (
             '[playlist]\n'
             'File1={0}/valid.mp3\n'
@@ -243,7 +241,7 @@ class TestPlayable(TestIntegrationBase):
             [p(self.base, 'valid.mp3'), p(self.base, 'relative.ogg')]
             )
 
-    def test_plsfile_with_holes(self):
+    def test_pls_file_with_holes(self):
         data = (
             '[playlist]\n'
             'File1={0}/valid.mp3\n'

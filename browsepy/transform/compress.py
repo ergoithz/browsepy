@@ -2,7 +2,6 @@
 
 import re
 
-import abc
 import jinja2
 import jinja2.ext
 import jinja2.lexer
@@ -10,15 +9,13 @@ import jinja2.lexer
 from . import StateMachine
 
 
-class Context(abc.ABC):
+class Context(object):
     """Compression context stub class."""
 
-    @abc.abstractmethod
     def feed(self, token):
         """Add token to context an yield tokens."""
         yield token
 
-    @abc.abstractmethod
     def finish(self):
         """Finish context and yield tokens."""
         return
