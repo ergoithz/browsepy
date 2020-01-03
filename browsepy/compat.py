@@ -4,7 +4,6 @@ import typing
 import os
 import os.path
 import sys
-import six
 import errno
 import time
 import tempfile
@@ -142,7 +141,6 @@ def rmtree(path):
 
     :param path: path to remove
     """
-    exc_info = ()
     for retry in range(10):
         try:
             return _unsafe_rmtree(path)
@@ -151,10 +149,9 @@ def rmtree(path):
               getattr(error, prop, None) in values
               for prop, values in RETRYABLE_OSERROR_PROPERTIES.items()
               ):
-                raise
-            exc_info = sys.exc_info()
+                break
         time.sleep(0.1)
-    six.reraise(*exc_info)
+    raise error
 
 
 @contextlib.contextmanager

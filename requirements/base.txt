@@ -13,7 +13,6 @@
 # - requirements/doc.txt
 #
 
-six
 flask
 cookieman
 unicategories

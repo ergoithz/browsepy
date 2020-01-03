@@ -4,8 +4,7 @@ import sys
 import codecs
 import os.path
 import warnings
-
-from six.moves import configparser, range
+import configparser
 
 from browsepy.file import underscore_replace, check_under_base
 

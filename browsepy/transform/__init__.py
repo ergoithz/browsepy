@@ -1,7 +1,7 @@
 """Generic string transform module."""
 
 
-class StateMachine(object):
+class StateMachine:
     """
     Character-driven finite state machine.
 
@@ -133,7 +133,7 @@ class StateMachine(object):
         :yields: result chunks
         :ytype: str
         """
-        self.pending += data
         self.streaming = False
+        self.pending += data
         for i in self:
             yield i

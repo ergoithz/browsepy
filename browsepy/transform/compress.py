@@ -1,6 +1,7 @@
 """Module providing HTML compression extension jinja2."""
 
 import re
+import functools
 
 import jinja2
 import jinja2.ext
@@ -9,7 +10,7 @@ import jinja2.lexer
 from . import StateMachine
 
 
-class Context(object):
+class UncompressedContext:
     """Compression context stub class."""
 
     def feed(self, token):
@@ -22,7 +23,7 @@ class Context(object):
         yield
 
 
-class CompressContext(StateMachine, Context):
+class CompressContext(StateMachine):
     """Base jinja2 template token finite state machine."""
 
     token_class = jinja2.lexer.Token
@@ -126,14 +127,76 @@ class HTMLCompressContext(SGMLCompressContext):
         }
 
 
+class JSCompressContext(CompressContext):
+    """Compression context for jinja2 JavaScript templates."""
+
+    jumps = {
+        'code': {
+            '\'': 'single_string',
+            '"': 'double_string',
+            '//': 'line_comment',
+            '/*': 'multiline_comment',
+            },
+        'single_string': {
+            '\'': 'code',
+            '\\\'': 'single_string_escape',
+            },
+        'single_string_escape': {
+            c: 'single-string' for c in ('\\', '\'', '')
+            },
+        'double_string': {
+            '"': 'code',
+            '\\"': 'double_string_escape',
+            },
+        'double_string_escape': {
+            c: 'double_string' for c in ('\\', '"', '')
+            },
+        'line_comment': {
+            '\n': 'ignore',
+            },
+        'multiline_comment': {
+            '*/': 'ignore',
+            },
+        'ignore': {
+            '': 'code',
+            }
+        }
+    current = 'code'
+    pristine = True
+    strip_tokens = staticmethod(
+        functools.partial(
+            re.compile(r'\s+[^\w\d\s]\s*|[^\w\d\s]\s+').sub,
+            lambda x: x.group(0).strip()
+            )
+        )
+
+    def transform_code(self, data, mark, next):
+        """Compress JS-like code."""
+        if self.pristine:
+            data = data.lstrip()
+            self.pristine = False
+        return self.strip_tokens(data)
+
+    def transform_ignore(self, data, mark, next):
+        """Ignore text."""
+        self.pristine = True
+        return ''
+
+    transform_line_comment = transform_ignore
+    transform_multiline_comment = transform_ignore
+
+
 class TemplateCompress(jinja2.ext.Extension):
     """Jinja2 HTML template compression extension."""
 
-    default_context_class = Context
+    default_context_class = UncompressedContext
     context_classes = {
+        '.xml': SGMLCompressContext,
         '.xhtml': HTMLCompressContext,
         '.html': HTMLCompressContext,
         '.htm': HTMLCompressContext,
+        '.json': JSCompressContext,
+        '.js': JSCompressContext,
         }
 
     def get_context(self, filename=None):
@@ -147,10 +210,6 @@ class TemplateCompress(jinja2.ext.Extension):
     def filter_stream(self, stream):
         """Yield compressed tokens from :class:`~jinja2.lexer.TokenStream`."""
         transform = self.get_context(stream.name)
-
         for token in stream:
-            for compressed in transform.feed(token):
-                yield compressed
-
-        for compressed in transform.finish():
-            yield compressed
+            yield from transform.feed(token)
+        yield from transform.finish()

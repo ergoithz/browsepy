@@ -5,6 +5,7 @@ import warnings
 
 import browsepy.transform
 import browsepy.transform.glob
+import browsepy.transform.compress
 
 
 class TestStateMachine(unittest.TestCase):
@@ -99,3 +100,41 @@ class TestGlob(unittest.TestCase):
                 warnings.simplefilter("always")
                 self.assertEqual(self.translate(source, sep='/'), result)
                 self.assertSubclass(w[-1].category, Warning)
+
+
+class TestXML(unittest.TestCase):
+    module = browsepy.transform.compress
+
+    @classmethod
+    def translate(cls, data):
+        return ''.join(cls.module.SGMLCompressContext(data))
+
+    def test_compression(self):
+        a = '''
+            <root
+                attr="true">with some text content </root>
+            '''
+        b = '<root attr="true">with some text content </root>'
+        self.assertEqual(self.translate(a), b)
+
+
+class TestJS(unittest.TestCase):
+    module = browsepy.transform.compress
+
+    @classmethod
+    def translate(cls, data):
+        return ''.join(cls.module.JSCompressContext(data))
+
+    def test_compression(self):
+        a = '''
+            function a() {
+                return 1 + 7 /2
+            }
+            var a = {b: ' this '}; // line comment
+            /*
+             * multiline comment
+             */
+            [1,2,3][0]
+            '''
+        b = 'function a(){return 1+7/2}var a={b:\' this \'};[1,2,3][0]'
+        self.assertEqual(self.translate(a), b)

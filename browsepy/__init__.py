@@ -218,6 +218,10 @@ def browse(path):
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
     directory = Node.from_urlpath(path)
     if directory.is_directory and not directory.is_excluded:
+        last_modified = max(
+            directory.content_mtime,
+            current_app.config['APPLICATION_TIME'],
+            )
         response = stream_template(
             'browse.html',
             file=directory,
@@ -225,13 +229,10 @@ def browse(path):
             sort_fnc=sort_fnc,
             sort_reverse=sort_reverse,
             )
-        response.last_modified = max(
-            directory.content_mtime,
-            current_app.config['APPLICATION_TIME'],
-            )
+        response.last_modified = last_modified
         response.set_etag(
             etag(
-                content_mtime=directory.content_mtime,
+                last_modified=last_modified,
                 sort_property=sort_property,
                 ),
             )
@@ -314,11 +315,11 @@ def upload(path):
 @create_app.route('/<any("manifest.json", "browserconfig.xml"):filename>')
 def metadata(filename):
     """Handle metadata request, serve browse metadata file."""
-    response = current_app.response_class(
-        render_template(filename),
-        content_type=mimetype.by_python(filename),
-        )
+    last_modified = current_app.config['APPLICATION_TIME']
+    response = stream_template(filename)
+    response.content_type = mimetype.by_python(filename)
     response.last_modified = current_app.config['APPLICATION_TIME']
+    response.set_etag(etag(last_modified=last_modified))
     response.make_conditional(request)
     return response
 

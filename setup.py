@@ -107,7 +107,6 @@ setup(
         'setuptools>36.2',
         ],
     install_requires=[
-        'six',
         'flask',
         'cookieman',
         'unicategories',

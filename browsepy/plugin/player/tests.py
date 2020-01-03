@@ -5,8 +5,6 @@ import os.path
 import unittest
 import tempfile
 
-import six
-import six.moves
 import flask
 
 import browsepy
@@ -319,8 +317,4 @@ class TestBlueprint(TestPlayerBase):
 
 
 def p(*args):
-    args = [
-        arg if isinstance(arg, six.text_type) else arg.decode('utf-8')
-        for arg in args
-        ]
     return os.path.join(*args)
