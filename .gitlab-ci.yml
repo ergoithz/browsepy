@@ -39,9 +39,7 @@ stages:
     apk add --no-cache build-base libffi-dev python3-dev
     pip install coverage flake8 wheel
   script:
-  - |
-    flake8 ${MODULE}
-    coverage run -p setup.py test
+  - coverage run -p setup.py flake8 test
 
 .report:
   extends: .python
@@ -102,7 +100,7 @@ coverage:
     - htmlcov
   coverage: '/^TOTAL\s+(?:\d+\s+)*(\d+\%)$/'
   before_script:
-    - pip install coverage
+  - pip install coverage
   script:
   - |
     coverage combine
@@ -120,7 +118,11 @@ doc:
     apk add --no-cache make
     pip install -r requirements/doc.txt
   script:
-  - make -C doc html
+  - |
+    if [ "${CI_COMMIT_REF_NAME}" != "master" ]; then
+      python setup.py alpha_version
+    fi
+    make -C doc html
 
 # stage: publish
 
@@ -174,11 +176,7 @@ publish-next:
     - next
   script:
   - |
-    ALPHA=$(date +%s)
-    SED_REGEX="s/^__version__\s*=\s*[\"']([^\"']+)[\"']\$/__version__ = '\\1a${ALPHA}'/g"
-    SED_PATH="${MODULE}/__init__.py"
-    sed -ri "${SED_REGEX}" "${SED_PATH}"
-    python setup.py bdist_wheel sdist
+    python setup.py alpha_version bdist_wheel sdist
     twine upload --repository-url=https://test.pypi.org/legacy/ dist/*
 
 publish-master:

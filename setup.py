@@ -1,9 +1,20 @@
-# -*- coding: utf-8 -*-
+"""
+Browsepy package setup script.
 
+Usage
+-----
+
+..code-block:: python
+
+    python setup.py --help-commands
+
+"""
 import io
 import re
 import os
 import sys
+import time
+import distutils
 
 from setuptools import setup, find_packages
 
@@ -18,6 +29,44 @@ for debugger in ('ipdb', 'pudb', 'pdb'):
     if opt in sys.argv:
         os.environ['UNITTEST_DEBUG'] = debugger
         sys.argv.remove(opt)
+
+
+class AlphaVersionCommand(distutils.cmd.Command):
+    """Command which update package version with alpha timestamp."""
+
+    description = 'update package version with alpha timestamp'
+    user_options = [('alpha=', None, 'alpha version (defaults to timestamp)')]
+
+    def initialize_options(self):
+        """Set alpha version."""
+        self.alpha = '{:.0f}'.format(time.time())
+
+    def finalize_options(self):
+        """Check alpha version."""
+        assert self.alpha, 'alpha cannot be empty'
+
+    def iter_package_paths(self):
+        for package in self.distribution.packages:
+            path = '{}/__init__.py'.format(package.replace('.', os.sep))
+            if os.path.isfile(path):
+                yield path
+
+    def run(self):
+        """Run command."""
+        for p in self.iter_package_paths():
+            self.announce('Updating: {}'.format(p), level=distutils.log.INFO)
+            with io.open(p, 'r+', encoding='utf8') as f:
+                data = re.sub(
+                    r'__version__ = \'(?P<version>[^a\']+)(a\d+)?\'',
+                    lambda m: '__version__ = {!r}'.format(
+                        '{}a{}'.format(m.groupdict()['version'], self.alpha)
+                        ),
+                    f.read(),
+                    )
+                f.seek(0)
+                f.write(data)
+                f.truncate()
+
 
 setup(
     name='browsepy',
@@ -37,6 +86,9 @@ setup(
         ],
     keywords=['web', 'file', 'browser'],
     packages=find_packages(),
+    cmdclass={
+        'alpha_version': AlphaVersionCommand,
+    },
     entry_points={
         'console_scripts': (
             'browsepy=browsepy.__main__:main'
