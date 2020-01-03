@@ -9,7 +9,7 @@
     {% for parent in file.ancestors[::-1] %}
       <li>{{ breadcrumb(parent) }}</li>
     {% endfor %}
-    {% if circular %}
+    {% if circular and file.is_directory %}
       <li>{{ breadcrumb(file) }}</li>
     {% elif file.name %}
       <li><span>{{ file.name }}</span></li>
