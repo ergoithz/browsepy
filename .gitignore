@@ -4,6 +4,7 @@
 .coverage
 .vscode
 
+
 htmlcov
 dist
 build
@@ -21,3 +22,4 @@ package-lock.json
 **/node_modules
 **/*.py[co]
 **/__pycache__
+**/.mypy_cache
