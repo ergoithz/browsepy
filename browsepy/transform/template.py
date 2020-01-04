@@ -10,8 +10,8 @@ import jinja2.lexer
 from . import StateMachine
 
 
-class UncompressedContext:
-    """Compression context stub class."""
+class OriginalContext:
+    """Non-minifying context stub class."""
 
     def feed(self, token):
         """Add token to context an yield tokens."""
@@ -23,8 +23,8 @@ class UncompressedContext:
         yield
 
 
-class CompressContext(StateMachine):
-    """Base jinja2 template token finite state machine."""
+class MinifyContext(StateMachine):
+    """Base minifying jinja2 template token finite state machine."""
 
     token_class = jinja2.lexer.Token
     block_tokens = {
@@ -49,18 +49,18 @@ class CompressContext(StateMachine):
             if not self.pending:
                 self.lineno = token.lineno
 
-            for data in super(CompressContext, self).feed(token.value):
+            for data in super().feed(token.value):
                 yield self.token_class(self.lineno, 'data', data)
                 self.lineno = token.lineno
 
     def finish(self):
         """Set state machine as finished, yielding remaining tokens."""
-        for data in super(CompressContext, self).finish():
+        for data in super().finish():
             yield self.token_class(self.lineno, 'data', data)
 
 
-class SGMLCompressContext(CompressContext):
-    """Compression context for jinja2 SGML templates."""
+class SGMLMinifyContext(MinifyContext):
+    """Minifying context for jinja2 SGML templates."""
 
     re_whitespace = re.compile('[ \\t\\r\\n]+')
     block_tags = {}  # block content will be treated as literal text
@@ -92,10 +92,10 @@ class SGMLCompressContext(CompressContext):
             if index == -1:
                 return len(self.pending), '', None
             return index, mark, self.current
-        return super(SGMLCompressContext, self).nearest
+        return super().nearest
 
     def transform_tag(self, data, mark, next):
-        """Compress SML tag node."""
+        """Minify SML tag node."""
         tagstart = self.start == '<'
         data = self.re_whitespace.sub(' ', data[1:] if tagstart else data)
         if tagstart:
@@ -108,7 +108,7 @@ class SGMLCompressContext(CompressContext):
         return self.start if data.strip() == self.start else data
 
     def transform_text(self, data, mark, next):
-        """Compress SGML text node."""
+        """Minify SGML text node."""
         if not self.skip_until_text:
             return self.start if data.strip() == self.start else data
         elif next is not None:
@@ -116,8 +116,8 @@ class SGMLCompressContext(CompressContext):
         return data
 
 
-class HTMLCompressContext(SGMLCompressContext):
-    """Compression context for jinja2 HTML templates."""
+class HTMLMinifyContext(SGMLMinifyContext):
+    """Minifying context for jinja2 HTML templates."""
 
     block_tags = {
         'textarea': '</textarea>',
@@ -127,8 +127,8 @@ class HTMLCompressContext(SGMLCompressContext):
         }
 
 
-class JSCompressContext(CompressContext):
-    """Compression context for jinja2 JavaScript templates."""
+class JSMinifyContext(MinifyContext):
+    """Minifying context for jinja2 JavaScript templates."""
 
     jumps = {
         'code': {
@@ -139,14 +139,14 @@ class JSCompressContext(CompressContext):
             },
         'single_string': {
             '\'': 'code',
-            '\\\'': 'single_string_escape',
+            '\\': 'single_string_escape',
             },
         'single_string_escape': {
-            c: 'single-string' for c in ('\\', '\'', '')
+            c: 'single_string' for c in ('\\', '\'', '')
             },
         'double_string': {
             '"': 'code',
-            '\\"': 'double_string_escape',
+            '\\': 'double_string_escape',
             },
         'double_string_escape': {
             c: 'double_string' for c in ('\\', '"', '')
@@ -165,13 +165,13 @@ class JSCompressContext(CompressContext):
     pristine = True
     strip_tokens = staticmethod(
         functools.partial(
-            re.compile(r'\s+[^\w\d\s]\s*|[^\w\d\s]\s+').sub,
-            lambda x: x.group(0).strip()
+            re.compile(r'\s+[^\w\d\s]\s*|[^\w\d\s]\s+|\s{2,}').sub,
+            lambda x: x.group(0).strip() or ' '
             )
         )
 
     def transform_code(self, data, mark, next):
-        """Compress JS-like code."""
+        """Minify JS-like code."""
         if self.pristine:
             data = data.lstrip()
             self.pristine = False
@@ -186,21 +186,21 @@ class JSCompressContext(CompressContext):
     transform_multiline_comment = transform_ignore
 
 
-class TemplateCompress(jinja2.ext.Extension):
-    """Jinja2 HTML template compression extension."""
+class MinifyExtension(jinja2.ext.Extension):
+    """Jinja2 template minifying extension."""
 
-    default_context_class = UncompressedContext
+    default_context_class = OriginalContext
     context_classes = {
-        '.xml': SGMLCompressContext,
-        '.xhtml': HTMLCompressContext,
-        '.html': HTMLCompressContext,
-        '.htm': HTMLCompressContext,
-        '.json': JSCompressContext,
-        '.js': JSCompressContext,
+        '.xml': SGMLMinifyContext,
+        '.xhtml': HTMLMinifyContext,
+        '.html': HTMLMinifyContext,
+        '.htm': HTMLMinifyContext,
+        '.json': JSMinifyContext,
+        '.js': JSMinifyContext,
         }
 
     def get_context(self, filename=None):
-        """Get compression context bassed on given filename."""
+        """Get minifying context based on given filename."""
         if filename:
             for extension, context_class in self.context_classes.items():
                 if filename.endswith(extension):
@@ -208,7 +208,7 @@ class TemplateCompress(jinja2.ext.Extension):
         return self.default_context_class()
 
     def filter_stream(self, stream):
-        """Yield compressed tokens from :class:`~jinja2.lexer.TokenStream`."""
+        """Yield minified tokens from :class:`~jinja2.lexer.TokenStream`."""
         transform = self.get_context(stream.name)
         for token in stream:
             yield from transform.feed(token)

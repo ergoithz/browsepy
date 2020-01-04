@@ -5,7 +5,7 @@ import warnings
 
 import browsepy.transform
 import browsepy.transform.glob
-import browsepy.transform.compress
+import browsepy.transform.template
 
 
 class TestStateMachine(unittest.TestCase):
@@ -103,13 +103,13 @@ class TestGlob(unittest.TestCase):
 
 
 class TestXML(unittest.TestCase):
-    module = browsepy.transform.compress
+    module = browsepy.transform.template
 
     @classmethod
     def translate(cls, data):
-        return ''.join(cls.module.SGMLCompressContext(data))
+        return ''.join(cls.module.SGMLMinifyContext(data))
 
-    def test_compression(self):
+    def test_minify(self):
         a = '''
             <root
                 attr="true">with some text content </root>
@@ -119,22 +119,29 @@ class TestXML(unittest.TestCase):
 
 
 class TestJS(unittest.TestCase):
-    module = browsepy.transform.compress
+    module = browsepy.transform.template
 
     @classmethod
     def translate(cls, data):
-        return ''.join(cls.module.JSCompressContext(data))
+        return ''.join(cls.module.JSMinifyContext(data))
 
-    def test_compression(self):
-        a = '''
-            function a() {
+    def test_minify(self):
+        a = r'''
+            function    a() {
                 return 1 + 7 /2
             }
-            var a = {b: ' this '}; // line comment
+            var a = {b: ' this\' '}; // line comment
             /*
              * multiline comment
              */
+            window
+            .location
+            .href =      '#top';
             [1,2,3][0]
             '''
-        b = 'function a(){return 1+7/2}var a={b:\' this \'};[1,2,3][0]'
+        b = (
+            'function a(){return 1+7/2}var a={b:\' this\\\' \'};'
+            'window.location.href=\'#top\';'
+            '[1,2,3][0]'
+            )
         self.assertEqual(self.translate(a), b)

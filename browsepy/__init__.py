@@ -7,6 +7,7 @@ import os
 import os.path
 import time
 
+import jinja2
 import cookieman
 
 from flask import (
@@ -60,9 +61,13 @@ def init_config():
             ),
         EXCLUDE_FNC=None,
         )
+    current_app.jinja_loader = jinja2.PackageLoader(
+        __package__,
+        current_app.template_folder
+        )
     current_app.jinja_env.add_extension(
-        'browsepy.transform.compress.TemplateCompress')
-
+        'browsepy.transform.template.MinifyExtension',
+        )
     if 'BROWSEPY_SETTINGS' in os.environ:
         current_app.config.from_envvar('BROWSEPY_SETTINGS')
 
