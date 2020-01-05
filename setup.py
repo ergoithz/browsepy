@@ -18,11 +18,14 @@ import distutils
 
 from setuptools import setup, find_packages
 
+
+version_pattern = re.compile(r'__version__ = \'(.*?)\'')
+
 with io.open('README.rst', 'rt', encoding='utf8') as f:
     readme = f.read()
 
 with io.open('browsepy/__init__.py', 'rt', encoding='utf8') as f:
-    version = re.search(r'__version__ = \'(.*?)\'', f.read()).group(1)
+    version = version_pattern.search(f.read()).group(1)
 
 for debugger in ('ipdb', 'pudb', 'pdb'):
     opt = '--debug=%s' % debugger
@@ -45,27 +48,29 @@ class AlphaVersionCommand(distutils.cmd.Command):
         """Check alpha version."""
         assert self.alpha, 'alpha cannot be empty'
 
-    def iter_package_paths(self):
-        for package in self.distribution.packages:
-            path = '{}/__init__.py'.format(package.replace('.', os.sep))
-            if os.path.isfile(path):
-                yield path
+    def replace_version(self, path, version):
+        """Replace version dunder variable on given path with value."""
+        with io.open(path, 'r+', encoding='utf8') as f:
+            data = version_pattern.sub(
+                '__version__ = {!r}'.format(version),
+                f.read(),
+                )
+            f.seek(0)
+            f.write(data)
+            f.truncate()
 
     def run(self):
         """Run command."""
-        for p in self.iter_package_paths():
-            self.announce('Updating: {}'.format(p), level=distutils.log.INFO)
-            with io.open(p, 'r+', encoding='utf8') as f:
-                data = re.sub(
-                    r'__version__ = \'(?P<version>[^a\']+)(a\d+)?\'',
-                    lambda m: '__version__ = {!r}'.format(
-                        '{}a{}'.format(m.groupdict()['version'], self.alpha)
-                        ),
-                    f.read(),
-                    )
-                f.seek(0)
-                f.write(data)
-                f.truncate()
+        alpha = '{}a{}'.format(version.split('a', 1)[0], self.alpha)
+        path = '/'.join(
+            self.distribution.metadata.name.split('.') + ['__init__.py']
+            )
+        self.execute(
+            self.replace_version,
+            (path, version),
+            'updating {!r} __version__ with {!r}'.format(path, alpha),
+            )
+        self.distribution.metadata.version = alpha
 
 
 setup(
