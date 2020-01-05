@@ -17,7 +17,6 @@ from flask import (
     )
 
 import browsepy.mimetype as mimetype
-import browsepy.compat as compat
 
 from browsepy.appconfig import CreateApp
 from browsepy.manager import PluginManager
@@ -44,7 +43,7 @@ def init_config():
         SECRET_KEY=os.urandom(4096),
         APPLICATION_NAME='browsepy',
         APPLICATION_TIME=0,
-        DIRECTORY_BASE=compat.getcwd(),
+        DIRECTORY_BASE=os.getcwd(),
         DIRECTORY_START=None,
         DIRECTORY_REMOVE=None,
         DIRECTORY_UPLOAD=None,
@@ -63,10 +62,10 @@ def init_config():
         )
     current_app.jinja_loader = jinja2.PackageLoader(
         __package__,
-        current_app.template_folder
+        current_app.template_folder,
         )
     current_app.jinja_env.add_extension(
-        'browsepy.transform.template.MinifyExtension',
+        'browsepy.transform.template.MinifyTemplateExtension',
         )
     if 'BROWSEPY_SETTINGS' in os.environ:
         current_app.config.from_envvar('BROWSEPY_SETTINGS')

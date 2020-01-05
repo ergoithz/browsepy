@@ -51,49 +51,6 @@ class TestCompat(unittest.TestCase):
         self.assertTrue(self.module.which('python'))
         self.assertIsNone(self.module.which('lets-put-a-wrong-executable'))
 
-    def test_fsdecode(self):
-        path = b'/a/\xc3\xb1'
-        self.assertEqual(
-            self.module.fsdecode(path, os_name='posix', fs_encoding='utf-8'),
-            path.decode('utf-8')
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsdecode(path, os_name='nt', fs_encoding='latin-1'),
-            path.decode('latin-1')
-            )
-        path = b'/a/\xf1'
-        self.assertRaises(
-            UnicodeDecodeError,
-            self.module.fsdecode,
-            path,
-            fs_encoding='utf-8',
-            errors='strict'
-            )
-
-    def test_fsencode(self):
-        path = b'/a/\xc3\xb1'
-        self.assertEqual(
-            self.module.fsencode(
-                path.decode('utf-8'),
-                fs_encoding='utf-8'
-                ),
-            path
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsencode(
-                path.decode('latin-1'),
-                fs_encoding='latin-1'
-                ),
-            path
-            )
-        path = b'/a/\xf1'
-        self.assertEqual(
-            self.module.fsencode(path, fs_encoding='utf-8'),
-            path
-            )
-
     def test_pathconf(self):
         kwargs = {
             'os_name': 'posix',
@@ -122,23 +79,6 @@ class TestCompat(unittest.TestCase):
         pcfg = self.module.pathconf('c:\\a', **kwargs)
         self.assertEqual(pcfg['PC_PATH_MAX'], 246)
         self.assertEqual(pcfg['PC_NAME_MAX'], 242)
-
-    def test_getcwd(self):
-        self.assertIsInstance(self.module.getcwd(), str)
-        self.assertIsInstance(
-            self.module.getcwd(
-                fs_encoding='latin-1',
-                cwd_fnc=lambda: b'\xf1'
-                ),
-            str
-            )
-        self.assertIsInstance(
-            self.module.getcwd(
-                fs_encoding='utf-8',
-                cwd_fnc=lambda: b'\xc3\xb1'
-                ),
-            str
-            )
 
     def test_path(self):
         parse = self.module.pathparse

@@ -6,7 +6,6 @@ import os.path
 import sys
 import errno
 import time
-import tempfile
 import functools
 import contextlib
 import warnings
@@ -26,6 +25,9 @@ except ImportError:
     from werkzeug.utils import cached_property  # noqa
 
 
+TFunction = typing.Callable[..., typing.Any]
+TFunction2 = typing.Callable[..., typing.Any]
+OSEnvironType = typing.Mapping[str, str]
 FS_ENCODING = sys.getfilesystemencoding()
 TRUE_VALUES = frozenset(
     # Truthy values
@@ -48,7 +50,7 @@ RETRYABLE_OSERROR_PROPERTIES = {
             'EINPROGRESS',
             'EREMOTEIO',
             )
-        if prop and hasattr(errno, prop)
+        if hasattr(errno, prop)
         ),
     'winerror': frozenset(
         # Handle WindowsError instances without errno
@@ -141,124 +143,54 @@ def rmtree(path):
 
     :param path: path to remove
     """
+    error = EnvironmentError
     for retry in range(10):
         try:
             return _unsafe_rmtree(path)
-        except EnvironmentError as error:
-            if not any(
-              getattr(error, prop, None) in values
-              for prop, values in RETRYABLE_OSERROR_PROPERTIES.items()
-              ):
-                break
+        except EnvironmentError as e:
+            if all(getattr(e, p, None) not in v
+                   for p, v in RETRYABLE_OSERROR_PROPERTIES.items()):
+                raise
+            error = e
         time.sleep(0.1)
     raise error
 
 
-@contextlib.contextmanager
-def mkdtemp(suffix='', prefix='', dir=None):
-    """
-    Create a temporary directory context manager.
-
-    Backwards-compatible :class:`tmpfile.TemporaryDirectory` context
-    manager, as it was added on `3.2`.
-
-    :param path: path to iterate
-    :type path: str
-    """
-    path = tempfile.mkdtemp(suffix, prefix, dir)
-    try:
-        yield path
-    finally:
-        rmtree(path)
-
-
 def isexec(path):
+    # type: (str) -> bool
     """
     Check if given path points to an executable file.
 
     :param path: file path
-    :type path: str
     :return: True if executable, False otherwise
-    :rtype: bool
     """
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 
-def fsdecode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
-    """
-    Decode given path using filesystem encoding.
-
-    This is necessary as python has pretty bad filesystem support on
-    some platforms.
-
-    :param path: path will be decoded if using bytes
-    :type path: bytes or str
-    :param os_name: operative system name, defaults to os.name
-    :type os_name: str
-    :param fs_encoding: current filesystem encoding, defaults to autodetected
-    :type fs_encoding: str
-    :return: decoded path
-    :rtype: str
-    """
-    if not isinstance(path, bytes):
-        return path
-    if not errors:
-        errors = 'strict' if os_name == 'nt' else 'surrogateescape'
-    return path.decode(fs_encoding, errors=errors)
-
-
-def fsencode(path, os_name=os.name, fs_encoding=FS_ENCODING, errors=None):
-    """
-    Encode given path using filesystem encoding.
-
-    This is necessary as python has pretty bad filesystem support on
-    some platforms.
-
-    :param path: path will be encoded if not using bytes
-    :type path: bytes or str
-    :param os_name: operative system name, defaults to os.name
-    :type os_name: str
-    :param fs_encoding: current filesystem encoding, defaults to autodetected
-    :type fs_encoding: str
-    :return: encoded path
-    :rtype: bytes
-    """
-    if isinstance(path, bytes):
-        return path
-    if not errors:
-        errors = 'strict' if os_name == 'nt' else 'surrogateescape'
-    return path.encode(fs_encoding, errors=errors)
-
-
-def getcwd(fs_encoding=FS_ENCODING, cwd_fnc=os.getcwd):
-    """
-    Get current work directory's absolute path.
-
-    Like os.getcwd but garanteed to return an unicode-str object.
-
-    :param fs_encoding: filesystem encoding, defaults to autodetected
-    :type fs_encoding: str
-    :param cwd_fnc: callable used to get the path, defaults to os.getcwd
-    :type cwd_fnc: Callable
-    :return: path
-    :rtype: str
-    """
-    path = fsdecode(cwd_fnc(), fs_encoding=fs_encoding)
-    return os.path.abspath(path)
-
-
 def getdebug(environ=os.environ, true_values=TRUE_VALUES):
+    # type: (OSEnvironType, typing.Iterable[str]) -> bool
     """
     Get if app is running in debug mode.
 
     This is detected looking at environment variables.
 
     :param environ: environment dict-like object
-    :type environ: collections.abc.Mapping
+    :param true_values: iterable of truthy values
     :returns: True if debug contains a true-like string, False otherwise
-    :rtype: bool
     """
     return environ.get('DEBUG', '').lower() in true_values
+
+
+@typing.overload
+def deprecated(func_or_text, environ=os.environ):
+    # type: (str, OSEnvironType) -> typing.Callable[[TFunction], TFunction]
+    """Get deprecation decorator with given message."""
+
+
+@typing.overload
+def deprecated(func_or_text, environ=os.environ):
+    # type: (TFunction, OSEnvironType) -> TFunction
+    """Decorate with default deprecation message."""
 
 
 def deprecated(func_or_text, environ=os.environ):
@@ -268,11 +200,8 @@ def deprecated(func_or_text, environ=os.environ):
     Calling a deprected function will result in a warning message.
 
     :param func_or_text: message or callable to decorate
-    :type func_or_text: callable
     :param environ: optional environment mapping
-    :type environ: collections.abc.Mapping
     :returns: nested decorator or new decorated function (depending on params)
-    :rtype: callable
 
     Usage:
 
@@ -306,7 +235,7 @@ def deprecated(func_or_text, environ=os.environ):
 
 
 def usedoc(other):
-    # type: (typing.Any) -> typing.Callable[[...], typing.Any]
+    # type: (TFunction) -> typing.Callable[[TFunction2], TFunction2]
     """
     Get decorating function which copies given object __doc__.
 
@@ -337,17 +266,15 @@ def usedoc(other):
 
 
 def pathsplit(value, sep=os.pathsep):
+    # type: (str, str) -> typing.Generator[str, None, None]
     """
-    Get enviroment PATH elements as list.
+    Iterate environment PATH elements.
 
     This function only cares about spliting across OSes.
 
     :param value: path string, as given by os.environ['PATH']
-    :type value: str
     :param sep: PATH separator, defaults to os.pathsep
-    :type sep: str
     :yields: every path
-    :ytype: str
     """
     for part in value.split(sep):
         if part[:1] == part[-1:] == '"' or part[:1] == part[-1:] == '\'':
@@ -356,20 +283,17 @@ def pathsplit(value, sep=os.pathsep):
 
 
 def pathparse(value, sep=os.pathsep, os_sep=os.sep):
+    # type: (str, str, str) -> typing.Generator[str, None, None]
     """
-    Get enviroment PATH directories as list.
+    Iterate environment PATH directories.
 
     This function cares about spliting, escapes and normalization of paths
     across OSes.
 
     :param value: path string, as given by os.environ['PATH']
-    :type value: str
     :param sep: PATH separator, defaults to os.pathsep
-    :type sep: str
     :param os_sep: OS filesystem path separator, defaults to os.sep
-    :type os_sep: str
-    :yields: every path
-    :ytype: str
+    :yields: every path in PATH
     """
     escapes = []
     normpath = ntpath.normpath if os_sep == '\\' else posixpath.normpath
@@ -387,7 +311,7 @@ def pathparse(value, sep=os.pathsep, os_sep=os.sep):
             part = part[:-1]
         for original, escape, unescape in escapes:
             part = part.replace(escape, unescape)
-        yield normpath(fsdecode(part))
+        yield normpath(part)
 
 
 def pathconf(path,
@@ -419,28 +343,23 @@ ENV_PATH = tuple(pathparse(os.getenv('PATH', '')))
 ENV_PATHEXT = tuple(pathsplit(os.getenv('PATHEXT', '')))
 
 
-def which(name,
-          env_path=ENV_PATH,
-          env_path_ext=ENV_PATHEXT,
-          is_executable_fnc=isexec,
-          path_join_fnc=os.path.join,
-          os_name=os.name):
+def which(name,  # type: str
+          env_path=ENV_PATH,  # type: typing.Iterable[str]
+          env_path_ext=ENV_PATHEXT,  # type: typing.Iterable[str]
+          is_executable_fnc=isexec,  # type: typing.Callable[[str], bool]
+          path_join_fnc=os.path.join,  # type: typing.Callable[[...], str]
+          os_name=os.name,  # type: str
+          ):  # type: (...) -> typing.Optional[str]
     """
     Get command absolute path.
 
     :param name: name of executable command
-    :type name: str
     :param env_path: OS environment executable paths, defaults to autodetected
-    :type env_path: list of str
     :param is_executable_fnc: callable will be used to detect if path is
                               executable, defaults to `isexec`
-    :type is_executable_fnc: Callable
     :param path_join_fnc: callable will be used to join path components
-    :type path_join_fnc: Callable
     :param os_name: os name, defaults to os.name
-    :type os_name: str
     :return: absolute path
-    :rtype: str or None
     """
     for path in env_path:
         for suffix in env_path_ext:
@@ -451,6 +370,7 @@ def which(name,
 
 
 def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
+    # type: (str, typing.Iterable[str]) -> str
     """
     Escape pattern to include it safely into another regex.
 
@@ -460,9 +380,7 @@ def re_escape(pattern, chars=frozenset("()[]{}?*+|^$\\.-#")):
     Logic taken from regex module.
 
     :param pattern: regex pattern to escape
-    :type patterm: str
     :returns: escaped pattern
-    :rtype: str
     """
     chr_escape = '\\{}'.format
     uni_escape = '\\u{:04d}'.format

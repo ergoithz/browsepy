@@ -3,13 +3,13 @@
 import sys
 import os
 import os.path
+import tempfile
 import unittest
 
 import flask
 
 import browsepy
 import browsepy.manager
-import browsepy.compat as compat
 import browsepy.exceptions as exceptions
 
 
@@ -116,7 +116,7 @@ class TestPlugins(unittest.TestCase):
             'browsepy_testing_',
             )
 
-        with compat.mkdtemp() as base:
+        with tempfile.TemporaryDirectory() as base:
             names = (
                 'browsepy_test_another_plugin',
                 'browsepy_testing_another_plugin',

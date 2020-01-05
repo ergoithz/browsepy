@@ -304,7 +304,7 @@ class Node(object):
         :type app: flask.Flask
         :param **defaults: initial property values
         """
-        self.path = compat.fsdecode(path) if path else None
+        self.path = path if path else None
         self.app = utils.solve_local(app or flask.current_app)
         self.__dict__.update(defaults)  # only for attr and cached_property
 
@@ -1053,16 +1053,12 @@ def secure_filename(path, destiny_os=os.name, fs_encoding=compat.FS_ENCODING):
     if isinstance(path, bytes):
         path = path.decode('latin-1', errors=underscore_replace)
 
-    # Decode and recover from filesystem encoding in order to strip unwanted
-    # characters out
-    kwargs = {
-        'os_name': destiny_os,
-        'fs_encoding': fs_encoding,
-        'errors': underscore_replace,
-        }
-    fs_encoded_path = compat.fsencode(path, **kwargs)
-    fs_decoded_path = compat.fsdecode(fs_encoded_path, **kwargs)
-    return fs_decoded_path
+    # encode/decode with filesystem encoding to remove incompatible characters
+    return (
+        path
+        .encode(fs_encoding, errors=underscore_replace)
+        .decode(fs_encoding, errors=underscore_replace)
+        )
 
 
 def alternative_filename(filename, attempt=None):

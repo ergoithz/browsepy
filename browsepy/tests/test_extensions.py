@@ -2,11 +2,11 @@
 import unittest
 import jinja2
 
-import browsepy.transform.compress
+import browsepy.transform.template
 
 
 class TestHTMLCompress(unittest.TestCase):
-    extension = browsepy.transform.compress.TemplateCompress
+    extension = browsepy.transform.template.MinifyTemplateExtension
 
     def render(self, html, **kwargs):
         data = {'code.html': html}

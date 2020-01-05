@@ -186,7 +186,7 @@ class JSMinifyContext(MinifyContext):
     transform_multiline_comment = transform_ignore
 
 
-class MinifyExtension(jinja2.ext.Extension):
+class MinifyTemplateExtension(jinja2.ext.Extension):
     """Jinja2 template minifying extension."""
 
     default_context_class = OriginalContext

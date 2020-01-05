@@ -3,9 +3,9 @@ import os
 import os.path
 import unittest
 import warnings
+import tempfile
 
 import browsepy
-import browsepy.compat as compat
 import browsepy.appconfig
 
 
@@ -17,7 +17,7 @@ class TestApp(unittest.TestCase):
         self.app.config._warned.clear()
 
     def test_config(self):
-        with compat.mkdtemp() as path:
+        with tempfile.TemporaryDirectory() as path:
             name = os.path.join(path, 'file.py')
             with open(name, 'w') as f:
                 f.write('DIRECTORY_DOWNLOADABLE = False\n')
