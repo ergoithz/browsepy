@@ -25,7 +25,7 @@ stages:
 .test:
   extends: .python
   stage: test
-  variables:
+  variables: &test-variables
     PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
     COVERAGE_FILE: "${CI_PROJECT_DIR}/.coverage.${CI_JOB_NAME}"
     MODULE: browsepy
@@ -59,14 +59,23 @@ stages:
 python35:
   extends: .test
   image: python:3.5-alpine
+  variables:
+    <<: *test-variables
+    NOCODECHECKS: true
 
 python36:
   extends: .test
   image: python:3.6-alpine
+  variables:
+    <<: *test-variables
+    NOCODECHECKS: true
 
 python37:
   extends: .test
   image: python:3.7-alpine
+  variables:
+    <<: *test-variables
+    NOCODECHECKS: true
 
 python38:
   extends: .test

@@ -1,9 +1,17 @@
 
 import re
+import os
+import unittest
+
+import browsepy.compat as compat
 
 import unittest_resources.testing as base
 
 
+@unittest.skipIf(
+    os.getenv('NOCODECHECKS') in compat.TRUE_VALUES,
+    'env NOCODECHECKS set to true.'
+    )
 class Rules:
     """Browsepy module mixin."""
 

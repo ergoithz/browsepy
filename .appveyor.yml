@@ -4,8 +4,6 @@ branches:
 
 environment:
   matrix:
-  - PYTHON: "C:\\Python27"
-  - PYTHON: "C:\\Python27-x64"
   - PYTHON: "C:\\Python35"
   - PYTHON: "C:\\Python35-x64"
   - PYTHON: "C:\\Python36"
@@ -31,7 +29,8 @@ install:
   SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
   python --version
   python -c "import struct; print(struct.calcsize('P') * 8)"
-  pip install --disable-pip-version-check --user --upgrade pip setuptools wheel
 
 test_script:
-- "python setup.py test"
+- |
+  SET NOCODECHECKS=true
+  python setup.py test
