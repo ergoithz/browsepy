@@ -3,6 +3,7 @@ branches:
   - /^gh-pages(-.*)?$/
 
 environment:
+  NOCODECHECKS: "true"
   matrix:
   - PYTHON: "C:\\Python35"
   - PYTHON: "C:\\Python35-x64"
@@ -31,6 +32,4 @@ install:
   python -c "import struct; print(struct.calcsize('P') * 8)"
 
 test_script:
-- |
-  SET NOCODECHECKS=true
-  python setup.py test
+- python setup.py test

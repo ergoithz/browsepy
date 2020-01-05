@@ -61,21 +61,21 @@ python35:
   image: python:3.5-alpine
   variables:
     <<: *test-variables
-    NOCODECHECKS: true
+    NOCODECHECKS: "true"
 
 python36:
   extends: .test
   image: python:3.6-alpine
   variables:
     <<: *test-variables
-    NOCODECHECKS: true
+    NOCODECHECKS: "true"
 
 python37:
   extends: .test
   image: python:3.7-alpine
   variables:
     <<: *test-variables
-    NOCODECHECKS: true
+    NOCODECHECKS: "true"
 
 python38:
   extends: .test
