@@ -23,43 +23,6 @@ ConfigParserBase = (
     )
 
 
-class PLSFileParser(object):
-    '''
-    ConfigParser wrapper accepting fallback on get for convenience.
-
-    This wraps instead of inheriting due ConfigParse being classobj on python2.
-    '''
-    NOT_SET = type('NotSetType', (object,), {})
-    parser_class = (
-        configparser.SafeConfigParser
-        if hasattr(configparser, 'SafeConfigParser') else
-        configparser.ConfigParser
-        )
-
-    def __init__(self, path):
-        with warnings.catch_warnings():
-            # We already know about SafeConfigParser deprecation!
-            warnings.filterwarnings('ignore', category=DeprecationWarning)
-            self._parser = self.parser_class()
-        self._parser.read(path)
-
-    def getint(self, section, key, fallback=NOT_SET):
-        try:
-            return self._parser.getint(section, key)
-        except (configparser.NoOptionError, ValueError):
-            if fallback is self.NOT_SET:
-                raise
-            return fallback
-
-    def get(self, section, key, fallback=NOT_SET):
-        try:
-            return self._parser.get(section, key)
-        except (configparser.NoOptionError, ValueError):
-            if fallback is self.NOT_SET:
-                raise
-            return fallback
-
-
 class ImageBase(File):
     extensions = {
         'png': 'image/png',

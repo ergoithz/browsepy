@@ -134,6 +134,6 @@ def register_plugin(manager):
         place='header',
         type='button',
         endpoint='gallery.directory',
-        text='Show directory',
+        text='Show image gallery',
         filter=ImageDirectory.detect
         )
