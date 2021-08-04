@@ -11,6 +11,7 @@ import functools
 
 import posixpath
 import ntpath
+import errno
 
 FS_ENCODING = sys.getfilesystemencoding()
 PY_LEGACY = sys.version_info < (3, )
@@ -252,8 +253,11 @@ def pathconf(path,
         for key in pathconf_names:
             try:
                 pathconf_output[key] = pathconf_fnc(path, key)
-            except OSError:
-                pass
+            except OSError as exc:
+                if exc.errno == errno.EINVAL:
+                    pass  # Ignoring unsupported pathconf key
+                else:
+                    raise exc from None
         return pathconf_output
     if os_name == 'nt':
         maxpath = 246 if isdir_fnc(path) else 259  # 260 minus <END>
