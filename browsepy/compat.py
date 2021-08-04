@@ -253,7 +253,6 @@ def pathconf(path,
             try:
                 pathconf_output[key] = pathconf_fnc(path, key)
             except OSError:
-                print(f"pathconf key {key} unsupported for this platform")
                 pass
         return pathconf_output
     if os_name == 'nt':
