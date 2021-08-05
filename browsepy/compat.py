@@ -254,10 +254,8 @@ def pathconf(path,
             try:
                 pathconf_output[key] = pathconf_fnc(path, key)
             except OSError as exc:
-                if exc.errno == errno.EINVAL:
-                    pass  # Ignoring unsupported pathconf key
-                else:
-                    raise exc from None
+                if exc.errno != errno.EINVAL:
+                    raise
         return pathconf_output
     if os_name == 'nt':
         maxpath = 246 if isdir_fnc(path) else 259  # 260 minus <END>
