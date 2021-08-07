@@ -83,7 +83,8 @@ class PlayableBase(File):
     def detect(cls, node, os_sep=os.sep):
         basename = node.path.rsplit(os_sep)[-1]
         if '.' in basename:
-            ext = basename.rsplit('.')[-1]
+            ext = basename.rsplit('.')[-1].lower().strip()
+            print("Detecting:", basename, ext)
             return cls.extensions.get(ext, None)
         return None
 

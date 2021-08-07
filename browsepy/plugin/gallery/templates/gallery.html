@@ -1,0 +1,44 @@
+{% extends "browse.html" %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" type="text/css" href="{{ url_for('gallery.static', filename='css/gallery.css') }}" />
+
+{% endblock %}
+
+{% block content %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<div id="overlay" class="modal"§>
+    <span class="close cursor" onclick="closeOverlay()">&times;</span>
+    <div class="modal-content">
+        <div id="numbertext" class="numbertext"></div>
+       
+        <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+        
+            <img id="fullSize" />
+        </a>
+        <a class="next" onclick="plusSlides(1)">&#10095;</a>
+        <div class="caption-container">
+            <a href="" id="full-image-link">
+                <p id="caption"></p>
+            </a> 
+        </div>
+    </div>
+</div>
+<div id="image-list"></div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('gallery.static', filename='js/jquery.min.js') }}"></script>
+<script src="{{ url_for('gallery.static', filename='js/gallery.js') }}"></script>
+<script>
+    {% if curdir %}
+        show_single_file("{{ url_for('open', path=file.urlpath) }}", "current_file.title");
+        draw_gallery("{{ url_for('gallery.directory_json', path=curdir.urlpath) }}");
+    {% else %}
+        draw_gallery("{{ url_for('gallery.directory_json', path=file.urlpath) }}");
+    {% endif %}
+    
+</script>
+{% endblock %}
