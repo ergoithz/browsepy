@@ -6,6 +6,7 @@ import os
 import os.path
 import json
 import base64
+from functools import total_ordering
 
 from flask import Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
@@ -86,6 +87,13 @@ def get_cookie_browse_sorting(path, default):
                 return cprop
     return default
 
+@total_ordering
+class _Btm(object):
+    def __lt__(self, other):
+        return not isinstance(other, self.__class__)
+    def __eq__(self, other):
+        return isinstance(other, self.__class__)
+
 
 def browse_sortkey_reverse(prop):
     '''
@@ -94,6 +102,7 @@ def browse_sortkey_reverse(prop):
     * Directories will be first.
     * If *name* is given, link widget lowercase text will be used istead.
     * If *size* is given, bytesize will be used.
+    * Items without given attribute will be placed last (i.e. Broken soft links)
 
     :param prop: file attribute name
     :returns: tuple with sorting gunction and reverse bool
@@ -124,7 +133,7 @@ def browse_sortkey_reverse(prop):
     return (
         lambda x: (
             x.is_directory == reverse,
-            getattr(x, prop, None)
+            _Btm() if getattr(x, prop, None) == None else getattr(x, prop)
             ),
         reverse
         )
