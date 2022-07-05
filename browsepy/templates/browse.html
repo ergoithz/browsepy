@@ -13,12 +13,16 @@
     <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
        {% if widget.css %}class="{{ widget.css }}"{% endif %}
        >
-	   {% if f.type!='image/png' %}
-	   	{{ widget.text or '' }}
-	   {% endif %}
-	   {% if f.type=='image/png' %}
+	   
+	    {% if 'image/' in f.type %}
 	      <img width="50%" src={{url_for(f.link.endpoint, path=f.urlpath)}} />
-	   {% endif %}
+		{% elif 'video/' in f.type %}
+	      <video width="50%" src={{url_for(f.link.endpoint, path=f.urlpath)}} />
+		{% elif 'audio/' in f.type %}
+	      <audio width="50%" src={{url_for(f.link.endpoint, path=f.urlpath)}} />
+		{% else %}
+		  {{ widget.text or '' }}
+	    {% endif %}
 	   </a>
   {%- elif widget.type == 'script' -%}
     <script
