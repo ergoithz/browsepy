@@ -12,7 +12,18 @@
   {%- elif widget.type == 'link' -%}
     <a href="{{ url_for(widget.endpoint, path=f.urlpath) }}"
        {% if widget.css %}class="{{ widget.css }}"{% endif %}
-       >{{ widget.text or '' }}</a>
+       >
+	   
+	    {% if 'image/' in f.type %}
+	      <img width="50%" src={{url_for(f.link.endpoint, path=f.urlpath)}} />
+		{% elif 'video/' in f.type %}
+	      <video width="50%" src={{url_for(f.link.endpoint, path=f.urlpath)}} />
+		{% elif 'audio/' in f.type %}
+	      <audio controls width="50%" src={{url_for(f.link.endpoint, path=f.urlpath)}} />
+		{% else %}
+		  {{ widget.text or '' }}
+	    {% endif %}
+	   </a>
   {%- elif widget.type == 'script' -%}
     <script
       src="{{ widget.src or url_for(widget.endpoint, filename=widget.filename) }}"
@@ -115,6 +126,8 @@
                     {% if f.link %}
                       <td class="icon {{ f.link.icon }}"></td>
                       <td>{{ draw_widget(f, f.link) }}</td>
+					  <!-- td><img width="50%" src={{"open/" + f.urlpath}} /></td -->
+					  <!-- td><img width="50%" src={{url_for(f.link.endpoint, path=f.urlpath)}} /></td -->
                     {% else %}
                       <td></td>
                       <td></td>
